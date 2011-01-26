@@ -11,10 +11,18 @@ The project contains a client implementation as well as a worker implementation 
 
 Design Decisions
 ----------------
-* I chose to implement the jobs as classes that implement java.lang.Runnable. If the job requires arguments (most do), there must be a constructor that matches the supplied arguments. I felt this was the most flexible option and didn't require the jobs to inherit or implement a special Jesque class. Because of this, the jobs don't even need to know about Jesque at all! Furthermore, the client need not have the job's Class in it's VM, it only needs to know the classname and all the parameters' Classes on it's classpath. Only the workers realize the job and then run them.
-* I chose to use the Jedis because 1) it was simple, 2) no dependencies and 3) fully supported Redis 2.0 and used the new protocol.
-* I chose to use Jackson because 1) I was already familiar with it and 2) it works great.
-* I chose to use SLF4J because 1) it lets the application choose how to log and 2) no dependencies.
+* I chose to implement the jobs as classes that implement `java.lang.Runnable`. If the job requires arguments (most do), there must be a constructor that matches the supplied arguments. I felt this was the most flexible option and didn't require the jobs to inherit or implement a special Jesque class. Because of this, the jobs don't even need to know about Jesque at all! Furthermore, the client need not have the job's `Class` in it's VM, it only needs to know the classname and all the parameters' `Class`es on it's classpath. Only the workers realize the job and then run them.
+* I chose to use Jedis because:
+	1. It is simple to use
+	2. Fully supports Redis 2.0 and uses the new unified protocol
+	3. No dependencies
+* I chose to use Jackson because:
+	1. I was already familiar with it
+	2. It performs great and does what it says on the tin
+	3. No dependencies
+* I chose to use SLF4J because:
+	1. It lets the application choose how to log
+	2. No dependencies
 
 ***
 
@@ -52,6 +60,9 @@ Example usage (from IntegrationTest):
 	try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 For more usage examples check the tests. The tests require that Redis is running on localhost:6379.
 Use the resque-web application to see the status of your jobs and workers.
+
+Misc.
+-----
 
 If you are on Mac OS X, I highly recommend using the fantasic [Homebrew package manager](https://github.com/mxcl/homebrew). It makes installing and maintaining libraries, tools and applications a cinch. E.g.:
 	brew install redis
