@@ -36,7 +36,7 @@ To use it in your Maven project, add it as a dependency:
 	<dependency>
 		<groupId>net.greghaines</groupId>
 		<artifactId>jesque</artifactId>
-		<version>0.1.0</version>
+		<version>0.1.0-SNAPSHOT</version>
 		<type>jar</type>
 		<scope>compile</scope>
 	</dependency>
@@ -54,11 +54,13 @@ Example usage (from IntegrationTest):
 	final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), Arrays.asList(TestAction.class));
 	final Thread workerThread = new Thread(worker);
 	workerThread.start();
+	
 	// Normally, we'd just keep running but for demo purposes we'll just wait a few secs then shutdown
 	try { Thread.sleep(5000); } catch (Exception e){} // Give ourselves time to process
 	worker.end();
 	try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 For more usage examples check the tests. The tests require that Redis is running on localhost:6379.
+
 Use the resque-web application to see the status of your jobs and workers.
 
 Misc.
@@ -70,3 +72,18 @@ If you are on Mac OS X, I highly recommend using the fantasic [Homebrew package 
 	brew install maven
 Boom! Ready to go!
 
+License
+-------
+Copyright 2011 Greg Haines
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

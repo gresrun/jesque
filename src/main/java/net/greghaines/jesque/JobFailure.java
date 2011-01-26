@@ -1,9 +1,29 @@
+/*
+ * Copyright 2011 Greg Haines
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package net.greghaines.jesque;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * A bean to hold information about a job that failed.
+ * 
+ * @author Greg Haines
+ */
 public class JobFailure implements Serializable
 {
 	private static final long serialVersionUID = -2160045729341301316L;
@@ -17,6 +37,9 @@ public class JobFailure implements Serializable
 	
 	public JobFailure(){}
 
+	/**
+	 * @return the name of the worker where the job failed
+	 */
 	public String getWorker()
 	{
 		return this.worker;
@@ -27,6 +50,9 @@ public class JobFailure implements Serializable
 		this.worker = worker;
 	}
 
+	/**
+	 * @return the job description
+	 */
 	public Job getPayload()
 	{
 		return this.payload;
@@ -37,6 +63,9 @@ public class JobFailure implements Serializable
 		this.payload = payload;
 	}
 
+	/**
+	 * @return the kind of exception that occured
+	 */
 	public String getException()
 	{
 		return this.exception;
@@ -47,6 +76,9 @@ public class JobFailure implements Serializable
 		this.exception = exception;
 	}
 
+	/**
+	 * @return the message given by the exception
+	 */
 	public String getError()
 	{
 		return this.error;
@@ -57,6 +89,9 @@ public class JobFailure implements Serializable
 		this.error = error;
 	}
 
+	/**
+	 * @return the stacktrace of the exception
+	 */
 	public List<String> getBacktrace()
 	{
 		return this.backtrace;
@@ -67,6 +102,9 @@ public class JobFailure implements Serializable
 		this.backtrace = backtrace;
 	}
 
+	/**
+	 * @return when the error occurred
+	 */
 	public Date getFailedAt()
 	{
 		return this.failedAt;
