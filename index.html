@@ -7,7 +7,7 @@
 			body {
 				margin-top: 1.0em;
 				background-color: #ffffff;
-				font-family: "Lucida Grande,Helvetica,Arial,FreeSans";
+				font-family: "'Lucida Grande',Helvetica,Arial,FreeSans";
 				color: #000000;
 	    		}
 			#container {
@@ -21,7 +21,7 @@
     			h3 { text-align: center; color: #000000; }
     			.description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
     			.download { float: right; }
-			pre { background: #D0D0D0; color: #000000; padding: 15px;}
+			pre { background: #E0E0E0; color: #000000; padding: 15px;}
     			hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
     			.footer { text-align:center; padding-top:30px; font-style: italic; }
 			img { border: 0px; }
@@ -34,7 +34,7 @@
 				<a href="http://github.com/gresrun/jesque/zipball/master"><img width="90" src="http://github.com/images/modules/download/zip.png"></a>
 				<a href="http://github.com/gresrun/jesque/tarball/master"><img width="90" src="http://github.com/images/modules/download/tar.png"></a>
 			</div>
-			<h1><a href="http://github.com/gresrun/jesque">jesque</a><span class="small">by <a href="http://github.com/gresrun">gresrun</a></span></h1>
+			<h1><a href="http://github.com/gresrun/jesque">Jesque</a></h1>
 			<div class="description">An implementation of Resque in Java.</div>
 			<p>Jesque is an implementation of Resque in Java. It is fully-interoperable with the Ruby and Node.js (Coffee-Resque) implementations.</p>
 			<p>Jesque is a Maven project and depends on Jedis to connect to Redis, Jackson to map to/from JSON and SLF4J for logging.</p>
@@ -44,22 +44,25 @@
 			<p>I chose to implement the jobs as classes that implement java.lang.Runnable. If the job requires arguments (most do), there must be a constructor that matches the supplied arguments. I felt this was the most flexible option and didn't require the jobs to inherit or implement a special Jesque class. Because of this, the jobs don't even need to know about Jesque at all! Furthermore, the client need not have the job's Class in it's VM, it only needs to know the classname and all the parameters' Classes on it's classpath. Only the workers realize the job and then run them.</p>
 			<ul>
 				<li>I chose to use Jedis because:
-				<ol>
-					<li>It is simple to use</li>
-					<li>Fully supports Redis 2.0 and uses the new unified protocol</li>
-					<li>No dependencies</li>
-				</ol></li>
+					<ol>
+						<li>It is simple to use</li>
+						<li>Fully supports Redis 2.0 and uses the new unified protocol</li>
+						<li>No dependencies</li>
+					</ol>
+				</li>
 				<li>I chose to use Jackson because:
-				<ol>
-					<li>I was already familiar with it</li>
-					<li>It performs great and does what it says on the tin</li>
-					<li>No dependencies</li>
-				</ol></li>
+					<ol>
+						<li>I was already familiar with it</li>
+						<li>It performs great and does what it says on the tin</li>
+						<li>No dependencies</li>
+					</ol>
+				</li>
 				<li>I chose to use SLF4J because:
-				<ol>
-					<li>It lets the application choose how to log</li>
-					<li>No dependencies</li>
-				</ol></li>
+					<ol>
+						<li>It lets the application choose how to log</li>
+						<li>No dependencies</li>
+					</ol>
+				</li>
 			</ul>
 			<hr/>
 			<h2>Dependencies</h2>
@@ -128,7 +131,7 @@ brew install maven
 			limitations under the License.</p>
 			<h2>Download</h2>
 			<p>You can download this project in either <a href="https://github.com/gresrun/jesque/zipball/master">zip</a> or <a href="https://github.com/gresrun/jesque/tarball/master">tar</a> formats.</p>
-			<p>You can also clone the project with <a href="http://git-scm.com">Git</a> by running: <pre>git clone git://github.com/gresrun/jesque</pre></p>
+			<p>You can also clone the project with <a href="http://git-scm.com">Git</a> by running:</p><pre>git clone git://github.com/gresrun/jesque</pre>
 			<div class="footer">get the source code on GitHub : <a href="https://github.com/gresrun/jesque">gresrun/jesque</a></div>
 		</div>
 	</body>
