@@ -28,7 +28,7 @@ Design Decisions
 
 How do I use it?
 ----------------
-You can download the latests build at:
+Download the latest source at:
 	https://github.com/gresrun/jesque
 You'll need to build it then add it to your local repo first:
 	mvn clean install
