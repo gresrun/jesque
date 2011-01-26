@@ -1,9 +1,9 @@
 Jesque
 ======
 
-Jesque is an implementation of [Resque](https://github.com/defunkt/resque) in Java. It is fully-interoperable with the Ruby and Node.js implementations.
+Jesque is an implementation of [Resque](https://github.com/defunkt/resque) in [Java](http://www.oracle.com/technetwork/java/index.html). It is fully-interoperable with the [Ruby](http://www.ruby-lang.org/en/) and [Node.js](http://nodejs.org/) ([Coffee-Resque](https://github.com/technoweenie/coffee-resque)) implementations.
 
-Jesque is a Maven project and depends on [Jedis](https://github.com/xetorthio/jedis) to connect to Redis, [Jackson](http://jackson.codehaus.org/) to map to/from JSON and [SLF4J](http://www.slf4j.org/) for logging.
+Jesque is a [Maven](http://maven.apache.org/) project and depends on [Jedis](https://github.com/xetorthio/jedis) to connect to [Redis](http://redis.io/), [Jackson](http://jackson.codehaus.org/) to map to/from [JSON](http://www.json.org/) and [SLF4J](http://www.slf4j.org/) for logging.
 
 The project contains a client implementation as well as a worker implementation that supports listeners.
 
