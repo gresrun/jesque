@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+	<title>gresrun/jesque @ GitHub</title>
+	
+	<style type="text/css">
+		body {
+  		margin-top: 1.0em;
+  		background-color: #7700ff;
+		  font-family: "Helvetica,Arial,FreeSans";
+  		color: #ffffff;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+		h1 { font-size: 3.8em; color: #88ff00; margin-bottom: 3px; }
+		h1 .small { font-size: 0.4em; }
+		h1 a { text-decoration: none }
+		h2 { font-size: 1.5em; color: #88ff00; }
+    h3 { text-align: center; color: #88ff00; }
+    a { color: #88ff00; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+		pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+	</style>
+	
+</head>
+
+<body>
+  <a href="http://github.com/gresrun/jesque"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+
+  <div id="container">
+
+    <div class="download">
+      <a href="http://github.com/gresrun/jesque/zipball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+      <a href="http://github.com/gresrun/jesque/tarball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
+    </div>
+
+    <h1><a href="http://github.com/gresrun/jesque">jesque</a>
+      <span class="small">by <a href="http://github.com/gresrun">gresrun</a></span></h1>
+
+    <div class="description">
+      An implementation of Resque in Java.
+    </div>
+
+    <p>Jesque is an implementation of Resque in Java. It is fully-interoperable with the Ruby and Node.js (Coffee-Resque) implementations.
+
+Jesque is a Maven project and depends on Jedis to connect to Redis, Jackson to map to/from JSON and SLF4J for logging.
+
+The project contains a client implementation as well as a worker implementation that supports listeners.
+
+Design Decisions
+
+I chose to implement the jobs as classes that implement java.lang.Runnable. If the job requires arguments (most do), there must be a constructor that matches the supplied arguments. I felt this was the most flexible option and didn't require the jobs to inherit or implement a special Jesque class. Because of this, the jobs don't even need to know about Jesque at all! Furthermore, the client need not have the job's Class in it's VM, it only needs to know the classname and all the parameters' Classes on it's classpath. Only the workers realize the job and then run them.
+- I chose to use Jedis because:
+1. It is simple to use
+2. Fully supports Redis 2.0 and uses the new unified protocol
+3. No dependencies
+- I chose to use Jackson because:
+1. I was already familiar with it
+2. It performs great and does what it says on the tin
+3. No dependencies
+- I chose to use SLF4J because:
+1. It lets the application choose how to log
+2. No dependencies</p><h2>Dependencies</h2>
+<p>Jedis - https://github.com/xetorthio/jedis
+Jackson - http://jackson.codehaus.org/
+SLF4J - http://www.slf4j.org/</p>
+<h2>Install</h2>
+<p>Download the latest source at:
+https://github.com/gresrun/jesque
+
+You'll need to build it then add it to your local repo first:
+mvn clean install
+
+To use it in your Maven project, add it as a dependency:
+<dependency>
+    <groupId>net.greghaines</groupId>
+    <artifactId>jesque</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <type>jar</type>
+    <scope>compile</scope>
+</dependency>
+
+Example usage (from IntegrationTest):
+
+// Configuration
+final Config config = new ConfigBuilder().withJobPackage("net.greghaines.jesque").build();
+
+// Add a job to the queue
+final Job job = new Job("TestAction", new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
+final Client client = new ClientImpl(config);
+client.enqueue("foo", job);
+client.end();
+
+// Start a worker to run jobs from the queue
+final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), Arrays.asList(TestAction.class));
+final Thread workerThread = new Thread(worker);
+workerThread.start();
+
+// Normally, we'd just keep running but for demo purposes we'll just wait a few secs then shutdown
+try { Thread.sleep(5000); } catch (Exception e){} // Give ourselves time to process
+worker.end();
+try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
+
+For more usage examples check the tests. The tests require that Redis is running on localhost:6379.
+
+Use the resque-web application to see the status of your jobs and workers.</p>
+<h2>License</h2>
+<p>Copyright 2011 Greg Haines
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.</p>
+<h2>Authors</h2>
+<p>Greg Haines (gresrun@gmail.com)<br/><br/>      </p>
+<h2>Contact</h2>
+<p>Greg Haines (gresrun@gmail.com)<br/>      </p>
+
+
+    <h2>Download</h2>
+    <p>
+      You can download this project in either
+      <a href="http://github.com/gresrun/jesque/zipball/master">zip</a> or
+      <a href="http://github.com/gresrun/jesque/tarball/master">tar</a> formats.
+    </p>
+    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
+      by running:
+      <pre>$ git clone git://github.com/gresrun/jesque</pre>
+    </p>
+
+    <div class="footer">
+      get the source code on GitHub : <a href="http://github.com/gresrun/jesque">gresrun/jesque</a>
+    </div>
+
+  </div>
+
+  
+</body>
+</html>
