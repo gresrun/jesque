@@ -36,28 +36,31 @@
 			</div>
 			<h1><a href="http://github.com/gresrun/jesque">Jesque</a></h1>
 			<div class="description">An implementation of Resque in Java.</div>
-			<p>Jesque is an implementation of Resque in Java. It is fully-interoperable with the Ruby and Node.js (Coffee-Resque) implementations.</p>
-			<p>Jesque is a Maven project and depends on Jedis to connect to Redis, Jackson to map to/from JSON and SLF4J for logging.</p>
+			<p>Jesque is an implementation of <a href="https://github.com/defunkt/resque">Resque</a> in <a href="http://www.oracle.com/technetwork/java/index.html">Java</a>. It is fully-interoperable with the <a href="http://www.ruby-lang.org/en/">Ruby</a> and <a href="http://nodejs.org/">Node.js</a> (<a href="https://github.com/technoweenie/coffee-resque">Coffee-Resque</a>) implementations.</p>
+			<p>Jesque is a <a href="http://maven.apache.org/">Maven</a> project and depends on <a href="https://github.com/xetorthio/jedis">Jedis</a> to connect to <a href="http://redis.io/">Redis</a>, <a href="http://jackson.codehaus.org/">Jackson</a> to map to/from <a href="http://www.json.org/">JSON</a> and <a href="http://www.slf4j.org/">SLF4J</a> for logging.</p>
 			<p>The project contains a client implementation as well as a worker implementation that supports listeners.</p>
 			<hr/>
 			<h2>Design Decisions</h2>
-			<p>I chose to implement the jobs as classes that implement java.lang.Runnable. If the job requires arguments (most do), there must be a constructor that matches the supplied arguments. I felt this was the most flexible option and didn't require the jobs to inherit or implement a special Jesque class. Because of this, the jobs don't even need to know about Jesque at all! Furthermore, the client need not have the job's Class in it's VM, it only needs to know the classname and all the parameters' Classes on it's classpath. Only the workers realize the job and then run them.</p>
+			<p>I chose to implement the jobs as classes that implement <code>java.lang.Runnable</code>. If the job requires arguments (most do), there must be a constructor that matches the supplied arguments. I felt this was the most flexible option and didn't require the jobs to inherit or implement a special Jesque class. Because of this, the jobs don't even need to know about Jesque at all! Furthermore, the client need not have the job's <code>Class</code> in it's VM, it only needs to know the classname and all the parameters' <code>Class</code>es on it's classpath. Only the workers realize the job and then run them.</p>
 			<ul>
-				<li>I chose to use Jedis because:
+				<li>
+					<span>I chose to use Jedis because:</span>
 					<ol>
 						<li>It is simple to use</li>
 						<li>Fully supports Redis 2.0 and uses the new unified protocol</li>
 						<li>No dependencies</li>
 					</ol>
 				</li>
-				<li>I chose to use Jackson because:
+				<li>
+					<span>I chose to use Jackson because:</span>
 					<ol>
 						<li>I was already familiar with it</li>
 						<li>It performs great and does what it says on the tin</li>
 						<li>No dependencies</li>
 					</ol>
 				</li>
-				<li>I chose to use SLF4J because:
+				<li>
+					<span>I chose to use SLF4J because:</span>
 					<ol>
 						<li>It lets the application choose how to log</li>
 						<li>No dependencies</li>
@@ -67,7 +70,7 @@
 			<hr/>
 			<h2>Dependencies</h2>
 			<ul>
-				<li><a href="https://github.com/xetorthio/jedis">Jedis</a><li>
+				<li><a href="https://github.com/xetorthio/jedis">Jedis</a></li>
 				<li><a href="http://jackson.codehaus.org/">Jackson</a></li>
 				<li><a href="http://www.slf4j.org/">SLF4J</a></li>
 			</ul>
@@ -78,46 +81,48 @@
 	 		<p>You'll need to build it then add it to your local repo first:</p> 
 	 		<pre><code>mvn clean install</code></pre>
 			<p>To use it in your Maven project, add it as a dependency:</p> 
-			<pre><code>
-&lt;dependency&gt;
+			<pre><code>&lt;dependency&gt;
     &lt;groupId&gt;net.greghaines&lt;/groupId&gt;
     &lt;artifactId&gt;jesque&lt;/artifactId&gt;
     &lt;version&gt;0.1.0-SNAPSHOT&lt;/version&gt;
     &lt;type&gt;jar&lt;/type&gt;
     &lt;scope&gt;compile&lt;/scope&gt;
-&lt;/dependency&gt;
-			</code></pre> 
+&lt;/dependency&gt;</code></pre> 
  			<p>Example usage (from IntegrationTest):</p> 
-			<pre><code>
-// Configuration
-final Config config = new ConfigBuilder().withJobPackage("net.greghaines.jesque").build();
+			<pre><code>// Configuration
+final Config config = new ConfigBuilder()
+				.withJobPackage("net.greghaines.jesque")
+				.build();
  
 // Add a job to the queue
-final Job job = new Job("TestAction", new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
+final Job job = new Job("TestAction", 
+	new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 final Client client = new ClientImpl(config);
 client.enqueue("foo", job);
 client.end();
  
 // Start a worker to run jobs from the queue
-final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), Arrays.asList(TestAction.class));
+final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), 
+	Arrays.asList(TestAction.class));
 final Thread workerThread = new Thread(worker);
 workerThread.start();
  
-// Normally, we'd just keep running but for demo purposes we'll just wait a few secs then shutdown
-try { Thread.sleep(5000); } catch (Exception e){} // Give ourselves time to process
+// Normally, we'd just keep running but 
+// for demo purposes we'll just wait a few secs then shutdown
+try { Thread.sleep(5000); } catch (Exception e){}
 worker.end();
-try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
-			</code></pre>
+try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }</code></pre>
 			<p>For more usage examples check the tests. The tests require that Redis is running on localhost:6379.</p> 
 			<p>Use the resque-web application to see the status of your jobs and workers.</p> 
+			<hr/>
 			<h2>Misc.</h2> 
 			<p>If you are on Mac OS X, I highly recommend using the fantasic <a href="https://github.com/mxcl/homebrew">Homebrew package manager</a>. It makes installing and maintaining libraries, tools and applications a cinch. E.g.:</p> 
-			<pre><code>
-brew install redis
-brew install git
+			<pre><code>brew install git
 brew install maven
-			</code></pre>
+brew install redis
+gem install resque</code></pre>
 			<p>Boom! Ready to go!</p> 
+			<hr/>
 			<h2>License</h2> 
 			<p>Copyright 2011 Greg Haines</p> 
 			<p>Licensed under the Apache License, Version 2.0 (the "License"); <br/>
@@ -129,6 +134,7 @@ brew install maven
 			WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. <br/>
 			See the License for the specific language governing permissions and <br/>
 			limitations under the License.</p>
+			<hr/>
 			<h2>Download</h2>
 			<p>You can download this project in either <a href="https://github.com/gresrun/jesque/zipball/master">zip</a> or <a href="https://github.com/gresrun/jesque/tarball/master">tar</a> formats.</p>
 			<p>You can also clone the project with <a href="http://git-scm.com">Git</a> by running:</p><pre>git clone git://github.com/gresrun/jesque</pre>
