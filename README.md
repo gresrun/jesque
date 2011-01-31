@@ -11,7 +11,7 @@ The project contains a client implementation as well as a worker implementation 
 
 Design Decisions
 ----------------
-* I chose to implement the jobs as classes that implement `java.lang.Runnable`. If the job requires arguments (most do), there must be a constructor that matches the supplied arguments. I felt this was the most flexible option and didn't require the jobs to inherit or implement a special Jesque class. Because of this, the jobs don't even need to know about Jesque at all! Furthermore, the client need not have the job's `Class` in it's VM, it only needs to know the classname and all the parameters' `Class`es on it's classpath. Only the workers realize the job and then run them.
+* I chose to implement the jobs as classes that implement `java.lang.Runnable` or `java.util.concurrent.Callable`. If the job requires arguments (most do), there must be a constructor that matches the supplied arguments. I felt this was the most flexible option and didn't require the jobs to inherit or implement a special Jesque class. Because of this, the jobs don't even need to know about Jesque at all. Furthermore, the client need not have the job's `Class` in it's VM, it only needs to know the classname and all the parameters' `Class`es on it's classpath. Only the workers realize the job and then run them.
 * I chose to use Jedis because:
 	1. It is simple to use
 	2. Fully supports Redis 2.0 and uses the new unified protocol
@@ -36,7 +36,7 @@ To use it in your Maven project, add it as a dependency:
 	<dependency>
 		<groupId>net.greghaines</groupId>
 		<artifactId>jesque</artifactId>
-		<version>0.1.0-SNAPSHOT</version>
+		<version>0.2.0-SNAPSHOT</version>
 		<type>jar</type>
 		<scope>compile</scope>
 	</dependency>

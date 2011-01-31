@@ -72,7 +72,7 @@ public class ClientImpl implements Client
 		try
 		{
 			final String msg = ObjectMapperFactory.get().writeValueAsString(job);
-			log.debug("enqueue msg={}", msg);
+			log.debug("enqueue queue={} msg={}", queue, msg);
 			this.jedis.sadd(key("queues"), queue);
 			this.jedis.rpush(key("queue", queue), msg);
 		}

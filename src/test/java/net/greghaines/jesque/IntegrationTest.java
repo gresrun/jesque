@@ -89,7 +89,7 @@ public class IntegrationTest
 	public void successInSpiteOfListenerFailPoll()
 	{
 		log.info("Running successInSpiteOfListenerFailPoll()...");
-		assertSuccess(new FailingWorkerListener(), WorkerEvent.POLL);
+		assertSuccess(new FailingWorkerListener(), WorkerEvent.WORKER_POLL);
 	}
 	
 	@Test
@@ -117,7 +117,7 @@ public class IntegrationTest
 	public void failureInSpiteOfListenerFailError()
 	{
 		log.info("Running failureInSpiteOfListenerFailError()...");
-		assertFailure(new FailingWorkerListener(), WorkerEvent.ERROR);
+		assertFailure(new FailingWorkerListener(), WorkerEvent.WORKER_ERROR);
 	}
 	
 	@Test
@@ -236,7 +236,7 @@ public class IntegrationTest
 	private static class FailingWorkerListener implements WorkerListener
 	{
 		public void onEvent(final WorkerEvent event, final Worker worker, final String queue,
-				final Job job, final Runnable runner, final Exception ex)
+				final Job job, final Object runner, final Object result, final Exception ex)
 		{
 			throw new RuntimeException("Listener FAIL");
 		}

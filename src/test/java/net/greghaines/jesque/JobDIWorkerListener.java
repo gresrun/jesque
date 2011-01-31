@@ -59,7 +59,8 @@ public class JobDIWorkerListener implements WorkerListener
 	}
 	
 	public void onEvent(final WorkerEvent event, final Worker worker, 
-			final String queue, final Job job, final Runnable runner, final Exception ex)
+			final String queue, final Job job, final Object runner, 
+			final Object result, final Exception ex)
 	{
 		if (WorkerEvent.JOB_EXECUTE.equals(event))
 		{
@@ -71,7 +72,7 @@ public class JobDIWorkerListener implements WorkerListener
 		}
 	}
 
-	private void invokeSetter(final Runnable runner, final String propName, final Method method)
+	private void invokeSetter(final Object runner, final String propName, final Method method)
 	{
 		final Object arg = this.diMap.get(propName);
 		final Class<?> paramType = method.getParameterTypes()[0]; // OK, since we already make sure there is 1 param

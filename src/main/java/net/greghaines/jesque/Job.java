@@ -28,14 +28,47 @@ public class Job implements Serializable
 {
 	private static final long serialVersionUID = -1523425239512691383L;
 	
-	private final String className;
-	private final Object[] args;
+	private String className;
+	private Object[] args;
 	
+	/**
+	 * No-arg contructor
+	 */
+	public Job(){}
+	
+	/**
+	 * Cloning constructor.
+	 * Makes a clone of the arguments, if they exist.
+	 * 
+	 * @param origJob the Job to start from
+	 */
+	public Job(final Job origJob)
+	{
+		if (origJob == null)
+		{
+			throw new IllegalArgumentException("origJob must not be null");
+		}
+		this.className = origJob.className;
+		this.args = (origJob.args == null) ? null : origJob.args.clone();
+	}
+	
+	/**
+	 * A convenience constructor. Delegates to Job(String, Object...) by calling args.toArray().
+	 * 
+	 * @param className the class name of the Job
+	 * @param args the arguments for the Job
+	 */
 	public Job(final String className, final List<?> args)
 	{
 		this(className, args.toArray());
 	}
 	
+	/**
+	 * Create a new Job with the given class name and arguments.
+	 * 
+	 * @param className the classname of the Job
+	 * @param args the arguments for the Job
+	 */
 	public Job(final String className, final Object... args)
 	{
 		if (className == null || "".equals(className))
@@ -47,11 +80,20 @@ public class Job implements Serializable
 	}
 
 	/**
-	 * @return the name of the job's class
+	 * @return the name of the Job's class
 	 */
 	public String getClassName()
 	{
 		return this.className;
+	}
+
+	/**
+	 * Set the class name.
+	 * @param className the new class name
+	 */
+	public void setClassName(final String className)
+	{
+		this.className = className;
 	}
 
 	/**
@@ -62,6 +104,23 @@ public class Job implements Serializable
 		return this.args;
 	}
 	
+	/**
+	 * Set the arguments.
+	 * @param args the new agruments
+	 */
+	public void setArgs(final Object[] args)
+	{
+		this.args = args;
+	}
+	
+	/**
+	 * @return true if this Job has a valid class name and arguments
+	 */
+	public boolean isValid()
+	{
+		return (this.args != null && this.className != null && !"".equals(this.className));
+	}
+
 	@Override
 	public String toString()
 	{

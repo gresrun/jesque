@@ -23,9 +23,13 @@ package net.greghaines.jesque.worker;
 public enum WorkerEvent
 {
 	/**
+	 * The Worker just finished starting up and is about to start running.
+	 */
+	WORKER_START,
+	/**
 	 * The Worker is polling the queue.
 	 */
-	POLL,
+	WORKER_POLL,
 	/**
 	 * The Worker is processing a Job.
 	 */
@@ -45,5 +49,9 @@ public enum WorkerEvent
 	/**
 	 * The Worker caught an Exception during normal operation.
 	 */
-	ERROR;
+	WORKER_ERROR,
+	/**
+	 * The Worker just finished running and is about to shutdown.
+	 */
+	WORKER_STOP;
 }

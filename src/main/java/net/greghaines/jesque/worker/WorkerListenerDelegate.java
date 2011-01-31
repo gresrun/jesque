@@ -117,10 +117,11 @@ public class WorkerListenerDelegate implements WorkerEventEmitter
 	 * @param queue the queue the Worker is processing
 	 * @param job the Job related to the event (only supply for JOB_PROCESS, JOB_EXECUTE, JOB_SUCCESS, and JOB_FAILURE events)
 	 * @param runner the materialized object that the Job specified (only supply for JOB_EXECUTE and JOB_SUCCESS events)
+	 * @param result the result of the successful execution of the Job (only set for JOB_SUCCESS and if the Job was a Callable that returned a value)
 	 * @param ex the Exception that caused the event (only supply for JOB_FAILURE and ERROR events)
 	 */
 	public void fireEvent(final WorkerEvent event, final Worker worker, final String queue, 
-			final Job job, final Runnable runner, final Exception ex)
+			final Job job, final Object runner, final Object result, final Exception ex)
 	{
 		final Map<WorkerListener,WorkerEvent> lMap = this.eventListenerMap.get(event);
 		if (lMap != null)
@@ -136,7 +137,7 @@ public class WorkerListenerDelegate implements WorkerEventEmitter
 				{
 					try
 					{
-						listener.onEvent(event, worker, queue, job, runner, ex);
+						listener.onEvent(event, worker, queue, job, runner, result, ex);
 					}
 					catch (Exception e)
 					{

@@ -38,7 +38,7 @@ import java.util.Collection;
 public interface Worker extends Runnable, WorkerEventEmitter
 {
 	/**
-	 * Special value to tell a Worker to listen to all currently available queues.
+	 * Special value to tell a Worker to poll all currently available queues.
 	 */
 	Collection<String> ALL_QUEUES = Arrays.asList("*");
 	
@@ -53,4 +53,22 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @return the name of this Worker
 	 */
 	String getName();
+	
+	/**
+	 * Poll the given queue. If the queue exists multiple times, 
+	 * it will be checked that many times per loop.
+	 * This allows for a queue to be given higher priority by checking it more often.
+	 * 
+	 * @param queueName the name of the queue to poll
+	 */
+	void addQueue(String queueName);
+	
+	/**
+	 * Stop polling the given queue. If the <code>all</code> argument is true,
+	 * all instances of the queue will be removed, otherwise, only one instance is removed.
+	 * 
+	 * @param queueName the queue to stop polling
+	 * @param all whether to remove all or only one of the instances
+	 */
+	void removeQueue(String queueName, boolean all);
 }
