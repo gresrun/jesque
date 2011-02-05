@@ -15,6 +15,8 @@
  */
 package net.greghaines.jesque.utils;
 
+import java.lang.reflect.InvocationTargetException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,9 +34,11 @@ public final class JesqueUtils
 {
 	public static final String DATE_FORMAT = "EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)";
 	private static final String bTracePrefix = "\tat ";
+	private static final String btCausedByPrefix = "Caused by: ";
 	private static final String btUnknownSource = "Unknown Source";
 	private static final String btNativeMethod = "Native Method";
 	private static final Pattern btPattern = Pattern.compile("[\\(\\):]");
+	private static final Pattern colonSpacePattern = Pattern.compile(":\\s");
 	
 	/**
 	 * Join the given strings, separated by the given separator.
@@ -93,12 +97,12 @@ public final class JesqueUtils
 	 * @param ex the Exception to use
 	 * @return a list of strings that represent how the exception's stacktrace appears.
 	 */
-	public static List<String> createStackTrace(final Throwable ex)
+	public static List<String> createBacktrace(final Throwable ex)
 	{
 		final List<String> bTrace = new LinkedList<String>();
 		for (final StackTraceElement ste : ex.getStackTrace())
 		{
-			bTrace.add("\tat " + ste.toString());
+			bTrace.add(bTracePrefix + ste.toString());
 		}
 		if (ex.getCause() != null)
 		{
@@ -109,7 +113,14 @@ public final class JesqueUtils
 
 	private static void addCauseToBacktrace(final Throwable ex, final List<String> bTrace)
 	{
-		bTrace.add("Caused by: " + ex.getClass().getName() + ": " + ex.getMessage());
+		if (ex.getMessage() != null)
+		{
+			bTrace.add(btCausedByPrefix + ex.getClass().getName() + ": " + ex.getMessage());
+		}
+		else
+		{
+			bTrace.add(btCausedByPrefix + ex.getClass().getName());
+		}
 		for (final StackTraceElement ste : ex.getStackTrace())
 		{
 			bTrace.add(bTracePrefix + ste.toString());
@@ -120,19 +131,82 @@ public final class JesqueUtils
 		}
 	}
 	
+	/**
+	 * Recreate an exception from a type name, a message and a backtrace 
+	 * (created from <code>JesqueUtils.createBacktrace(Throwable)</code>).
+	 * 
+	 * @param type the String name of the Throwable type
+	 * @param message the message of the exception
+	 * @param backtrace the backtrace of the exception
+	 * @return a new Throwable of the given type with the given message and given backtrace/causes
+	 * @throws ParseException if there is a problem parsing the given backtrace
+	 * @throws ClassNotFoundException if the given type is not available
+	 * @throws NoSuchConstructorException if there is not a common constructor available for the given type
+	 * @throws AmbiguousConstructorException if there is more than one constructor that is viable
+	 * @throws InstantiationException if there is a problem instantiating the given type
+	 * @throws IllegalAccessException if the common constructor is not visible
+	 * @throws InvocationTargetException if the constructor threw an exception
+	 * @throws ClassCastException is the given type is not a Throwable
+	 * @see JesqueUtils#createBacktrace(Throwable)
+	 */
 	public static Throwable recreateException(final String type, final String message, 
 			final List<String> backtrace)
+	throws ParseException, ClassNotFoundException, NoSuchConstructorException, 
+			AmbiguousConstructorException, InstantiationException, 
+			IllegalAccessException, InvocationTargetException, ClassCastException
 	{
 		Throwable t = null;
-		final List<String> bTrace = new LinkedList<String>(backtrace);
-		
+		final LinkedList<String> bTrace = new LinkedList<String>(backtrace);
+		Throwable cause = null;
+		StackTraceElement[] stes = null;
+		while (!bTrace.isEmpty())
+		{
+			stes = recreateStackTrace(bTrace);
+			if (!bTrace.isEmpty())
+			{
+				final String line = bTrace.removeLast().substring(btCausedByPrefix.length());
+				final String[] classNameAndMsg = colonSpacePattern.split(line, 2);
+				final Class<?> throwableType = ReflectionUtils.forName(classNameAndMsg[0]);
+				final Throwable newEx = (classNameAndMsg.length == 2 && classNameAndMsg[1] != null)
+					? (Throwable) ReflectionUtils.createObject(throwableType, classNameAndMsg[1]) 
+					: (Throwable) ReflectionUtils.createObject(throwableType);
+				newEx.setStackTrace(stes);
+				if (cause != null)
+				{
+					newEx.initCause(cause);
+				}
+				cause = newEx;
+			}
+		}
+		final Class<?> throwableType = ReflectionUtils.forName(type);
+		if (message != null)
+		{
+			t = (Throwable) ReflectionUtils.createObject(throwableType, message);
+		}
+		else
+		{
+			try
+			{
+				t = (Throwable) ReflectionUtils.createObject(throwableType);
+			}
+			catch (NoSuchConstructorException nsce)
+			{
+				t = (Throwable) ReflectionUtils.createObject(throwableType, (String) null);
+			}
+		}
+		t.setStackTrace(stes);
+		if (cause != null)
+		{
+			t.initCause(cause);
+		}
 		return t;
 	}
 	
 	private static StackTraceElement[] recreateStackTrace(final List<String> bTrace)
+	throws ParseException
 	{
 		final List<StackTraceElement> stes = new LinkedList<StackTraceElement>();
-		final ListIterator<String> iter = bTrace.listIterator(bTrace.size() - 1);
+		final ListIterator<String> iter = bTrace.listIterator(bTrace.size());
 		while (iter.hasPrevious())
 		{
 			final String prev = iter.previous();
@@ -140,6 +214,31 @@ public final class JesqueUtils
 			{ // All stack trace elements start with bTracePrefix
 				iter.remove();
 				final String[] stParts = btPattern.split(prev.substring(bTracePrefix.length()));
+				if (stParts.length < 2 || stParts.length > 3)
+				{
+					throw new ParseException("Malformed stack trace element string: " + prev, 0);
+				}
+				final int periodPos = stParts[0].lastIndexOf('.');
+				final String className = stParts[0].substring(0, periodPos);
+				final String methodName = stParts[0].substring(periodPos + 1);
+				final String fileName;
+				final int lineNumber;
+				if (btUnknownSource.equals(stParts[1]))
+				{
+					fileName = null;
+					lineNumber = -1;
+				}
+				else if (btNativeMethod.equals(stParts[1]))
+				{
+					fileName = null;
+					lineNumber = -2;
+				}
+				else
+				{
+					fileName = stParts[1];
+					lineNumber = (stParts.length == 3) ? Integer.parseInt(stParts[2]) : -1;
+				}
+				stes.add(0, new StackTraceElement(className, methodName, fileName, lineNumber));
 			}
 			else
 			{ // Stop if it is not a stack trace element
@@ -150,22 +249,66 @@ public final class JesqueUtils
 	}
 	
 	/**
+	 * This is needed because Throwable doesn't override equals() 
+	 * and object equality is not what we want to test here.
+	 * 
+	 * @param ex original Throwable
+	 * @param newEx other Throwable
+	 * @return true if the two arguments are equal, as we define it.
+	 */
+	public static boolean equal(final Throwable ex, final Throwable newEx)
+	{
+		if (ex == newEx)
+		{
+			return true;
+		}
+		if (ex == null)
+		{
+			if (newEx != null)
+			{
+				return false;
+			}
+		}
+		else
+		{
+			if (ex.getClass() != newEx.getClass())
+			{
+				return false;
+			}
+			if (ex.getMessage() == null)
+			{
+				if (newEx.getMessage() != null)
+				{
+					return false;
+				}
+			}
+			else if (!ex.getMessage().equals(newEx.getMessage()))
+			{
+				return false;
+			}
+			if (ex.getCause() == null)
+			{
+				if (newEx.getCause() != null)
+				{
+					return false;
+				}
+			}
+			else if (!equal(ex.getCause(), newEx.getCause()))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	/**
 	 * Sleep the current thread, ignoring any Exception that might occur.
 	 * 
-	 * @param millis the time to sleep for
+	 * @param millis the time in milliseconds to sleep for
 	 */
 	public static void sleepTight(final long millis)
 	{
 		try { Thread.sleep(millis); } catch (Exception e){} // Ignore
-	}
-	
-	public static void main(final String[] args)
-	{
-		System.out.println(Arrays.toString(btPattern.split("\tat MyClass.mash(MyClass.java:9)".substring(bTracePrefix.length()))));
-		System.out.println(Arrays.toString(btPattern.split("MyClass.mash(MyClass.java)")));
-		System.out.println(Arrays.toString(btPattern.split("MyClass.mash(Unknown Source)")));
-		System.out.println(Arrays.toString(btPattern.split("MyClass.mash(Native Method)")));
-		System.out.println(Arrays.toString(btPattern.split("com.ndr.foo.MyClass$Bar.mash(MyClass.java:9)")));
 	}
 
 	private JesqueUtils(){} // Utility class

@@ -47,6 +47,6 @@ public class TestAction implements Runnable
 	public void run()
 	{
 		log.info("TestAction.run() {} {} {} {} {}", new Object[]{this.i, this.d, this.b, this.s, this.l});
-		try { Thread.sleep(2000); } catch (Exception e){}
+		try { Thread.sleep(100); } catch (Exception e){}
 	}
 }

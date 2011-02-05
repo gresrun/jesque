@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Date;
 
 import net.greghaines.jesque.json.ObjectMapperFactory;
-import net.greghaines.jesque.utils.JesqueUtils;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -54,10 +53,8 @@ public class TestJsonSerialization
 		assertSerializeRoundTrip(jobFailure);
 		jobFailure.setPayload(job);
 		jobFailure.setFailedAt(new Date());
-		jobFailure.setException(e.getClass().getName());
-		jobFailure.setError(e.getMessage());
+		jobFailure.setException(e);
 		jobFailure.setWorker(null);
-		jobFailure.setBacktrace(JesqueUtils.createStackTrace(e));
 		assertSerializeRoundTrip(jobFailure);
 	}
 	

@@ -221,7 +221,7 @@ public class IntegrationTest
 	
 	private static void stopWorker(final Worker worker, final Thread workerThread)
 	{
-		try { Thread.sleep(5000); } catch (Exception e){}// Give us time to process
+		try { Thread.sleep(1000); } catch (Exception e){}// Give us time to process
 		worker.end();
 		try
 		{

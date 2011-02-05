@@ -21,6 +21,7 @@ import java.util.List;
 
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
+import net.greghaines.jesque.utils.JesqueUtils;
 
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonProcessingException;
@@ -45,6 +46,9 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 	throws IOException, JsonProcessingException
 	{
 		final JobFailure jobFailure = new JobFailure();
+		String exception = null;
+		String error = null;
+		List<String> backtrace = null;
 		while (jp.getCurrentToken() != JsonToken.END_OBJECT)
 		{
 			jp.nextToken();
@@ -66,21 +70,21 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 			{
 				if (JsonToken.VALUE_STRING.equals(jp.nextToken()))
 				{
-					jobFailure.setException(jp.getText());
+					exception = jp.getText();
 				}
 			}
 			else if ("error".equals(jp.getText()))
 			{
 				if (JsonToken.VALUE_STRING.equals(jp.nextToken()))
 				{
-					jobFailure.setError(jp.getText());
+					error = jp.getText();
 				}
 			}
 			else if ("backtrace".equals(jp.getText()))
 			{
 				if (JsonToken.START_ARRAY.equals(jp.nextToken()))
 				{
-					jobFailure.setBacktrace(jp.<List<String>>readValueAs(stringListTypeRef));
+					backtrace = jp.<List<String>>readValueAs(stringListTypeRef);
 				}
 			}
 			else if ("failed_at".equals(jp.getText()))
@@ -93,6 +97,17 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 			else if (jp.getCurrentToken() != JsonToken.END_OBJECT)
 			{
 				throw new JsonMappingException("Unexpected field for JobFailure: " + jp.getText(), jp.getCurrentLocation());
+			}
+		}
+		if (exception != null)
+		{
+			try
+			{
+				jobFailure.setException(JesqueUtils.recreateException(exception, error, backtrace));
+			}
+			catch (Exception e)
+			{
+				throw new JsonMappingException("Unable to recreate exception for JobFailure", e);
 			}
 		}
 		return jobFailure;

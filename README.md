@@ -30,13 +30,11 @@ How do I use it?
 ----------------
 Download the latest source at:
 	https://github.com/gresrun/jesque
-You'll need to build it then add it to your local repo first:
-	mvn clean install
-To use it in your Maven project, add it as a dependency:
+Or, to use it in your Maven project, add it as a dependency:
 	<dependency>
 		<groupId>net.greghaines</groupId>
 		<artifactId>jesque</artifactId>
-		<version>0.2.0-SNAPSHOT</version>
+		<version>0.3.0</version>
 		<type>jar</type>
 		<scope>compile</scope>
 	</dependency>

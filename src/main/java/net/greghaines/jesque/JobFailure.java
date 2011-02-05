@@ -17,7 +17,8 @@ package net.greghaines.jesque;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.List;
+
+import net.greghaines.jesque.utils.JesqueUtils;
 
 /**
  * A bean to hold information about a job that failed.
@@ -30,9 +31,7 @@ public class JobFailure implements Serializable
 	
 	private String worker;
 	private Job payload;
-	private String exception;
-	private String error;
-	private List<String> backtrace;
+	private Throwable exception;
 	private Date failedAt;
 	
 	public JobFailure(){}
@@ -72,54 +71,20 @@ public class JobFailure implements Serializable
 	}
 
 	/**
-	 * @return the kind of exception that occured
+	 * @return the exception that occured
 	 */
-	public String getException()
+	public Throwable getException()
 	{
 		return this.exception;
 	}
 
 	/**
-	 * Set the kind of exception that occured.
+	 * Set the exception that occured.
 	 * @param exception the kind of exception that occured
 	 */
-	public void setException(final String exception)
+	public void setException(final Throwable exception)
 	{
 		this.exception = exception;
-	}
-
-	/**
-	 * @return the message given by the exception
-	 */
-	public String getError()
-	{
-		return this.error;
-	}
-
-	/**
-	 * Set the message given by the exception.
-	 * @param error the message given by the exception
-	 */
-	public void setError(String error)
-	{
-		this.error = error;
-	}
-
-	/**
-	 * @return the stacktrace of the exception
-	 */
-	public List<String> getBacktrace()
-	{
-		return this.backtrace;
-	}
-
-	/**
-	 * Set the stacktrace of the exception.
-	 * @param backtrace the stacktrace of the exception
-	 */
-	public void setBacktrace(final List<String> backtrace)
-	{
-		this.backtrace = backtrace;
 	}
 
 	/**
@@ -144,8 +109,6 @@ public class JobFailure implements Serializable
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((this.backtrace == null) ? 0 : this.backtrace.hashCode());
-		result = prime * result + ((this.error == null) ? 0 : this.error.hashCode());
 		result = prime * result + ((this.exception == null) ? 0 : this.exception.hashCode());
 		result = prime * result + ((this.failedAt == null) ? 0 : this.failedAt.hashCode());
 		result = prime * result + ((this.payload == null) ? 0 : this.payload.hashCode());
@@ -169,28 +132,6 @@ public class JobFailure implements Serializable
 			return false;
 		}
 		final JobFailure other = (JobFailure) obj;
-		if (this.backtrace == null)
-		{
-			if (other.backtrace != null)
-			{
-				return false;
-			}
-		}
-		else if (!this.backtrace.equals(other.backtrace))
-		{
-			return false;
-		}
-		if (this.error == null)
-		{
-			if (other.error != null)
-			{
-				return false;
-			}
-		}
-		else if (!this.error.equals(other.error))
-		{
-			return false;
-		}
 		if (this.exception == null)
 		{
 			if (other.exception != null)
@@ -198,7 +139,7 @@ public class JobFailure implements Serializable
 				return false;
 			}
 		}
-		else if (!this.exception.equals(other.exception))
+		else if (!JesqueUtils.equal(this.exception, other.exception))
 		{
 			return false;
 		}

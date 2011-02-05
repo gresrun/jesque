@@ -113,7 +113,7 @@ public final class ReflectionUtils
 	 * @throws IllegalAccessException if the Constructor object enforces Java language access control and the underlying constructor is inaccessible
 	 * @throws InvocationTargetException if the underlying constructor throws an exception
 	 */
-	public static <T> T createObject(final Class<T> clazz, final Object[] args)
+	public static <T> T createObject(final Class<T> clazz, final Object... args)
 	throws NoSuchConstructorException, AmbiguousConstructorException, 
 			InstantiationException, IllegalAccessException, InvocationTargetException
 	{
@@ -130,8 +130,8 @@ public final class ReflectionUtils
 	 * @throws NoSuchConstructorException if there is not a constructor that matches the given arguments
 	 * @throws AmbiguousConstructorException if there is more than one constructor that matches the given arguments
 	 */
-	@SuppressWarnings({"rawtypes", "unchecked"})
-	private static <T> Constructor<T> findConstructor(final Class<T> clazz, final Object[] args)
+	@SuppressWarnings("rawtypes")
+	private static <T> Constructor<T> findConstructor(final Class<T> clazz, final Object... args)
 	throws NoSuchConstructorException, AmbiguousConstructorException
 	{
 		Constructor<T> constructorToUse = null;

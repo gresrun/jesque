@@ -368,9 +368,7 @@ public class WorkerImpl implements Worker
 		f.setFailedAt(new Date());
 		f.setWorker(this.name);
 		f.setPayload(job);
-		f.setException(ex.getClass().getName());
-		f.setError(ex.getMessage());
-		f.setBacktrace(JesqueUtils.createStackTrace(ex));
+		f.setException(ex);
 		final String failMsg = ObjectMapperFactory.get().writeValueAsString(f);
 		log.warn("failMsg={}", failMsg);
 		return failMsg;

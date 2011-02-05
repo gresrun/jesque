@@ -18,6 +18,7 @@ package net.greghaines.jesque.json;
 import java.io.IOException;
 
 import net.greghaines.jesque.JobFailure;
+import net.greghaines.jesque.utils.JesqueUtils;
 
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonProcessingException;
@@ -40,10 +41,13 @@ public class JobFailureJsonSerializer extends JsonSerializer<JobFailure>
 		jgen.writeStringField("worker", jobFailure.getWorker());
 		jgen.writeFieldName("payload");
 		ObjectMapperFactory.get().writeValue(jgen, jobFailure.getPayload());
-		jgen.writeStringField("exception", jobFailure.getException());
-		jgen.writeStringField("error", jobFailure.getError());
+		jgen.writeStringField("exception", (jobFailure.getException() == null) ? null : 
+			jobFailure.getException().getClass().getName());
+		jgen.writeStringField("error", (jobFailure.getException() == null) ? null : 
+			jobFailure.getException().getMessage());
 		jgen.writeFieldName("backtrace");
-		ObjectMapperFactory.get().writeValue(jgen, jobFailure.getBacktrace());
+		ObjectMapperFactory.get().writeValue(jgen, (jobFailure.getException() == null) ? null : 
+			JesqueUtils.createBacktrace(jobFailure.getException()));
 		jgen.writeFieldName("failed_at");
 		ObjectMapperFactory.get().writeValue(jgen, jobFailure.getFailedAt());
 		jgen.writeEndObject();
