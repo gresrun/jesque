@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.regex.Pattern;
 
 /**
  * Miscellaneous utilities.
@@ -29,6 +31,10 @@ import java.util.List;
 public final class JesqueUtils
 {
 	public static final String DATE_FORMAT = "EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)";
+	private static final String bTracePrefix = "\tat ";
+	private static final String btUnknownSource = "Unknown Source";
+	private static final String btNativeMethod = "Native Method";
+	private static final Pattern btPattern = Pattern.compile("[\\(\\):]");
 	
 	/**
 	 * Join the given strings, separated by the given separator.
@@ -96,22 +102,51 @@ public final class JesqueUtils
 		}
 		if (ex.getCause() != null)
 		{
-			addToBacktrace(ex.getCause(), bTrace);
+			addCauseToBacktrace(ex.getCause(), bTrace);
 		}
 		return bTrace;
 	}
 
-	private static void addToBacktrace(final Throwable ex, final List<String> bTrace)
+	private static void addCauseToBacktrace(final Throwable ex, final List<String> bTrace)
 	{
 		bTrace.add("Caused by: " + ex.getClass().getName() + ": " + ex.getMessage());
 		for (final StackTraceElement ste : ex.getStackTrace())
 		{
-			bTrace.add("\tat " + ste.toString());
+			bTrace.add(bTracePrefix + ste.toString());
 		}
 		if (ex.getCause() != null)
 		{
-			addToBacktrace(ex.getCause(), bTrace);
+			addCauseToBacktrace(ex.getCause(), bTrace);
 		}
+	}
+	
+	public static Throwable recreateException(final String type, final String message, 
+			final List<String> backtrace)
+	{
+		Throwable t = null;
+		final List<String> bTrace = new LinkedList<String>(backtrace);
+		
+		return t;
+	}
+	
+	private static StackTraceElement[] recreateStackTrace(final List<String> bTrace)
+	{
+		final List<StackTraceElement> stes = new LinkedList<StackTraceElement>();
+		final ListIterator<String> iter = bTrace.listIterator(bTrace.size() - 1);
+		while (iter.hasPrevious())
+		{
+			final String prev = iter.previous();
+			if (prev.startsWith(bTracePrefix))
+			{ // All stack trace elements start with bTracePrefix
+				iter.remove();
+				final String[] stParts = btPattern.split(prev.substring(bTracePrefix.length()));
+			}
+			else
+			{ // Stop if it is not a stack trace element
+				break;
+			}
+		}
+		return stes.toArray(new StackTraceElement[stes.size()]);
 	}
 	
 	/**
@@ -122,6 +157,15 @@ public final class JesqueUtils
 	public static void sleepTight(final long millis)
 	{
 		try { Thread.sleep(millis); } catch (Exception e){} // Ignore
+	}
+	
+	public static void main(final String[] args)
+	{
+		System.out.println(Arrays.toString(btPattern.split("\tat MyClass.mash(MyClass.java:9)".substring(bTracePrefix.length()))));
+		System.out.println(Arrays.toString(btPattern.split("MyClass.mash(MyClass.java)")));
+		System.out.println(Arrays.toString(btPattern.split("MyClass.mash(Unknown Source)")));
+		System.out.println(Arrays.toString(btPattern.split("MyClass.mash(Native Method)")));
+		System.out.println(Arrays.toString(btPattern.split("com.ndr.foo.MyClass$Bar.mash(MyClass.java:9)")));
 	}
 
 	private JesqueUtils(){} // Utility class

@@ -45,19 +45,27 @@ public class JobFailure implements Serializable
 		return this.worker;
 	}
 
+	/**
+	 * Set the name of the worker where the job failed.
+	 * @param worker the name of the worker
+	 */
 	public void setWorker(final String worker)
 	{
 		this.worker = worker;
 	}
 
 	/**
-	 * @return the job description
+	 * @return the job
 	 */
 	public Job getPayload()
 	{
 		return this.payload;
 	}
 
+	/**
+	 * Set the job.
+	 * @param payload the job
+	 */
 	public void setPayload(final Job payload)
 	{
 		this.payload = payload;
@@ -71,6 +79,10 @@ public class JobFailure implements Serializable
 		return this.exception;
 	}
 
+	/**
+	 * Set the kind of exception that occured.
+	 * @param exception the kind of exception that occured
+	 */
 	public void setException(final String exception)
 	{
 		this.exception = exception;
@@ -84,6 +96,10 @@ public class JobFailure implements Serializable
 		return this.error;
 	}
 
+	/**
+	 * Set the message given by the exception.
+	 * @param error the message given by the exception
+	 */
 	public void setError(String error)
 	{
 		this.error = error;
@@ -97,6 +113,10 @@ public class JobFailure implements Serializable
 		return this.backtrace;
 	}
 
+	/**
+	 * Set the stacktrace of the exception.
+	 * @param backtrace the stacktrace of the exception
+	 */
 	public void setBacktrace(final List<String> backtrace)
 	{
 		this.backtrace = backtrace;
@@ -110,6 +130,10 @@ public class JobFailure implements Serializable
 		return this.failedAt;
 	}
 
+	/**
+	 * Set when the error occurred.
+	 * @param failedAt when the error occurred
+	 */
 	public void setFailedAt(final Date failedAt)
 	{
 		this.failedAt = failedAt;

@@ -19,6 +19,7 @@ package net.greghaines.jesque;
  * A builder for Configs.
  * 
  * @author Greg Haines
+ * @see Config
  */
 public class ConfigBuilder
 {
@@ -97,6 +98,7 @@ public class ConfigBuilder
 	
 	public Config build()
 	{
-		return new Config(this.host, this.port, this.timeout, this.namespace, this.database, this.jobPackage);
+		return new Config(this.host, this.port, this.timeout, 
+			this.namespace, this.database, this.jobPackage);
 	}
 }

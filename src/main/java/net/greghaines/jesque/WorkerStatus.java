@@ -41,6 +41,10 @@ public class WorkerStatus implements Serializable
 		return this.runAt;
 	}
 
+	/**
+	 * Set when the Worker started on the current job.
+	 * @param runAt when the Worker started on the current job
+	 */
 	public void setRunAt(final Date runAt)
 	{
 		this.runAt = runAt;
@@ -54,19 +58,27 @@ public class WorkerStatus implements Serializable
 		return this.queue;
 	}
 
+	/**
+	 * Set which queue the current job came from.
+	 * @param queue which queue the current job came from
+	 */
 	public void setQueue(final String queue)
 	{
 		this.queue = queue;
 	}
 
 	/**
-	 * @return the job description
+	 * @return the job
 	 */
 	public Job getPayload()
 	{
 		return this.payload;
 	}
 
+	/**
+	 * Set the job.
+	 * @param payload the job
+	 */
 	public void setPayload(final Job payload)
 	{
 		this.payload = payload;
