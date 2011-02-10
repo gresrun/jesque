@@ -17,9 +17,7 @@ package net.greghaines.jesque.utils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -49,14 +47,7 @@ public final class JesqueUtils
 	 */
 	public static String join(final String sep, final String... strs)
 	{
-		final StringBuilder sb = new StringBuilder();
-		String s = "";
-		for (final String str : strs)
-		{
-			sb.append(s).append(str);
-			s = sep;
-		}
-		return sb.toString();
+		return join(sep, Arrays.asList(strs));
 	}
 	
 	/**
@@ -66,7 +57,7 @@ public final class JesqueUtils
 	 * @param strs the strings to join
 	 * @return the joined string
 	 */
-	public static String join(final String sep, final Collection<String> strs)
+	public static String join(final String sep, final Iterable<String> strs)
 	{
 		final StringBuilder sb = new StringBuilder();
 		String s = "";
@@ -87,53 +78,93 @@ public final class JesqueUtils
 	 */
 	public static String createKey(final String namespace, final String... parts)
 	{
-		final List<String> list = new ArrayList<String>(parts.length + 1);
+		return createKey(namespace, Arrays.asList(parts));
+	}
+	
+	/**
+	 * Builds a namespaced Redis key with the given arguments.
+	 * 
+	 * @param namespace the namespace to use
+	 * @param parts the key parts to be joined
+	 * @return an assembled String key
+	 */
+	public static String createKey(final String namespace, final Iterable<String> parts)
+	{
+		final List<String> list = new LinkedList<String>();
 		list.add(namespace);
-		list.addAll(Arrays.asList(parts));
+		for (final String part : parts)
+		{
+			list.add(part);
+		}
 		return join(":", list);
 	}
 	
 	/**
-	 * @param ex the Exception to use
+	 * Creates a Resque backtrace from a Throwable's stack trace. Includes causes.
+	 * 
+	 * @param t the Exception to use
 	 * @return a list of strings that represent how the exception's stacktrace appears.
 	 */
-	public static List<String> createBacktrace(final Throwable ex)
+	public static List<String> createBacktrace(final Throwable t)
 	{
 		final List<String> bTrace = new LinkedList<String>();
-		for (final StackTraceElement ste : ex.getStackTrace())
+		for (final StackTraceElement ste : t.getStackTrace())
 		{
 			bTrace.add(bTracePrefix + ste.toString());
 		}
-		if (ex.getCause() != null)
+		if (t.getCause() != null)
 		{
-			addCauseToBacktrace(ex.getCause(), bTrace);
+			addCauseToBacktrace(t.getCause(), bTrace);
 		}
 		return bTrace;
 	}
 
-	private static void addCauseToBacktrace(final Throwable ex, final List<String> bTrace)
+	/**
+	 * Add a cause to the backtrace.
+	 * 
+	 * @param cause the cause
+	 * @param bTrace the backtrace list
+	 */
+	private static void addCauseToBacktrace(final Throwable cause, final List<String> bTrace)
 	{
-		if (ex.getMessage() != null)
+		if (cause.getMessage() != null)
 		{
-			bTrace.add(btCausedByPrefix + ex.getClass().getName() + ": " + ex.getMessage());
+			bTrace.add(btCausedByPrefix + cause.getClass().getName() + ": " + cause.getMessage());
 		}
 		else
 		{
-			bTrace.add(btCausedByPrefix + ex.getClass().getName());
+			bTrace.add(btCausedByPrefix + cause.getClass().getName());
 		}
-		for (final StackTraceElement ste : ex.getStackTrace())
+		for (final StackTraceElement ste : cause.getStackTrace())
 		{
 			bTrace.add(bTracePrefix + ste.toString());
 		}
-		if (ex.getCause() != null)
+		if (cause.getCause() != null)
 		{
-			addCauseToBacktrace(ex.getCause(), bTrace);
+			addCauseToBacktrace(cause.getCause(), bTrace);
 		}
 	}
 	
 	/**
 	 * Recreate an exception from a type name, a message and a backtrace 
 	 * (created from <code>JesqueUtils.createBacktrace(Throwable)</code>).
+	 * <p/>
+	 * <b>Limitations:</b><br/>
+	 * This method cannot recreate Throwables with unusual/custom Constructors.
+	 * <ul>
+	 * <li>If the message is non-null and the cause is null, there must be 
+	 * a Constructor with a single String as it's only parameter.</li>
+	 * <li>If the message is non-null and the cause is non-null, there must be 
+	 * a Constructor with a single String as it's only parameter or a Constructor
+	 * with a String and a Throwable as its parameters.</li>
+	 * <li>If the message is null and the cause is null, there must be either 
+	 * a no-arg Constructor or a Constructor with a single String as it's only 
+	 * parameter.</li>
+	 * <li>If the message is null and the cause is non-null, there must be 
+	 * either a no-arg Constructor, a Constructor with a single String as its 
+	 * only parameter or a Constructor with a String and a Throwable as its 
+	 * parameters.</li>
+	 * </ul>
 	 * 
 	 * @param type the String name of the Throwable type
 	 * @param message the message of the exception
@@ -146,16 +177,14 @@ public final class JesqueUtils
 	 * @throws InstantiationException if there is a problem instantiating the given type
 	 * @throws IllegalAccessException if the common constructor is not visible
 	 * @throws InvocationTargetException if the constructor threw an exception
-	 * @throws ClassCastException is the given type is not a Throwable
 	 * @see JesqueUtils#createBacktrace(Throwable)
 	 */
-	public static Throwable recreateException(final String type, final String message, 
+	public static Throwable recreateThrowable(final String type, final String message, 
 			final List<String> backtrace)
 	throws ParseException, ClassNotFoundException, NoSuchConstructorException, 
 			AmbiguousConstructorException, InstantiationException, 
-			IllegalAccessException, InvocationTargetException, ClassCastException
+			IllegalAccessException, InvocationTargetException
 	{
-		Throwable t = null;
 		final LinkedList<String> bTrace = new LinkedList<String>(backtrace);
 		Throwable cause = null;
 		StackTraceElement[] stes = null;
@@ -166,36 +195,75 @@ public final class JesqueUtils
 			{
 				final String line = bTrace.removeLast().substring(btCausedByPrefix.length());
 				final String[] classNameAndMsg = colonSpacePattern.split(line, 2);
-				final Class<?> throwableType = ReflectionUtils.forName(classNameAndMsg[0]);
-				final Throwable newEx = (classNameAndMsg.length == 2 && classNameAndMsg[1] != null)
-					? (Throwable) ReflectionUtils.createObject(throwableType, classNameAndMsg[1]) 
-					: (Throwable) ReflectionUtils.createObject(throwableType);
-				newEx.setStackTrace(stes);
-				if (cause != null)
-				{
-					newEx.initCause(cause);
-				}
-				cause = newEx;
+				final String msg = (classNameAndMsg.length == 2) ? classNameAndMsg[1] : null;
+				cause = instantiateThrowable(classNameAndMsg[0], msg, cause, stes);
 			}
 		}
+		return instantiateThrowable(type, message, cause, stes);
+	}
+
+	private static Throwable instantiateThrowable(final String type, final String message, 
+			final Throwable cause, final StackTraceElement[] stes)
+	throws ClassNotFoundException, AmbiguousConstructorException,
+			InstantiationException, IllegalAccessException,
+			InvocationTargetException, NoSuchConstructorException
+	{
+		Throwable t = null;
+		boolean causeInited = false;
 		final Class<?> throwableType = ReflectionUtils.forName(type);
 		if (message != null)
 		{
-			t = (Throwable) ReflectionUtils.createObject(throwableType, message);
+			try
+			{
+				t = (Throwable) ReflectionUtils.createObject(throwableType, message);
+			}
+			catch (NoSuchConstructorException nsce)
+			{
+				if (cause == null)
+				{
+					throw nsce;
+				}
+				causeInited = true;
+				t = (Throwable) ReflectionUtils.createObject(throwableType, message, cause);
+			}
 		}
 		else
 		{
 			try
 			{
-				t = (Throwable) ReflectionUtils.createObject(throwableType);
+				try
+				{
+					t = (Throwable) ReflectionUtils.createObject(throwableType);
+				}
+				catch (NoSuchConstructorException nsce2)
+				{
+					if (cause == null)
+					{
+						throw nsce2;
+					}
+					causeInited = true;
+					t = (Throwable) ReflectionUtils.createObject(throwableType, cause);
+				}
 			}
 			catch (NoSuchConstructorException nsce)
 			{
-				t = (Throwable) ReflectionUtils.createObject(throwableType, (String) null);
+				try
+				{
+					t = (Throwable) ReflectionUtils.createObject(throwableType, (String) null);
+				}
+				catch (NoSuchConstructorException nsce3)
+				{
+					if (cause == null)
+					{
+						throw nsce3;
+					}
+					causeInited = true;
+					t = (Throwable) ReflectionUtils.createObject(throwableType, (String) null, cause);
+				}
 			}
 		}
 		t.setStackTrace(stes);
-		if (cause != null)
+		if (!causeInited && cause != null)
 		{
 			t.initCause(cause);
 		}

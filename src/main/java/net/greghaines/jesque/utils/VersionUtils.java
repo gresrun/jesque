@@ -29,40 +29,44 @@ import org.slf4j.LoggerFactory;
  */
 public final class VersionUtils
 {
+	public static final String DEVELOPMENT = "DEVELOPMENT";
+	private static final String ERROR = "ERROR";
+	
 	private static final Logger log = LoggerFactory.getLogger(VersionUtils.class);
 	private static final String pomPropertiesResName = "/META-INF/maven/net.greghaines/jesque/pom.properties";
-	private static final AtomicReference<String> version = new AtomicReference<String>(null);
+	private static final String versionPropName = "version";
+	private static final AtomicReference<String> versionRef = new AtomicReference<String>(null);
 	
 	/**
 	 * @return the current version of this software
 	 */
 	public static String getVersion()
 	{
-		String v = version.get();
-		if (v == null)
+		String version = versionRef.get();
+		if (version == null)
 		{
-			version.compareAndSet(null, readVersion());
-			v = version.get();
+			versionRef.set(readVersion());
+			version = versionRef.get();
 		}
-		return v;
+		return version;
 	}
 
 	private static String readVersion()
 	{
-		String version = "DEVELOPMENT";
-		InputStream stream = VersionUtils.class.getResourceAsStream(pomPropertiesResName);
+		String version = DEVELOPMENT;
+		final InputStream stream = VersionUtils.class.getResourceAsStream(pomPropertiesResName);
 		if (stream != null)
 		{
 			try
 			{
 				final Properties props = new Properties();
 				props.load(stream);
-				version = (String) props.get("version");
+				version = (String) props.get(versionPropName);
 			}
 			catch (Exception e)
 			{
 				log.warn("Could not determine version from POM properties", e);
-				version = "ERROR";
+				version = ERROR;
 			}
 			finally
 			{

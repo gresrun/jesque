@@ -22,10 +22,10 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -53,14 +53,15 @@ public class WorkerImpl implements Worker
 {
 	private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
 	private static final AtomicLong workerCounter = new AtomicLong(0);
+	private static final long emptyQueueSleepTime = 500; // 500 ms
 	
 	private final Jedis jedis;
 	private final String namespace;
 	private final String jobPackage;
-	private final Queue<String> queues;
+	private final BlockingDeque<String> queues;
 	private final Set<Class<?>> jobTypes;
-	private final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
 	private final String name;
+	private final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private final DateFormat df = new SimpleDateFormat(JesqueUtils.DATE_FORMAT);
 	private final long workerId = workerCounter.getAndIncrement();
@@ -93,10 +94,7 @@ public class WorkerImpl implements Worker
 		this.namespace = config.getNamespace();
 		this.jobPackage = config.getJobPackage();
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-		if (config.getDatabase() != null)
-		{
-			this.jedis.select(config.getDatabase());
-		}
+		this.jedis.select(config.getDatabase());
 		this.queues = checkQueues(queues);
 		this.jobTypes = new HashSet<Class<?>>(jobTypes);
 		this.name = createName();
@@ -192,26 +190,38 @@ public class WorkerImpl implements Worker
 	{
 		if (all)
 		{ // Remove all instances
-			while (this.queues.remove(queueName)){}
+			boolean tryAgain = true;
+			while (tryAgain)
+			{
+				tryAgain = this.queues.remove(queueName);
+			}
 		}
 		else
 		{ // Only remove one instance
 			this.queues.remove(queueName);
 		}
 	}
+	
+	public void setQueues(final Collection<String> queues)
+	{
+		this.queues.clear();
+		this.queues.addAll((queues == ALL_QUEUES) // Using object equality on purpose
+			? this.jedis.smembers(key("queues")) // Like '*' in other clients
+			: queues);
+	}
 
 	/**
 	 * Ensures that the given queues are in the right format.
 	 * Also, retrives the current list of queues if ALL_QUEUES is passed.
 	 * 
-	 * @param qs List of queues to subscribe to
+	 * @param queues the queues to poll
 	 * @return a copy of the passed-in list of queues or the current list of queues if ALL_QUEUES is passed.
 	 */
-	private Queue<String> checkQueues(final Collection<String> qs)
+	private BlockingDeque<String> checkQueues(final Collection<String> queues)
 	{
-		return new ConcurrentLinkedQueue<String>((qs == ALL_QUEUES) // Using object equality on purpose
+		return new LinkedBlockingDeque<String>((queues == ALL_QUEUES) // Using object equality on purpose
 			? this.jedis.smembers(key("queues")) // Like '*' in other clients
-			: qs);
+			: queues);
 	}
 	
 	/**
@@ -223,23 +233,13 @@ public class WorkerImpl implements Worker
 		String curQueue = null;
 		while (this.running.get())
 		{
-			if (this.queues.isEmpty())
+			try
 			{
-				synchronized (this.queues)
+				renameThread("Waiting for " + JesqueUtils.join(",", this.queues));
+				curQueue = this.queues.take();
+				this.queues.add(curQueue); // Rotate the queues
+				if (this.running.get()) // Might have been waiting in take() for a while
 				{
-					while (this.queues.isEmpty() && this.running.get())
-					{
-						try { this.queues.wait(); } catch (InterruptedException ie){}
-					}
-				}
-			}
-			if (this.running.get())
-			{
-				try
-				{
-					renameThread("Waiting for " + JesqueUtils.join(",", this.queues));
-					curQueue = this.queues.remove();
-					this.queues.add(curQueue); // Rotate the queue
 					this.listenerDelegate.fireEvent(WorkerEvent.WORKER_POLL, this, curQueue, null, null, null, null);
 					final String payload = this.jedis.lpop(key("queue", curQueue));
 					if (payload != null)
@@ -248,21 +248,21 @@ public class WorkerImpl implements Worker
 						missCount = 0;
 					}
 					else if (++missCount == this.queues.size() && this.running.get())
-					{ // Keeps us from busy-spinning on empty queues
+					{ // Keeps worker from busy-spinning on empty queues
 						missCount = 0;
-						JesqueUtils.sleepTight(500);
+						JesqueUtils.sleepTight(emptyQueueSleepTime);
 					}
 				}
-				catch (Exception e)
-				{
-					this.listenerDelegate.fireEvent(WorkerEvent.WORKER_ERROR, this, curQueue, null, null, null, e);
-				}
+			}
+			catch (Exception e)
+			{
+				this.listenerDelegate.fireEvent(WorkerEvent.WORKER_ERROR, this, curQueue, null, null, null, e);
 			}
 		}
 	}
 
 	/**
-	 * Deserialzes, matierializes and executes the given payload.
+	 * Deserializes, materializes and executes the given payload.
 	 * 
 	 * @param payload the JSON representation of a Job
 	 * @param curQueue the queue the payload came from
@@ -312,7 +312,7 @@ public class WorkerImpl implements Worker
 		}
 		catch (Exception e)
 		{
-			failure(e, payload, job, curQueue);
+			failure(e, job, curQueue);
 		}
 	}
 	
@@ -334,11 +334,10 @@ public class WorkerImpl implements Worker
 	 * Update the status in Redis on failure
 	 * 
 	 * @param ex the Exception that occured
-	 * @param payload the JSON representation of the Job
 	 * @param job the Job that failed
 	 * @param curQueue the queue the Job came from
 	 */
-	private void failure(final Exception ex, final String payload, final Job job, final String curQueue)
+	private void failure(final Exception ex, final Job job, final String curQueue)
 	{
 		this.jedis.incr(key("stat", "failed"));
 		this.jedis.incr(key("stat", "failed", this.name));
@@ -432,5 +431,11 @@ public class WorkerImpl implements Worker
 	{
 		this.threadNameSB.setLength(this.threadNameBase.length());
 		Thread.currentThread().setName(this.threadNameSB.append(msg).toString());
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "WorkerImpl(" + this.name + ")";
 	}
 }

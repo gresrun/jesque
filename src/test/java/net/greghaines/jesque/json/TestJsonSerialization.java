@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.greghaines.jesque;
+package net.greghaines.jesque.json;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 
-import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.Job;
+import net.greghaines.jesque.JobFailure;
+import net.greghaines.jesque.WorkerStatus;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -54,7 +56,7 @@ public class TestJsonSerialization
 		jobFailure.setPayload(job);
 		jobFailure.setFailedAt(new Date());
 		jobFailure.setException(e);
-		jobFailure.setWorker(null);
+		jobFailure.setWorker("foo");
 		assertSerializeRoundTrip(jobFailure);
 	}
 	

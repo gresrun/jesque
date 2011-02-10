@@ -28,7 +28,25 @@ public class NoSuchConstructorException extends Exception
 	
 	private final Class<?> type;
 	private final Object[] args;
+	
+	/**
+	 * Create a new NoSuchConstructorException with only a message.
+	 * 
+	 * @param msg the detail message to show
+	 */
+	public NoSuchConstructorException(final String msg)
+	{
+		super(msg);
+		this.type = null;
+		this.args = null;
+	}
 
+	/**
+	 * Create a new NoSuchConstructorException with the type and arguments.
+	 * 
+	 * @param type the type of Object under construction
+	 * @param args the arguments given to match on
+	 */
 	public NoSuchConstructorException(final Class<?> type, final Object... args)
 	{
 		super("class=" + type.getName() + " args=" + Arrays.toString(args));
@@ -37,7 +55,7 @@ public class NoSuchConstructorException extends Exception
 	}
 
 	/**
-	 * @return the Class object searched.
+	 * @return the Class object searched
 	 */
 	public Class<?> getType()
 	{
@@ -45,7 +63,7 @@ public class NoSuchConstructorException extends Exception
 	}
 
 	/**
-	 * @return the arguments that the Constructor needed to match.
+	 * @return the arguments that the Constructor needed to match
 	 */
 	public Object[] getArgs()
 	{

@@ -1,7 +1,7 @@
 package net.greghaines.jesque.utils;
 
 import static net.greghaines.jesque.utils.JesqueUtils.createBacktrace;
-import static net.greghaines.jesque.utils.JesqueUtils.recreateException;
+import static net.greghaines.jesque.utils.JesqueUtils.recreateThrowable;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -16,9 +16,9 @@ public class TestExceptionSerialization
 		{
 			throw new Exception();
 		}
-		catch (Throwable ex)
+		catch (Throwable t)
 		{
-			serialize(ex);
+			serialize(t);
 		}
 	}
 	
@@ -30,9 +30,9 @@ public class TestExceptionSerialization
 		{
 			throw new Exception("FOO: tricky!");
 		}
-		catch (Throwable ex)
+		catch (Throwable t)
 		{
-			serialize(ex);
+			serialize(t);
 		}
 	}
 	
@@ -51,9 +51,9 @@ public class TestExceptionSerialization
 				throw new RuntimeException(t1);
 			}
 		}
-		catch (Throwable ex)
+		catch (Throwable t)
 		{
-			serialize(ex);
+			serialize(t);
 		}
 	}
 	
@@ -72,9 +72,9 @@ public class TestExceptionSerialization
 				throw new RuntimeException(t1);
 			}
 		}
-		catch (Throwable ex)
+		catch (Throwable t)
 		{
-			serialize(ex);
+			serialize(t);
 		}
 	}
 	
@@ -93,9 +93,9 @@ public class TestExceptionSerialization
 				throw new RuntimeException("FOO: tricky!", t1);
 			}
 		}
-		catch (Throwable ex)
+		catch (Throwable t)
 		{
-			serialize(ex);
+			serialize(t);
 		}
 	}
 	
@@ -149,31 +149,84 @@ public class TestExceptionSerialization
 				throw new RuntimeException("FOO: tricky!", t1);
 			}
 		}
-		catch (Throwable ex)
+		catch (Throwable t)
 		{
-			serialize(ex);
+			serialize(t);
 		}
 	}
 	
-	private static void serialize(final Throwable ex)
+	@Test(expected=NoSuchConstructorException.class)
+	public void simpleNonRegularException()
 	throws Exception
 	{
-		assertEquals(ex, recreateException(ex.getClass().getName(), ex.getMessage(), createBacktrace(ex)));
+		try
+		{
+			throw new NonRegularException(0.0);
+		}
+		catch (Throwable t)
+		{
+			serialize(t);
+		}
+	}
+	
+	@Test(expected=NoSuchConstructorException.class)
+	public void nestedNonRegularException()
+	throws Exception
+	{
+		try
+		{
+			try
+			{
+				throw new NonRegularException(0.0);
+			}
+			catch (Throwable t)
+			{
+				throw new RuntimeException(t);
+			}
+		}
+		catch (Throwable t2)
+		{
+			serialize(t2);
+		}
+	}
+	
+	private static void serialize(final Throwable t)
+	throws Exception
+	{
+		assertEquals(t, recreateThrowable(t.getClass().getName(), t.getMessage(), createBacktrace(t)));
 	}
 
-	private static void assertEquals(final Throwable ex, final Throwable newEx)
+	private static void assertEquals(final Throwable t, final Throwable newT)
 	{
-		Assert.assertEquals((ex == null), (newEx == null));
-		if (ex != null)
+		Assert.assertEquals((t == null), (newT == null));
+		if (t != null)
 		{
-			Assert.assertEquals(ex.getClass(), newEx.getClass());
-			Assert.assertEquals(ex.getMessage(), newEx.getMessage());
-			Assert.assertEquals((ex.getCause() == null), (newEx.getCause() == null));
-			Assert.assertEquals(createBacktrace(ex), createBacktrace(newEx));
-			if (ex.getCause() != null)
+			Assert.assertEquals(t.getClass(), newT.getClass());
+			Assert.assertEquals(t.getMessage(), newT.getMessage());
+			Assert.assertEquals((t.getCause() == null), (newT.getCause() == null));
+			Assert.assertEquals(createBacktrace(t), createBacktrace(newT));
+			if (t.getCause() != null)
 			{
-				assertEquals(ex.getCause(), newEx.getCause());
+				assertEquals(t.getCause(), newT.getCause());
 			}
+		}
+	}
+	
+	public static final class NonRegularException extends Exception
+	{
+		private static final long serialVersionUID = -5336815460233912386L;
+		
+		private final double number;
+		
+		public NonRegularException(final double number)
+		{
+			super(Double.toString(number));
+			this.number = number;
+		}
+		
+		public double getNumber()
+		{
+			return this.number;
 		}
 	}
 }

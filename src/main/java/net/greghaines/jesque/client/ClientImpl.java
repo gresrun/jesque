@@ -53,10 +53,7 @@ public class ClientImpl implements Client
 		}
 		this.namespace = config.getNamespace();
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-		if (config.getDatabase() != null)
-		{
-			this.jedis.select(config.getDatabase());
-		}
+		this.jedis.select(config.getDatabase());
 	}
 	
 	public void enqueue(final String queue, final Job job)
@@ -65,9 +62,13 @@ public class ClientImpl implements Client
 		{
 			throw new IllegalArgumentException("queue must not be null or empty: " + queue);
 		}
-		if (job == null || "".equals(job))
+		if (job == null)
 		{
 			throw new IllegalArgumentException("job must not be null");
+		}
+		if (!job.isValid())
+		{
+			throw new IllegalStateException("job is not valid: " + job);
 		}
 		try
 		{

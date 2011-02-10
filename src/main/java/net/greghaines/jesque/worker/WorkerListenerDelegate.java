@@ -16,16 +16,16 @@
 package net.greghaines.jesque.worker;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import net.greghaines.jesque.Job;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import net.greghaines.jesque.Job;
 
 /**
  * This class keeps track of WorkerListeners and notifies each listener when fireEvent() is invoked.
@@ -44,7 +44,7 @@ public class WorkerListenerDelegate implements WorkerEventEmitter
 	public WorkerListenerDelegate()
 	{
 		final Map<WorkerEvent,Map<WorkerListener,WorkerEvent>> elp = 
-			new HashMap<WorkerEvent,Map<WorkerListener,WorkerEvent>>(WorkerEvent.values().length);
+			new EnumMap<WorkerEvent,Map<WorkerListener,WorkerEvent>>(WorkerEvent.class);
 		for (final WorkerEvent event : WorkerEvent.values())
 		{
 			elp.put(event, Collections.synchronizedMap(new WeakHashMap<WorkerListener,WorkerEvent>()));

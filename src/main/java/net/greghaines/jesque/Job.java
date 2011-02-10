@@ -41,6 +41,7 @@ public class Job implements Serializable
 	 * Makes a clone of the arguments, if they exist.
 	 * 
 	 * @param origJob the Job to start from
+	 * @throws IllegalArgumentException if the origJob is null
 	 */
 	public Job(final Job origJob)
 	{
@@ -153,10 +154,6 @@ public class Job implements Serializable
 			return false;
 		}
 		final Job other = (Job) obj;
-		if (!Arrays.equals(this.args, other.args))
-		{
-			return false;
-		}
 		if (this.className == null)
 		{
 			if (other.className != null)
@@ -165,6 +162,10 @@ public class Job implements Serializable
 			}
 		}
 		else if (!this.className.equals(other.className))
+		{
+			return false;
+		}
+		if (!Arrays.equals(this.args, other.args))
 		{
 			return false;
 		}

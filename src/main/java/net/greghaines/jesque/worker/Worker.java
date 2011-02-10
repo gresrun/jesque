@@ -71,4 +71,11 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @param all whether to remove all or only one of the instances
 	 */
 	void removeQueue(String queueName, boolean all);
+	
+	/**
+	 * Clear any current queues and poll the given queues.
+	 * 
+	 * @param queues the queues to poll
+	 */
+	void setQueues(Collection<String> queues);
 }

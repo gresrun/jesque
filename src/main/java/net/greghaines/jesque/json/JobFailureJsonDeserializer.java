@@ -103,7 +103,7 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 		{
 			try
 			{
-				jobFailure.setException(JesqueUtils.recreateException(exception, error, backtrace));
+				jobFailure.setException(JesqueUtils.recreateThrowable(exception, error, backtrace));
 			}
 			catch (Exception e)
 			{

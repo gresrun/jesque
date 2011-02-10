@@ -32,18 +32,38 @@ public class AmbiguousConstructorException extends Exception
 	private final Object[] args;
 	private final Set<Constructor<?>> options;
 	
+	/**
+	 * Create a new AmbiguousConstructorException with only a message.
+	 * 
+	 * @param msg the detail message to show
+	 */
+	public AmbiguousConstructorException(final String msg)
+	{
+		super(msg);
+		this.type = null;
+		this.args = null;
+		this.options = null;
+	}
+	
+	/**
+	 * Create a new AmbiguousConstructorException with the possible Constructor options.
+	 * 
+	 * @param type the type of Object under construction
+	 * @param args the arguments given to match on
+	 * @param options the possible matching Constructors
+	 */
 	public AmbiguousConstructorException(final Class<?> type, final Object[] args, 
 			final Set<Constructor<?>> options)
 	{
 		super("Found " + options.size() + " possible matches for class=" + 
 			type.getName() + " args=" + Arrays.toString(args) + ": " + options);
 		this.type = type;
-		this.args = args;
+		this.args = args.clone();
 		this.options = options;
 	}
 
 	/**
-	 * @return the Class object searched.
+	 * @return the Class object searched
 	 */
 	public Class<?> getType()
 	{
@@ -51,7 +71,7 @@ public class AmbiguousConstructorException extends Exception
 	}
 
 	/**
-	 * @return the arguments that the Constructor needed to match.
+	 * @return the arguments that the Constructor needed to match
 	 */
 	public Object[] getArgs()
 	{

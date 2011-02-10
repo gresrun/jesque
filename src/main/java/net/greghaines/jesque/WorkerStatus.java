@@ -31,7 +31,27 @@ public class WorkerStatus implements Serializable
 	private String queue;
 	private Job payload;
 	
+	/**
+	 * No-arg constructor
+	 */
 	public WorkerStatus(){}
+	
+	/**
+	 * Cloning constructor.
+	 * 
+	 * @param origStatus the status to start from
+	 * @throws IllegalArgumentException if the origStatus is null
+	 */
+	public WorkerStatus(final WorkerStatus origStatus)
+	{
+		if (origStatus == null)
+		{
+			throw new IllegalArgumentException("origStatus must not be null");
+		}
+		this.runAt = origStatus.runAt;
+		this.queue = origStatus.queue;
+		this.payload = origStatus.payload;
+	}
 
 	/**
 	 * @return when the Worker started on the current job
@@ -111,18 +131,6 @@ public class WorkerStatus implements Serializable
 			return false;
 		}
 		final WorkerStatus other = (WorkerStatus) obj;
-		if (this.payload == null)
-		{
-			if (other.payload != null)
-			{
-				return false;
-			
-			}
-		}
-		else if (!this.payload.equals(other.payload))
-		{
-			return false;
-		}
 		if (this.queue == null)
 		{
 			if (other.queue != null)
@@ -142,6 +150,18 @@ public class WorkerStatus implements Serializable
 			}
 		}
 		else if (!this.runAt.equals(other.runAt))
+		{
+			return false;
+		}
+		if (this.payload == null)
+		{
+			if (other.payload != null)
+			{
+				return false;
+			
+			}
+		}
+		else if (!this.payload.equals(other.payload))
 		{
 			return false;
 		}

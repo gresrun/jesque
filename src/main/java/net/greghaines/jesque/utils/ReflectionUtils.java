@@ -330,7 +330,7 @@ public final class ReflectionUtils
 		{
 			cl = Thread.currentThread().getContextClassLoader();
 		}
-		catch (Throwable t) {} // Cannot access thread context ClassLoader - falling back to system class loader...
+		catch (Exception e) {} // Cannot access thread context ClassLoader - falling back to system class loader...
 		if (cl == null)
 		{ // No thread context class loader -> use class loader of this class.
 			cl = ReflectionUtils.class.getClassLoader();
@@ -347,12 +347,11 @@ public final class ReflectionUtils
 	 * @param name the name of the Class
 	 * @return Class instance for the supplied name
 	 * @throws ClassNotFoundException if the class was not found
-	 * @throws LinkageError if the class file could not be loaded
 	 * @see Class#forName(String, boolean, ClassLoader)
 	 * @see #getDefaultClassLoader()
 	 */
 	public static Class<?> forName(final String name)
-	throws ClassNotFoundException, LinkageError
+	throws ClassNotFoundException
 	{
 		return forName(name, getDefaultClassLoader());
 	}
@@ -368,11 +367,10 @@ public final class ReflectionUtils
 	 * (may be <code>null</code>, which indicates the default class loader)
 	 * @return Class instance for the supplied name
 	 * @throws ClassNotFoundException if the class was not found
-	 * @throws LinkageError if the class file could not be loaded
 	 * @see Class#forName(String, boolean, ClassLoader)
 	 */
 	public static Class<?> forName(final String name, final ClassLoader classLoader)
-	throws ClassNotFoundException, LinkageError
+	throws ClassNotFoundException
 	{
 		if (name == null)
 		{

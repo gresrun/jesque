@@ -18,10 +18,12 @@ package net.greghaines.jesque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientImpl;
 import net.greghaines.jesque.utils.JesqueUtils;
+import net.greghaines.jesque.worker.UnpermittedJobException;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
 import net.greghaines.jesque.worker.WorkerImpl;
@@ -132,6 +134,37 @@ public class IntegrationTest
 	{
 		log.info("Running mixedInSpiteOfListenerFailAll()...");
 		assertMixed(new FailingWorkerListener(), WorkerEvent.values());
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Test
+	public void unpermittedJob()
+	{
+		final Job job = new Job("TestAction", new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
+		final AtomicBoolean didFailWithUnpermittedJob = new AtomicBoolean(false);
+		doWork(Arrays.asList(job), Arrays.asList(FailAction.class), new WorkerListener()
+		{
+			public void onEvent(final WorkerEvent event, final Worker worker, final String queue,
+					final Job job, final Object runner, final Object result, final Exception ex)
+			{
+				if (WorkerEvent.JOB_FAILURE.equals(event) && (ex instanceof UnpermittedJobException))
+				{
+					didFailWithUnpermittedJob.set(true);
+				}
+			}
+		}, WorkerEvent.JOB_FAILURE);
+		
+		final Jedis jedis = TestUtils.createJedis(config);
+		try
+		{
+			Assert.assertTrue(didFailWithUnpermittedJob.get());
+			Assert.assertEquals("1", jedis.get(JesqueUtils.createKey(config.getNamespace(), "stat", "failed")));
+			Assert.assertNull(jedis.get(JesqueUtils.createKey(config.getNamespace(), "stat", "processed")));
+		}
+		finally
+		{
+			jedis.quit();
+		}
 	}
 	
 	@SuppressWarnings("unchecked")

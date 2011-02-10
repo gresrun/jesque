@@ -34,7 +34,28 @@ public class JobFailure implements Serializable
 	private Throwable exception;
 	private Date failedAt;
 	
+	/**
+	 * No-arg constructor
+	 */
 	public JobFailure(){}
+	
+	/**
+	 * Cloning constructor.
+	 * 
+	 * @param origFailure the failure to start from
+	 * @throws IllegalArgumentException if the origFailure is null
+	 */
+	public JobFailure(final JobFailure origFailure)
+	{
+		if (origFailure == null)
+		{
+			throw new IllegalArgumentException("origFailure must not be null");
+		}
+		this.worker = origFailure.worker;
+		this.payload = origFailure.payload;
+		this.exception = origFailure.exception;
+		this.failedAt = origFailure.failedAt;
+	}
 
 	/**
 	 * @return the name of the worker where the job failed

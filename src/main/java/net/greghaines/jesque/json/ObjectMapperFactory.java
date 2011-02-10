@@ -19,6 +19,8 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 
+import org.codehaus.jackson.map.JsonDeserializer;
+import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.map.deser.CustomDeserializerFactory;
@@ -30,15 +32,15 @@ import org.codehaus.jackson.map.ser.CustomSerializerFactory;
  * 
  * @author Greg Haines
  */
-public class ObjectMapperFactory
+public final class ObjectMapperFactory
 {
 	private static final ObjectMapper mapper = new ObjectMapper();
+	private static final CustomDeserializerFactory cdf = new CustomDeserializerFactory();
+	private static final CustomSerializerFactory csf = new CustomSerializerFactory();
 
 	static
 	{
 		mapper.configure(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
-		final CustomDeserializerFactory cdf = new CustomDeserializerFactory();
-		final CustomSerializerFactory csf = new CustomSerializerFactory();
 		mapper.setDeserializerProvider(new StdDeserializerProvider(cdf));
 		mapper.setSerializerFactory(csf);
 		cdf.addSpecificMapping(Job.class, new JobJsonDeserializer());
@@ -48,6 +50,30 @@ public class ObjectMapperFactory
 		cdf.addSpecificMapping(WorkerStatus.class, new WorkerStatusJsonDeserializer());
 		csf.addSpecificMapping(WorkerStatus.class, new WorkerStatusJsonSerializer());
 	}
+
+	/**
+	 * Add a custom JSON serializer for the given type.
+	 * 
+	 * @param <T> the type to map
+	 * @param forClass the class of the type
+	 * @param ser the custom serializer
+	 */
+	public static <T> void addSpecificSerializer(final Class<? extends T> forClass, final JsonSerializer<T> ser)
+	{
+		csf.addSpecificMapping(forClass, ser);
+	}
+
+	/**
+	 * Add a custom JSON deserializer for the given type.
+	 * 
+	 * @param <T> the type to map
+	 * @param forClass the class of the type
+	 * @param deser the custom deserializer
+	 */
+	public static <T> void addSpecificDeserializer(final Class<T> forClass, final JsonDeserializer<? extends T> deser)
+    {
+		cdf.addSpecificMapping(forClass, deser);
+    }
 	
 	/**
 	 * @return a fully-configured ObjectMapper
@@ -56,4 +82,6 @@ public class ObjectMapperFactory
 	{
 		return mapper;
 	}
+	
+	private ObjectMapperFactory(){} // Utility class
 }

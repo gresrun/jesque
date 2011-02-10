@@ -31,11 +31,22 @@ public class Config implements Serializable
 	private final int port;
 	private final int timeout; 
 	private final String namespace;
-	private final Integer database;
+	private final int database;
 	private final String jobPackage;
 	
+	/**
+	 * Using a ConfigBuilder is recommended...
+	 * 
+	 * @param host the Reds hostname
+	 * @param port the Redis port number
+	 * @param timeout the Redis connection timeout
+	 * @param namespace the Redis namespace to prefix keys with
+	 * @param database the Redis database to use
+	 * @param jobPackage the Java package base where Job implementations are
+	 * @see ConfigBuilder
+	 */
 	public Config(final String host, final int port, final int timeout,
-			final String namespace, final Integer database, final String jobPackage)
+			final String namespace, final int database, final String jobPackage)
 	{
 		this.host = host;
 		this.port = port;
@@ -45,31 +56,49 @@ public class Config implements Serializable
 		this.jobPackage = jobPackage;
 	}
 
+	/**
+	 * @return the Redis hostname
+	 */
 	public String getHost()
 	{
 		return this.host;
 	}
 
+	/**
+	 * @return the Redis port number
+	 */
 	public int getPort()
 	{
 		return this.port;
 	}
 
+	/**
+	 * @return the Redis connection timeout
+	 */
 	public int getTimeout()
 	{
 		return this.timeout;
 	}
 
+	/**
+	 * @return the Redis namespace to prefix keys with
+	 */
 	public String getNamespace()
 	{
 		return this.namespace;
 	}
 
-	public Integer getDatabase()
+	/**
+	 * @return the Redis database to use
+	 */
+	public int getDatabase()
 	{
 		return this.database;
 	}
 
+	/**
+	 * @return the Java package base where Job implementations are
+	 */
 	public String getJobPackage()
 	{
 		return this.jobPackage;
@@ -80,7 +109,7 @@ public class Config implements Serializable
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((this.database == null) ? 0 : this.database.hashCode());
+		result = prime * result + this.database;
 		result = prime * result + ((this.host == null) ? 0 : this.host.hashCode());
 		result = prime * result + ((this.jobPackage == null) ? 0 : this.jobPackage.hashCode());
 		result = prime * result + ((this.namespace == null) ? 0 : this.namespace.hashCode());
@@ -105,14 +134,15 @@ public class Config implements Serializable
 			return false;
 		}
 		final Config other = (Config) obj;
-		if (this.database == null)
+		if (this.database != other.database)
 		{
-			if (other.database != null)
-			{
-				return false;
-			}
+			return false;
 		}
-		else if (!this.database.equals(other.database))
+		if (this.port != other.port)
+		{
+			return false;
+		}
+		if (this.timeout != other.timeout)
 		{
 			return false;
 		}
@@ -146,14 +176,6 @@ public class Config implements Serializable
 			}
 		}
 		else if (!this.namespace.equals(other.namespace))
-		{
-			return false;
-		}
-		if (this.port != other.port)
-		{
-			return false;
-		}
-		if (this.timeout != other.timeout)
 		{
 			return false;
 		}
