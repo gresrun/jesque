@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -55,10 +56,30 @@ public class WorkerImpl implements Worker
 	private static final AtomicLong workerCounter = new AtomicLong(0);
 	private static final long emptyQueueSleepTime = 500; // 500 ms
 	
+	/**
+	 * Verify that the given queues are all valid.
+	 * 
+	 * @param queues the given queues
+	 */
+	private static void checkQueues(final Iterable<String> queues)
+	{
+		if (queues == null)
+		{
+			throw new IllegalArgumentException("queues must not be null");
+		}
+		for (final String queue : queues)
+		{
+			if (queue == null || "".equals(queue))
+			{
+				throw new IllegalArgumentException("queues' members must not be null: " + queues);
+			}
+		}
+	}
+	
 	private final Jedis jedis;
 	private final String namespace;
 	private final String jobPackage;
-	private final BlockingDeque<String> queues;
+	private final BlockingDeque<String> queueNames;
 	private final Set<Class<?>> jobTypes;
 	private final String name;
 	private final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
@@ -75,7 +96,7 @@ public class WorkerImpl implements Worker
 	 * @param config used to create a connection to Redis and the package prefix for incoming jobs
 	 * @param queues the list of queues to poll
 	 * @param jobTypes the list of job types to execute
-	 * @throws IllegalArgumentException if the config is null, if the queues is null or empty, or if the jobTypes is null or empty
+	 * @throws IllegalArgumentException if the config is null, if the queues is null, or if the jobTypes is null or empty
 	 */
 	public WorkerImpl(final Config config, final Collection<String> queues, final Collection<? extends Class<?>> jobTypes)
 	{
@@ -83,19 +104,25 @@ public class WorkerImpl implements Worker
 		{
 			throw new IllegalArgumentException("config must not be null");
 		}
-		if (queues == null || queues.isEmpty())
-		{
-			throw new IllegalArgumentException("queues must not be null or empty: " + queues);
-		}
+		checkQueues(queues);
 		if (jobTypes == null || jobTypes.isEmpty())
 		{
 			throw new IllegalArgumentException("jobTypes must not be null or empty: " + jobTypes);
+		}
+		for (final Class<?> jobType : jobTypes)
+		{
+			if (jobType == null)
+			{
+				throw new IllegalArgumentException("jobType's members must not be null: " + jobTypes);
+			}
 		}
 		this.namespace = config.getNamespace();
 		this.jobPackage = config.getJobPackage();
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
 		this.jedis.select(config.getDatabase());
-		this.queues = checkQueues(queues);
+		this.queueNames = new LinkedBlockingDeque<String>((queues == ALL_QUEUES) // Using object equality on purpose
+				? this.jedis.smembers(key("queues")) // Like '*' in other clients
+				: queues);
 		this.jobTypes = new HashSet<Class<?>>(jobTypes);
 		this.name = createName();
 	}
@@ -136,10 +163,6 @@ public class WorkerImpl implements Worker
 	public void end()
 	{
 		this.running.set(false);
-		synchronized (this.queues)
-		{ // In case this.queues is empty and we're waiting for a queue
-			this.queues.notifyAll();
-		}
 	}
 	
 	public String getName()
@@ -179,51 +202,42 @@ public class WorkerImpl implements Worker
 	
 	public void addQueue(final String queueName)
 	{
-		this.queues.add(queueName);
-		synchronized (this.queues)
-		{ // In case this.queues is empty and we're waiting for a queue
-			this.queues.notifyAll();
+		if (queueName == null || "".equals(queueName))
+		{
+			throw new IllegalArgumentException("queueName must not be null or empty: " + queueName);
 		}
+		this.queueNames.add(queueName);
 	}
 	
 	public void removeQueue(final String queueName, final boolean all)
 	{
+		if (queueName == null || "".equals(queueName))
+		{
+			throw new IllegalArgumentException("queueName must not be null or empty: " + queueName);
+		}
 		if (all)
 		{ // Remove all instances
 			boolean tryAgain = true;
 			while (tryAgain)
 			{
-				tryAgain = this.queues.remove(queueName);
+				tryAgain = this.queueNames.remove(queueName);
 			}
 		}
 		else
 		{ // Only remove one instance
-			this.queues.remove(queueName);
+			this.queueNames.remove(queueName);
 		}
 	}
 	
 	public void setQueues(final Collection<String> queues)
 	{
-		this.queues.clear();
-		this.queues.addAll((queues == ALL_QUEUES) // Using object equality on purpose
+		checkQueues(queues);
+		this.queueNames.clear();
+		this.queueNames.addAll((queues == ALL_QUEUES) // Using object equality on purpose
 			? this.jedis.smembers(key("queues")) // Like '*' in other clients
 			: queues);
 	}
 
-	/**
-	 * Ensures that the given queues are in the right format.
-	 * Also, retrives the current list of queues if ALL_QUEUES is passed.
-	 * 
-	 * @param queues the queues to poll
-	 * @return a copy of the passed-in list of queues or the current list of queues if ALL_QUEUES is passed.
-	 */
-	private BlockingDeque<String> checkQueues(final Collection<String> queues)
-	{
-		return new LinkedBlockingDeque<String>((queues == ALL_QUEUES) // Using object equality on purpose
-			? this.jedis.smembers(key("queues")) // Like '*' in other clients
-			: queues);
-	}
-	
 	/**
 	 * Polls the queues for jobs and executes them.
 	 */
@@ -235,22 +249,25 @@ public class WorkerImpl implements Worker
 		{
 			try
 			{
-				renameThread("Waiting for " + JesqueUtils.join(",", this.queues));
-				curQueue = this.queues.take();
-				this.queues.add(curQueue); // Rotate the queues
-				if (this.running.get()) // Might have been waiting in take() for a while
+				renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
+				curQueue = this.queueNames.poll(emptyQueueSleepTime, TimeUnit.MILLISECONDS);
+				if (curQueue != null)
 				{
-					this.listenerDelegate.fireEvent(WorkerEvent.WORKER_POLL, this, curQueue, null, null, null, null);
-					final String payload = this.jedis.lpop(key("queue", curQueue));
-					if (payload != null)
+					this.queueNames.add(curQueue); // Rotate the queues
+					if (this.running.get()) // Might have been waiting in poll() for a while
 					{
-						perform(payload, curQueue);
-						missCount = 0;
-					}
-					else if (++missCount == this.queues.size() && this.running.get())
-					{ // Keeps worker from busy-spinning on empty queues
-						missCount = 0;
-						JesqueUtils.sleepTight(emptyQueueSleepTime);
+						this.listenerDelegate.fireEvent(WorkerEvent.WORKER_POLL, this, curQueue, null, null, null, null);
+						final String payload = this.jedis.lpop(key("queue", curQueue));
+						if (payload != null)
+						{
+							perform(payload, curQueue);
+							missCount = 0;
+						}
+						else if (++missCount == this.queueNames.size() && this.running.get())
+						{ // Keeps worker from busy-spinning on empty queues
+							missCount = 0;
+							JesqueUtils.sleepTight(emptyQueueSleepTime);
+						}
 					}
 				}
 			}
@@ -404,7 +421,7 @@ public class WorkerImpl implements Worker
 		sb.append(this.namespace).append(':')
 			.append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
 			.append('-').append(this.workerId);
-		for (final String q : this.queues)
+		for (final String q : this.queueNames)
 		{
 			sb.append(':').append(q);
 		}
