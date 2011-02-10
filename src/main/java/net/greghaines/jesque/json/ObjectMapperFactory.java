@@ -57,10 +57,19 @@ public final class ObjectMapperFactory
 	 * @param <T> the type to map
 	 * @param forClass the class of the type
 	 * @param ser the custom serializer
+	 * @param specific whether to add as a specific or generic mapping
 	 */
-	public static <T> void addSpecificSerializer(final Class<? extends T> forClass, final JsonSerializer<T> ser)
+	public static <T> void addSpecificSerializer(final Class<? extends T> forClass, 
+			final JsonSerializer<T> ser, final boolean specific)
 	{
-		csf.addSpecificMapping(forClass, ser);
+		if (specific)
+		{
+			csf.addSpecificMapping(forClass, ser);
+		}
+		else
+		{
+			csf.addGenericMapping(forClass, ser);
+		}
 	}
 
 	/**
