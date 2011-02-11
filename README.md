@@ -34,7 +34,7 @@ Or, to use it in your Maven project, add it as a dependency:
 	<dependency>
 		<groupId>net.greghaines</groupId>
 		<artifactId>jesque</artifactId>
-		<version>0.3.0</version>
+		<version>0.4.0</version>
 		<type>jar</type>
 		<scope>compile</scope>
 	</dependency>
@@ -68,6 +68,7 @@ If you are on Mac OS X, I highly recommend using the fantasic [Homebrew package 
 	brew install redis
 	brew install git
 	brew install maven
+	gem install resque
 Boom! Ready to go!
 
 License
