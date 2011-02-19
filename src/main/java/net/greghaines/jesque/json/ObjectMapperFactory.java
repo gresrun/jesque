@@ -59,7 +59,7 @@ public final class ObjectMapperFactory
 	 * @param ser the custom serializer
 	 * @param specific whether to add as a specific or generic mapping
 	 */
-	public static <T> void addSpecificSerializer(final Class<? extends T> forClass, 
+	public static <T> void addSerializer(final Class<? extends T> forClass, 
 			final JsonSerializer<T> ser, final boolean specific)
 	{
 		if (specific)
@@ -79,7 +79,7 @@ public final class ObjectMapperFactory
 	 * @param forClass the class of the type
 	 * @param deser the custom deserializer
 	 */
-	public static <T> void addSpecificDeserializer(final Class<T> forClass, final JsonDeserializer<? extends T> deser)
+	public static <T> void addDeserializer(final Class<T> forClass, final JsonDeserializer<? extends T> deser)
     {
 		cdf.addSpecificMapping(forClass, deser);
     }
