@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 public final class VersionUtils
 {
 	public static final String DEVELOPMENT = "DEVELOPMENT";
-	private static final String ERROR = "ERROR";
+	public static final String ERROR = "ERROR";
 	
 	private static final Logger log = LoggerFactory.getLogger(VersionUtils.class);
 	private static final String pomPropertiesResName = "/META-INF/maven/net.greghaines/jesque/pom.properties";
