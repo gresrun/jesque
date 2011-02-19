@@ -8,7 +8,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.greghaines</groupId>
 	<artifactId>jesque</artifactId>
-	<version>0.9.0</version>
+	<version>0.9.1-SNAPSHOT</version>
 	<name>Jesque</name>
 	<description>An implementation of Resque in Java</description>
 	<url>https://github.com/gresrun/jesque</url>
