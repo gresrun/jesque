@@ -139,19 +139,14 @@ public final class ReflectionUtils
 		Arrays.sort(candidates, ConstructorComparator.INSTANCE);
 		int minTypeDiffWeight = Integer.MAX_VALUE;
 		Set<Constructor<?>> ambiguousConstructors = null;
-		for (int i = 0; i < candidates.length; i++)
+		for (final Constructor candidate : candidates)
 		{
-			final Constructor candidate = candidates[i];
 			final Class[] paramTypes = candidate.getParameterTypes();
 			if (constructorToUse != null && args.length > paramTypes.length)
 			{
 				// Already found greedy constructor that can be satisfied.
 				// Do not look any further, there are only less greedy constructors left.
 				break;
-			}
-			if (paramTypes.length < args.length)
-			{
-				continue;
 			}
 			if (paramTypes.length != args.length)
 			{
@@ -294,6 +289,7 @@ public final class ReflectionUtils
 	private static final class ConstructorComparator implements Comparator<Constructor<?>>, Serializable
 	{
 		private static final long serialVersionUID = 1338239669376657022L;
+		
 		public static final ConstructorComparator INSTANCE = new ConstructorComparator();
 		
 		private ConstructorComparator(){} // Singleton
@@ -302,11 +298,9 @@ public final class ReflectionUtils
 		{
 			final boolean p1 = Modifier.isPublic(c1.getModifiers());
 			final boolean p2 = Modifier.isPublic(c2.getModifiers());
-			if (p1 != p2)
-			{
-				return (p1 ? -1 : 1);
-			}
-			return (Integer.valueOf(c2.getParameterTypes().length)).compareTo(c1.getParameterTypes().length);
+			return (p1 != p2)
+				? (p1 ? -1 : 1)
+				: Integer.valueOf(c2.getParameterTypes().length).compareTo(c1.getParameterTypes().length);
 		}
 	}
 	
