@@ -17,7 +17,6 @@ package net.greghaines.jesque.worker;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
@@ -29,10 +28,12 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
+import net.greghaines.jesque.ResqueConstants;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JesqueUtils;
@@ -50,7 +51,7 @@ import redis.clients.jedis.Jedis;
  * 
  * @author Greg Haines
  */
-public class WorkerImpl implements Worker
+public class WorkerImpl implements Worker, ResqueConstants
 {
 	private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
 	private static final AtomicLong workerCounter = new AtomicLong(0);
@@ -84,10 +85,10 @@ public class WorkerImpl implements Worker
 	private final String name;
 	private final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
 	private final AtomicBoolean running = new AtomicBoolean(false);
-	private final DateFormat df = new SimpleDateFormat(JesqueUtils.DATE_FORMAT);
+	private final AtomicBoolean paused = new AtomicBoolean(false);
 	private final long workerId = workerCounter.getAndIncrement();
 	private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
-	private final StringBuilder threadNameSB = new StringBuilder(this.threadNameBase);
+	private final AtomicReference<Thread> workerThreadRef = new AtomicReference<Thread>(null);
 	
 	/**
 	 * Creates a new WorkerImpl, which creates it's own connection to Redis using values from the config.
@@ -121,7 +122,7 @@ public class WorkerImpl implements Worker
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
 		this.jedis.select(config.getDatabase());
 		this.queueNames = new LinkedBlockingDeque<String>((queues == ALL_QUEUES) // Using object equality on purpose
-				? this.jedis.smembers(key("queues")) // Like '*' in other clients
+				? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
 				: queues);
 		this.jobTypes = new HashSet<Class<?>>(jobTypes);
 		this.name = createName();
@@ -138,20 +139,23 @@ public class WorkerImpl implements Worker
 		{
 			try
 			{
-				this.jedis.sadd(key("workers"), this.name);
-				this.jedis.set(key("worker", this.name, "started"), this.df.format(new Date()));
+				this.workerThreadRef.set(Thread.currentThread());
+				this.jedis.sadd(key(WORKERS), this.name);
+				this.jedis.set(key(WORKER, this.name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
 				this.listenerDelegate.fireEvent(WorkerEvent.WORKER_START, this, null, null, null, null, null);
 				poll();
 			}
 			finally
 			{
 				this.listenerDelegate.fireEvent(WorkerEvent.WORKER_STOP, this, null, null, null, null, null);
-				this.jedis.srem(key("workers"), this.name);
+				this.jedis.srem(key(WORKERS), this.name);
 				this.jedis.del(
-					key("worker", this.name), 
-					key("worker", this.name, "started"), 
-					key("stat", "failed", this.name), 
-					key("stat", "processed", this.name));
+					key(WORKER, this.name), 
+					key(WORKER, this.name, STARTED), 
+					key(STAT, FAILED, this.name), 
+					key(STAT, PROCESSED, this.name));
+				this.jedis.quit();
+				this.workerThreadRef.set(null);
 			}
 		}
 		else
@@ -160,9 +164,26 @@ public class WorkerImpl implements Worker
 		}
 	}
 	
-	public void end()
+	public void end(final boolean now)
 	{
 		this.running.set(false);
+		if (now)
+		{
+			final Thread workerThread = this.workerThreadRef.get();
+			if (workerThread != null)
+			{
+				workerThread.interrupt();
+			}
+		}
+	}
+	
+	public void togglePause(final boolean paused)
+	{
+		this.paused.set(paused);
+		synchronized (this.paused)
+		{
+			this.paused.notifyAll();
+		}
 	}
 	
 	public String getName()
@@ -234,7 +255,7 @@ public class WorkerImpl implements Worker
 		checkQueues(queues);
 		this.queueNames.clear();
 		this.queueNames.addAll((queues == ALL_QUEUES) // Using object equality on purpose
-			? this.jedis.smembers(key("queues")) // Like '*' in other clients
+			? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
 			: queues);
 	}
 
@@ -254,19 +275,21 @@ public class WorkerImpl implements Worker
 				if (curQueue != null)
 				{
 					this.queueNames.add(curQueue); // Rotate the queues
-					if (this.running.get()) // Might have been waiting in poll() for a while
+					checkPaused();
+					if (this.running.get()) // Might have been waiting in poll()/checkPaused() for a while
 					{
 						this.listenerDelegate.fireEvent(WorkerEvent.WORKER_POLL, this, curQueue, null, null, null, null);
-						final String payload = this.jedis.lpop(key("queue", curQueue));
+						final String payload = this.jedis.lpop(key(QUEUE, curQueue));
 						if (payload != null)
 						{
-							perform(payload, curQueue);
+							final Job job = ObjectMapperFactory.get().readValue(payload, Job.class);
+							process(job, curQueue);
 							missCount = 0;
 						}
 						else if (++missCount == this.queueNames.size() && this.running.get())
 						{ // Keeps worker from busy-spinning on empty queues
 							missCount = 0;
-							JesqueUtils.sleepTight(emptyQueueSleepTime);
+							Thread.sleep(emptyQueueSleepTime);
 						}
 					}
 				}
@@ -279,16 +302,30 @@ public class WorkerImpl implements Worker
 	}
 
 	/**
-	 * Deserializes, materializes and executes the given payload.
-	 * 
-	 * @param payload the JSON representation of a Job
-	 * @param curQueue the queue the payload came from
-	 * @throws IOException if the payload could not be deserialized
+	 * Checks to see if worker is paused. If so, wait until unpaused.
 	 */
-	private void perform(final String payload, final String curQueue)
-	throws IOException
+	private void checkPaused()
 	{
-		final Job job = ObjectMapperFactory.get().readValue(payload, Job.class);
+		if (this.paused.get())
+		{
+			synchronized (this.paused)
+			{
+				while (this.paused.get())
+				{
+					try { this.paused.wait(); } catch (InterruptedException ie){}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Materializes and executes the given job.
+	 * 
+	 * @param job the Job to process
+	 * @param curQueue the queue the payload came from
+	 */
+	private void process(final Job job, final String curQueue)
+	{
 		this.listenerDelegate.fireEvent(WorkerEvent.JOB_PROCESS, this, curQueue, job, null, null, null);
 		renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
 		try
@@ -301,35 +338,54 @@ public class WorkerImpl implements Worker
 			{
 				throw new UnpermittedJobException(clazz);
 			}
-			final Object instance = ReflectionUtils.createObject(clazz, job.getArgs());
-			this.jedis.set(key("worker", this.name), statusMsg(curQueue, job));
-			try
+			if (!Runnable.class.isAssignableFrom(clazz) && !Callable.class.isAssignableFrom(clazz))
 			{
-				Object result = null;
-				this.listenerDelegate.fireEvent(WorkerEvent.JOB_EXECUTE, this, curQueue, job, instance, null, null);
-				if (instance instanceof Callable)
-				{
-					result = ((Callable<?>) instance).call(); // The job is executing!
-				}
-				else if (instance instanceof Runnable)
-				{
-					((Runnable) instance).run(); // The job is executing!
-				}
-				else
-				{
-					throw new ClassCastException("instance is not a Runnable or a Callable: " + 
-						instance.getClass().getName() + " - " + instance);
-				}
-				success(job, instance, result, curQueue);
+				throw new ClassCastException("jobs must be a Runnable or a Callable: " + 
+					clazz.getName() + " - " + job);
 			}
-			finally
-			{
-				this.jedis.del(key("worker", this.name));
-			}
+			execute(job, curQueue, ReflectionUtils.createObject(clazz, job.getArgs()));
 		}
 		catch (Exception e)
 		{
 			failure(e, job, curQueue);
+		}
+	}
+
+	/**
+	 * Executes the given job.
+	 * 
+	 * @param job the job to execute
+	 * @param curQueue the queue the job came from 
+	 * @param instance the materialized job
+	 * @throws Exception if the instance is a callable and throws an exception
+	 */
+	private void execute(final Job job, final String curQueue, final Object instance)
+	throws Exception
+	{
+		this.jedis.set(key(WORKER, this.name), statusMsg(curQueue, job));
+		try
+		{
+			final Object result;
+			this.listenerDelegate.fireEvent(WorkerEvent.JOB_EXECUTE, this, curQueue, job, instance, null, null);
+			if (instance instanceof Callable)
+			{
+				result = ((Callable<?>) instance).call(); // The job is executing!
+			}
+			else if (instance instanceof Runnable)
+			{
+				((Runnable) instance).run(); // The job is executing!
+				result = null;
+			}
+			else
+			{ // Should never happen since we're testing the class earlier
+				throw new ClassCastException("instance must be a Runnable or a Callable: " + 
+					instance.getClass().getName() + " - " + instance);
+			}
+			success(job, instance, result, curQueue);
+		}
+		finally
+		{
+			this.jedis.del(key(WORKER, this.name));
 		}
 	}
 	
@@ -342,8 +398,8 @@ public class WorkerImpl implements Worker
 	 */
 	private void success(final Job job, final Object runner, final Object result, final String curQueue)
 	{
-		this.jedis.incr(key("stat", "processed"));
-		this.jedis.incr(key("stat", "processed", this.name));
+		this.jedis.incr(key(STAT, PROCESSED));
+		this.jedis.incr(key(STAT, PROCESSED, this.name));
 		this.listenerDelegate.fireEvent(WorkerEvent.JOB_SUCCESS, this, curQueue, job, runner, result, null);
 	}
 
@@ -356,11 +412,11 @@ public class WorkerImpl implements Worker
 	 */
 	private void failure(final Exception ex, final Job job, final String curQueue)
 	{
-		this.jedis.incr(key("stat", "failed"));
-		this.jedis.incr(key("stat", "failed", this.name));
+		this.jedis.incr(key(STAT, FAILED));
+		this.jedis.incr(key(STAT, FAILED, this.name));
 		try
 		{
-			this.jedis.rpush(key("failed"), failMsg(ex, job));
+			this.jedis.rpush(key(FAILED), failMsg(ex, job));
 		}
 		catch (Exception e)
 		{
@@ -421,9 +477,9 @@ public class WorkerImpl implements Worker
 		sb.append(this.namespace).append(':')
 			.append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
 			.append('-').append(this.workerId);
-		for (final String q : this.queueNames)
+		for (final String queueName : this.queueNames)
 		{
-			sb.append(':').append(q);
+			sb.append(':').append(queueName);
 		}
 		return sb.toString();
 	}
@@ -446,13 +502,12 @@ public class WorkerImpl implements Worker
 	 */
 	private void renameThread(final String msg)
 	{
-		this.threadNameSB.setLength(this.threadNameBase.length());
-		Thread.currentThread().setName(this.threadNameSB.append(msg).toString());
+		Thread.currentThread().setName(this.threadNameBase + msg);
 	}
 	
 	@Override
 	public String toString()
 	{
-		return "WorkerImpl(" + this.name + ")";
+		return this.name;
 	}
 }

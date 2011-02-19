@@ -19,6 +19,7 @@ import java.io.IOException;
 
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
+import net.greghaines.jesque.ResqueConstants;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JesqueUtils;
 
@@ -32,7 +33,7 @@ import redis.clients.jedis.Jedis;
  * 
  * @author Greg Haines
  */
-public class ClientImpl implements Client
+public class ClientImpl implements Client, ResqueConstants
 {
 	private static final Logger log = LoggerFactory.getLogger(ClientImpl.class);
 	
@@ -74,8 +75,8 @@ public class ClientImpl implements Client
 		{
 			final String msg = ObjectMapperFactory.get().writeValueAsString(job);
 			log.debug("enqueue queue={} msg={}", queue, msg);
-			this.jedis.sadd(key("queues"), queue);
-			this.jedis.rpush(key("queue", queue), msg);
+			this.jedis.sadd(key(QUEUES), queue);
+			this.jedis.rpush(key(QUEUE, queue), msg);
 		}
 		catch (IOException ioe)
 		{

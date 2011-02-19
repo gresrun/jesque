@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.regex.Pattern;
 
+import net.greghaines.jesque.ResqueConstants;
+
 /**
  * Miscellaneous utilities.
  * 
@@ -30,7 +32,6 @@ import java.util.regex.Pattern;
  */
 public final class JesqueUtils
 {
-	public static final String DATE_FORMAT = "EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)";
 	private static final String bTracePrefix = "\tat ";
 	private static final String btCausedByPrefix = "Caused by: ";
 	private static final String btUnknownSource = "Unknown Source";
@@ -96,7 +97,7 @@ public final class JesqueUtils
 		{
 			list.add(part);
 		}
-		return join(":", list);
+		return join(ResqueConstants.COLON, list);
 	}
 	
 	/**
@@ -127,13 +128,13 @@ public final class JesqueUtils
 	 */
 	private static void addCauseToBacktrace(final Throwable cause, final List<String> bTrace)
 	{
-		if (cause.getMessage() != null)
+		if (cause.getMessage() == null)
 		{
-			bTrace.add(btCausedByPrefix + cause.getClass().getName() + ": " + cause.getMessage());
+			bTrace.add(btCausedByPrefix + cause.getClass().getName());
 		}
 		else
 		{
-			bTrace.add(btCausedByPrefix + cause.getClass().getName());
+			bTrace.add(btCausedByPrefix + cause.getClass().getName() + ": " + cause.getMessage());
 		}
 		for (final StackTraceElement ste : cause.getStackTrace())
 		{
@@ -211,23 +212,7 @@ public final class JesqueUtils
 		Throwable t = null;
 		boolean causeInited = false;
 		final Class<?> throwableType = ReflectionUtils.forName(type);
-		if (message != null)
-		{
-			try
-			{
-				t = (Throwable) ReflectionUtils.createObject(throwableType, message);
-			}
-			catch (NoSuchConstructorException nsce)
-			{
-				if (cause == null)
-				{
-					throw nsce;
-				}
-				causeInited = true;
-				t = (Throwable) ReflectionUtils.createObject(throwableType, message, cause);
-			}
-		}
-		else
+		if (message == null)
 		{
 			try
 			{
@@ -260,6 +245,22 @@ public final class JesqueUtils
 					causeInited = true;
 					t = (Throwable) ReflectionUtils.createObject(throwableType, (String) null, cause);
 				}
+			}
+		}
+		else
+		{
+			try
+			{
+				t = (Throwable) ReflectionUtils.createObject(throwableType, message);
+			}
+			catch (NoSuchConstructorException nsce)
+			{
+				if (cause == null)
+				{
+					throw nsce;
+				}
+				causeInited = true;
+				t = (Throwable) ReflectionUtils.createObject(throwableType, message, cause);
 			}
 		}
 		t.setStackTrace(stes);
@@ -318,7 +319,7 @@ public final class JesqueUtils
 	
 	/**
 	 * This is needed because Throwable doesn't override equals() 
-	 * and object equality is not what we want to test here.
+	 * and object equality is not what we want to test.
 	 * 
 	 * @param ex original Throwable
 	 * @param newEx other Throwable
@@ -367,16 +368,6 @@ public final class JesqueUtils
 			}
 		}
 		return true;
-	}
-	
-	/**
-	 * Sleep the current thread, ignoring any Exception that might occur.
-	 * 
-	 * @param millis the time in milliseconds to sleep for
-	 */
-	public static void sleepTight(final long millis)
-	{
-		try { Thread.sleep(millis); } catch (Exception e){} // Ignore
 	}
 
 	private JesqueUtils(){} // Utility class

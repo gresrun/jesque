@@ -44,8 +44,17 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	
 	/**
 	 * Shutdown this Worker.
+	 * 
+	 * @param now if true, an effort will be made to stop any job in progress
 	 */
-	void end();
+	void end(boolean now);
+	
+	/**
+	 * Toggle whether this worker will process any new jobs.
+	 * 
+	 * @param paused if true, the worker will not process any new jobs; if false, the worker will process new jobs
+	 */
+	void togglePause(boolean paused);
 	
 	/**
 	 * Returns the name of this Worker.
