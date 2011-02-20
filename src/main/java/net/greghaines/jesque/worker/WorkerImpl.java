@@ -175,6 +175,12 @@ public class WorkerImpl implements Worker, ResqueConstants
 		}
 	}
 	
+	/**
+	 * Shutdown this Worker.<br/>
+	 * <b>The worker cannot be started again; create a new worker in this case.</b>
+	 * 
+	 * @param now if true, an effort will be made to stop any job in progress
+	 */
 	public void end(final boolean now)
 	{
 		this.state.set(STATE_SHUTDOWN);
