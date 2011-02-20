@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -56,6 +57,9 @@ public class WorkerImpl implements Worker, ResqueConstants
 	private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
 	private static final AtomicLong workerCounter = new AtomicLong(0);
 	private static final long emptyQueueSleepTime = 500; // 500 ms
+	private static final int STATE_NEW = 0;
+	private static final int STATE_RUNNING = 1;
+	private static final int STATE_SHUTDOWN = 2;
 	
 	/**
 	 * Verify that the given queues are all valid.
@@ -84,7 +88,7 @@ public class WorkerImpl implements Worker, ResqueConstants
 	private final Set<Class<?>> jobTypes;
 	private final String name;
 	private final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
-	private final AtomicBoolean running = new AtomicBoolean(false);
+	private final AtomicInteger state = new AtomicInteger(STATE_NEW);
 	private final AtomicBoolean paused = new AtomicBoolean(false);
 	private final long workerId = workerCounter.getAndIncrement();
 	private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
@@ -135,7 +139,7 @@ public class WorkerImpl implements Worker, ResqueConstants
 	 */
 	public void run()
 	{
-		if (this.running.compareAndSet(false, true))
+		if (this.state.compareAndSet(STATE_NEW, STATE_RUNNING))
 		{
 			try
 			{
@@ -160,13 +164,20 @@ public class WorkerImpl implements Worker, ResqueConstants
 		}
 		else
 		{
-			throw new IllegalStateException("This WorkerImpl is already started");
+			if (this.state.get() == STATE_RUNNING)
+			{
+				throw new IllegalStateException("This WorkerImpl is already running");
+			}
+			else
+			{
+				throw new IllegalStateException("This WorkerImpl was shutdown");
+			}
 		}
 	}
 	
 	public void end(final boolean now)
 	{
-		this.running.set(false);
+		this.state.set(STATE_SHUTDOWN);
 		if (now)
 		{
 			final Thread workerThread = this.workerThreadRef.get();
@@ -266,7 +277,7 @@ public class WorkerImpl implements Worker, ResqueConstants
 	{
 		int missCount = 0;
 		String curQueue = null;
-		while (this.running.get())
+		while (this.state.get() == STATE_RUNNING)
 		{
 			try
 			{
@@ -276,7 +287,7 @@ public class WorkerImpl implements Worker, ResqueConstants
 				{
 					this.queueNames.add(curQueue); // Rotate the queues
 					checkPaused();
-					if (this.running.get()) // Might have been waiting in poll()/checkPaused() for a while
+					if (this.state.get() == STATE_RUNNING) // Might have been waiting in poll()/checkPaused() for a while
 					{
 						this.listenerDelegate.fireEvent(WorkerEvent.WORKER_POLL, this, curQueue, null, null, null, null);
 						final String payload = this.jedis.lpop(key(QUEUE, curQueue));
@@ -286,7 +297,7 @@ public class WorkerImpl implements Worker, ResqueConstants
 							process(job, curQueue);
 							missCount = 0;
 						}
-						else if (++missCount == this.queueNames.size() && this.running.get())
+						else if (++missCount >= this.queueNames.size() && this.state.get() == STATE_RUNNING)
 						{ // Keeps worker from busy-spinning on empty queues
 							missCount = 0;
 							Thread.sleep(emptyQueueSleepTime);
