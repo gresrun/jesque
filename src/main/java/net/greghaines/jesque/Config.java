@@ -42,12 +42,37 @@ public class Config implements Serializable
 	 * @param timeout the Redis connection timeout
 	 * @param namespace the Redis namespace to prefix keys with
 	 * @param database the Redis database to use
-	 * @param jobPackage the Java package base where Job implementations are
+	 * @param jobPackage the Java package base where Job implementations are, 
+	 * or empty string if the full class names will be sent in the jobs
 	 * @see ConfigBuilder
 	 */
 	public Config(final String host, final int port, final int timeout,
 			final String namespace, final int database, final String jobPackage)
 	{
+		if (host == null || "".equals(host))
+		{
+			throw new IllegalArgumentException("host must not be null or empty: " + host);
+		}
+		if (port < 1 || port > 65535)
+		{
+			throw new IllegalArgumentException("post must be a valid port in the range 1-65535: " + port);
+		}
+		if (timeout < 0)
+		{
+			throw new IllegalArgumentException("timeout must not be negative: " + timeout);
+		}
+		if (namespace == null || "".equals(namespace))
+		{
+			throw new IllegalArgumentException("namespace must not be null or empty: " + namespace);
+		}
+		if (database < 0)
+		{
+			throw new IllegalArgumentException("database must not be negative: " + database);
+		}
+		if (jobPackage == null)
+		{
+			throw new IllegalArgumentException("jobPackage must not be null");
+		}
 		this.host = host;
 		this.port = port;
 		this.timeout = timeout;

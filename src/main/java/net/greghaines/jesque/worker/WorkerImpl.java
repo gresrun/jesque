@@ -15,6 +15,16 @@
  */
 package net.greghaines.jesque.worker;
 
+import static net.greghaines.jesque.utils.ResqueConstants.DATE_FORMAT;
+import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
+import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
+import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
+import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
+import static net.greghaines.jesque.utils.ResqueConstants.STARTED;
+import static net.greghaines.jesque.utils.ResqueConstants.STAT;
+import static net.greghaines.jesque.utils.ResqueConstants.WORKER;
+import static net.greghaines.jesque.utils.ResqueConstants.WORKERS;
+
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.text.SimpleDateFormat;
@@ -32,7 +42,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
-import net.greghaines.jesque.ResqueConstants;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.ConcurrentHashSet;
@@ -52,7 +61,7 @@ import redis.clients.jedis.Jedis;
  * 
  * @author Greg Haines
  */
-public class WorkerImpl implements Worker, ResqueConstants
+public class WorkerImpl implements Worker
 {
 	private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
 	private static final AtomicLong workerCounter = new AtomicLong(0);

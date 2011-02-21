@@ -100,7 +100,10 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E>
 			throw new IllegalArgumentException("set must not be null");
 		}
 		this.delegate = new ConcurrentHashMap<E,Nothing>(Math.max(16, Math.round(c.size() * 1.5f)));
-		addAll(c);
+		for (final E e : c)
+		{
+			this.delegate.put(e, Nothing.NOTHING);
+		}
 	}
 
 	@Override

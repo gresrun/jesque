@@ -37,6 +37,8 @@ public class ConfigBuilder implements Serializable
 	public static final String DEFAULT_NAMESPACE = "resque";
 	/** 0 */
 	public static final int DEFAULT_DATABASE = 0;
+	/** &lt;empty string&gt; */ 
+	public static final String DEFAULT_JOB_PACKAGE = "";
 
 	/**
 	 * @return a Config with all the default values set
@@ -51,7 +53,7 @@ public class ConfigBuilder implements Serializable
 	private int timeout = DEFAULT_TIMEOUT; 
 	private String namespace = DEFAULT_NAMESPACE;
 	private int database = DEFAULT_DATABASE;
-	private String jobPackage = null;
+	private String jobPackage = DEFAULT_JOB_PACKAGE;
 
 	/**
 	 * No-arg constructor
@@ -85,6 +87,10 @@ public class ConfigBuilder implements Serializable
 	 */
 	public ConfigBuilder withHost(final String host)
 	{
+		if (host == null || "".equals(host))
+		{
+			throw new IllegalArgumentException("host must not be null or empty: " + host);
+		}
 		this.host = host;
 		return this;
 	}
@@ -97,6 +103,10 @@ public class ConfigBuilder implements Serializable
 	 */
 	public ConfigBuilder withPort(final int port)
 	{
+		if (port < 1 || port > 65535)
+		{
+			throw new IllegalArgumentException("post must be a valid port in the range 1-65535: " + port);
+		}
 		this.port = port;
 		return this;
 	}
@@ -109,6 +119,10 @@ public class ConfigBuilder implements Serializable
 	 */
 	public ConfigBuilder withTimeout(final int timeout)
 	{
+		if (timeout < 0)
+		{
+			throw new IllegalArgumentException("timeout must not be negative: " + timeout);
+		}
 		this.timeout = timeout;
 		return this;
 	}
@@ -121,6 +135,10 @@ public class ConfigBuilder implements Serializable
 	 */
 	public ConfigBuilder withNamespace(final String namespace)
 	{
+		if (namespace == null || "".equals(namespace))
+		{
+			throw new IllegalArgumentException("namespace must not be null or empty: " + namespace);
+		}
 		this.namespace = namespace;
 		return this;
 	}
@@ -133,6 +151,10 @@ public class ConfigBuilder implements Serializable
 	 */
 	public ConfigBuilder withDatabase(final int database)
 	{
+		if (database < 0)
+		{
+			throw new IllegalArgumentException("database must not be negative: " + database);
+		}
 		this.database = database;
 		return this;
 	}
@@ -145,6 +167,10 @@ public class ConfigBuilder implements Serializable
 	 */
 	public ConfigBuilder withJobPackage(final String jobPackage)
 	{
+		if (jobPackage == null)
+		{
+			throw new IllegalArgumentException("jobPackage must not be null");
+		}
 		this.jobPackage = jobPackage;
 		return this;
 	}
