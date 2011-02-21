@@ -20,8 +20,6 @@ import java.lang.management.ManagementFactory;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -37,6 +35,8 @@ import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.ResqueConstants;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.utils.ConcurrentHashSet;
+import net.greghaines.jesque.utils.ConcurrentSet;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.ReflectionUtils;
 import net.greghaines.jesque.utils.VersionUtils;
@@ -80,12 +80,36 @@ public class WorkerImpl implements Worker, ResqueConstants
 			}
 		}
 	}
+
+	/**
+	 * Verify the given job types are all valid.
+	 * 
+	 * @param jobTypes the given job types
+	 */
+	private static void checkJobTypes(final Collection<? extends Class<?>> jobTypes)
+	{
+		if (jobTypes == null)
+		{
+			throw new IllegalArgumentException("jobTypes must not be null");
+		}
+		for (final Class<?> jobType : jobTypes)
+		{
+			if (jobType == null)
+			{
+				throw new IllegalArgumentException("jobType's members must not be null: " + jobTypes);
+			}
+			if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType)))
+			{
+				throw new IllegalArgumentException("jobType's members must implement either Runnable or Callable: " + jobTypes);
+			}
+		}
+	}
 	
 	private final Jedis jedis;
 	private final String namespace;
 	private final String jobPackage;
 	private final BlockingDeque<String> queueNames;
-	private final Set<Class<?>> jobTypes;
+	private final ConcurrentSet<Class<?>> jobTypes;
 	private final String name;
 	private final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
 	private final AtomicInteger state = new AtomicInteger(STATE_NEW);
@@ -110,17 +134,7 @@ public class WorkerImpl implements Worker, ResqueConstants
 			throw new IllegalArgumentException("config must not be null");
 		}
 		checkQueues(queues);
-		if (jobTypes == null || jobTypes.isEmpty())
-		{
-			throw new IllegalArgumentException("jobTypes must not be null or empty: " + jobTypes);
-		}
-		for (final Class<?> jobType : jobTypes)
-		{
-			if (jobType == null)
-			{
-				throw new IllegalArgumentException("jobType's members must not be null: " + jobTypes);
-			}
-		}
+		checkJobTypes(jobTypes);
 		this.namespace = config.getNamespace();
 		this.jobPackage = config.getJobPackage();
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
@@ -128,7 +142,7 @@ public class WorkerImpl implements Worker, ResqueConstants
 		this.queueNames = new LinkedBlockingDeque<String>((queues == ALL_QUEUES) // Using object equality on purpose
 				? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
 				: queues);
-		this.jobTypes = new HashSet<Class<?>>(jobTypes);
+		this.jobTypes = new ConcurrentHashSet<Class<?>>(jobTypes);
 		this.name = createName();
 	}
 	
@@ -274,6 +288,35 @@ public class WorkerImpl implements Worker, ResqueConstants
 		this.queueNames.addAll((queues == ALL_QUEUES) // Using object equality on purpose
 			? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
 			: queues);
+	}
+	
+	public void addJobType(final Class<?> jobType)
+	{
+		if (jobType == null)
+		{
+			throw new IllegalArgumentException("jobType must not be null");
+		}
+		if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType)))
+		{
+			throw new IllegalArgumentException("jobType must implement either Runnable or Callable: " + jobType);
+		}
+		this.jobTypes.add(jobType);
+	}
+	
+	public void removeJobType(final Class<?> jobType)
+	{
+		if (jobType == null)
+		{
+			throw new IllegalArgumentException("jobType must not be null");
+		}
+		this.jobTypes.remove(jobType);
+	}
+	
+	public void setJobTypes(final Collection<? extends Class<?>> jobTypes)
+	{
+		checkJobTypes(jobTypes);
+		this.jobTypes.clear();
+		this.jobTypes.addAll(jobTypes);
 	}
 
 	/**

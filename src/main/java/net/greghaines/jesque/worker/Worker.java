@@ -87,4 +87,25 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @param queues the queues to poll
 	 */
 	void setQueues(Collection<String> queues);
+
+	/**
+	 * Allow the given job type to be executed.
+	 * 
+	 * @param jobType the job type to allow
+	 */
+	void addJobType(Class<?> jobType);
+
+	/**
+	 * Disallow the job type from being executed.
+	 * 
+	 * @param jobType the jot type to disallow
+	 */
+	void removeJobType(Class<?> jobType);
+
+	/**
+	 * Clear any current allowed job types and use the given set.
+	 * 
+	 * @param jobTypes the job types to allow
+	 */
+	void setJobTypes(Collection<? extends Class<?>> jobTypes);
 }
