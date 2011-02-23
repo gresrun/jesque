@@ -54,45 +54,34 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 			jp.nextToken();
 			if ("worker".equals(jp.getText()))
 			{
-				if (JsonToken.VALUE_STRING.equals(jp.nextToken()))
-				{
-					jobFailure.setWorker(jp.getText());
-				}
+				jp.nextToken();
+				jobFailure.setWorker(jp.readValueAs(String.class));
 			}
 			else if ("payload".equals(jp.getText()))
 			{
-				if (JsonToken.START_OBJECT.equals(jp.nextToken()))
-				{
-					jobFailure.setPayload(jp.<Job>readValueAs(Job.class));
-				}
+				jp.nextToken();
+				
+				jobFailure.setPayload(jp.readValueAs(Job.class));
 			}
 			else if ("exception".equals(jp.getText()))
 			{
-				if (JsonToken.VALUE_STRING.equals(jp.nextToken()))
-				{
-					exception = jp.getText();
-				}
+				jp.nextToken();
+				exception = jp.readValueAs(String.class);
 			}
 			else if ("error".equals(jp.getText()))
 			{
-				if (JsonToken.VALUE_STRING.equals(jp.nextToken()))
-				{
-					error = jp.getText();
-				}
+				jp.nextToken();
+				error = jp.readValueAs(String.class);
 			}
 			else if ("backtrace".equals(jp.getText()))
 			{
-				if (JsonToken.START_ARRAY.equals(jp.nextToken()))
-				{
-					backtrace = jp.<List<String>>readValueAs(stringListTypeRef);
-				}
+				jp.nextToken();
+				backtrace = jp.<List<String>>readValueAs(stringListTypeRef);
 			}
 			else if ("failed_at".equals(jp.getText()))
 			{
-				if (JsonToken.VALUE_STRING.equals(jp.nextToken()))
-				{
-					jobFailure.setFailedAt(jp.readValueAs(Date.class));
-				}
+				jp.nextToken();
+				jobFailure.setFailedAt(jp.readValueAs(Date.class));
 			}
 			else if (jp.getCurrentToken() != JsonToken.END_OBJECT)
 			{

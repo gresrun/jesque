@@ -48,17 +48,13 @@ public class JobJsonDeserializer extends JsonDeserializer<Job>
 			jp.nextToken();
 			if ("class".equals(jp.getText()))
 			{
-				if (JsonToken.VALUE_STRING.equals(jp.nextToken()))
-				{
-					clazz = jp.getText();
-				}
+				jp.nextToken();
+				clazz = jp.readValueAs(String.class);
 			}
 			else if ("args".equals(jp.getText()))
 			{
-				if (JsonToken.START_ARRAY.equals(jp.nextToken()))
-				{
-					args = jp.readValueAs(objectArrTypeRef);
-				}
+				jp.nextToken();
+				args = jp.readValueAs(objectArrTypeRef);
 			}
 			else if (jp.getCurrentToken() != JsonToken.END_OBJECT)
 			{

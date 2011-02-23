@@ -46,24 +46,18 @@ public class WorkerStatusJsonDeserializer extends JsonDeserializer<WorkerStatus>
 			jp.nextToken();
 			if ("run_at".equals(jp.getText()))
 			{
-				if (JsonToken.VALUE_STRING.equals(jp.nextToken()))
-				{
-					workerStatus.setRunAt(jp.readValueAs(Date.class));
-				}
+				jp.nextToken();
+				workerStatus.setRunAt(jp.readValueAs(Date.class));
 			}
 			else if ("queue".equals(jp.getText()))
 			{
-				if (JsonToken.VALUE_STRING.equals(jp.nextToken()))
-				{
-					workerStatus.setQueue(jp.getText());
-				}
+				jp.nextToken();
+				workerStatus.setQueue(jp.readValueAs(String.class));
 			}
 			else if ("payload".equals(jp.getText()))
 			{
-				if (JsonToken.START_OBJECT.equals(jp.nextToken()))
-				{
-					workerStatus.setPayload(jp.<Job>readValueAs(Job.class));
-				}
+				jp.nextToken();
+				workerStatus.setPayload(jp.readValueAs(Job.class));
 			}
 			else if (jp.getCurrentToken() != JsonToken.END_OBJECT)
 			{
