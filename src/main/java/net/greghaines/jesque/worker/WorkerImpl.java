@@ -543,8 +543,7 @@ public class WorkerImpl implements Worker
 	private String createName()
 	{
 		final StringBuilder sb = new StringBuilder();
-		sb.append(this.namespace).append(':')
-			.append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
+		sb.append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
 			.append('-').append(this.workerId);
 		for (final String queueName : this.queueNames)
 		{
@@ -577,6 +576,6 @@ public class WorkerImpl implements Worker
 	@Override
 	public String toString()
 	{
-		return this.name;
+		return this.namespace + ":" + WORKER + ":" + this.name;
 	}
 }
