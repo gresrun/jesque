@@ -27,6 +27,8 @@ import static net.greghaines.jesque.utils.ResqueConstants.WORKERS;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
@@ -543,11 +545,19 @@ public class WorkerImpl implements Worker
 	private String createName()
 	{
 		final StringBuilder sb = new StringBuilder();
-		sb.append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
-			.append('-').append(this.workerId);
-		for (final String queueName : this.queueNames)
+		try
 		{
-			sb.append(':').append(queueName);
+			sb.append(InetAddress.getLocalHost().getHostName()).append(':')
+				.append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
+				.append('-').append(this.workerId);
+			for (final String queueName : this.queueNames)
+			{
+				sb.append(':').append(queueName);
+			}
+		}
+		catch (UnknownHostException uhe)
+		{
+			throw new RuntimeException(uhe);
 		}
 		return sb.toString();
 	}
