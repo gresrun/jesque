@@ -17,12 +17,11 @@ package net.greghaines.jesque.worker;
 
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
 
 import net.greghaines.jesque.Job;
+import net.greghaines.jesque.utils.ConcurrentHashSet;
+import net.greghaines.jesque.utils.ConcurrentSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,18 +35,18 @@ public class WorkerListenerDelegate implements WorkerEventEmitter
 {	
 	private static final Logger log = LoggerFactory.getLogger(WorkerListenerDelegate.class);
 	
-	private final Map<WorkerEvent,Map<WorkerListener,WorkerEvent>> eventListenerMap;
+	private final Map<WorkerEvent,ConcurrentSet<WorkerListener>> eventListenerMap;
 	
 	/**
 	 * Create a new WorkerListenerDelegate.
 	 */
 	public WorkerListenerDelegate()
 	{
-		final Map<WorkerEvent,Map<WorkerListener,WorkerEvent>> elp = 
-			new EnumMap<WorkerEvent,Map<WorkerListener,WorkerEvent>>(WorkerEvent.class);
+		final Map<WorkerEvent,ConcurrentSet<WorkerListener>> elp = 
+			new EnumMap<WorkerEvent,ConcurrentSet<WorkerListener>>(WorkerEvent.class);
 		for (final WorkerEvent event : WorkerEvent.values())
 		{
-			elp.put(event, Collections.synchronizedMap(new WeakHashMap<WorkerListener,WorkerEvent>()));
+			elp.put(event, new ConcurrentHashSet<WorkerListener>());
 		}
 		this.eventListenerMap = Collections.unmodifiableMap(elp);
 	}
@@ -63,10 +62,10 @@ public class WorkerListenerDelegate implements WorkerEventEmitter
 		{
 			for (final WorkerEvent event : events)
 			{
-				final Map<WorkerListener,WorkerEvent> lMap = this.eventListenerMap.get(event);
-				if (lMap != null)
+				final ConcurrentSet<WorkerListener> listeners = this.eventListenerMap.get(event);
+				if (listeners != null)
 				{
-					lMap.put(listener, event);
+					listeners.add(listener);
 				}
 			}
 		}
@@ -83,10 +82,10 @@ public class WorkerListenerDelegate implements WorkerEventEmitter
 		{
 			for (final WorkerEvent event : events)
 			{
-				final Map<WorkerListener,WorkerEvent> lMap = this.eventListenerMap.get(event);
-				if (lMap != null)
+				final ConcurrentSet<WorkerListener> listeners = this.eventListenerMap.get(event);
+				if (listeners != null)
 				{
-					lMap.remove(listener);
+					listeners.remove(listener);
 				}
 			}
 		}
@@ -101,10 +100,10 @@ public class WorkerListenerDelegate implements WorkerEventEmitter
 	{
 		for (final WorkerEvent event : events)
 		{
-			final Map<WorkerListener,WorkerEvent> lMap = this.eventListenerMap.get(event);
-			if (lMap != null)
+			final ConcurrentSet<WorkerListener> listeners = this.eventListenerMap.get(event);
+			if (listeners != null)
 			{
-				lMap.clear();
+				listeners.clear();
 			}
 		}
 	}
@@ -123,14 +122,9 @@ public class WorkerListenerDelegate implements WorkerEventEmitter
 	public void fireEvent(final WorkerEvent event, final Worker worker, final String queue, 
 			final Job job, final Object runner, final Object result, final Exception ex)
 	{
-		final Map<WorkerListener,WorkerEvent> lMap = this.eventListenerMap.get(event);
-		if (lMap != null)
+		final ConcurrentSet<WorkerListener> listeners = this.eventListenerMap.get(event);
+		if (listeners != null)
 		{
-			final Set<WorkerListener> listeners = new HashSet<WorkerListener>(lMap.size());
-			synchronized (lMap)
-			{ // Still have to synch here because synchronizedMap()'s iterators aren't thread-safe
-				listeners.addAll(lMap.keySet());
-			}
 			for (final WorkerListener listener : listeners)
 			{
 				if (listener != null)
