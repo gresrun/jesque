@@ -136,9 +136,11 @@ public class WorkerImpl implements Worker
 	 * @param config used to create a connection to Redis and the package prefix for incoming jobs
 	 * @param queues the list of queues to poll
 	 * @param jobTypes the list of job types to execute
-	 * @throws IllegalArgumentException if the config is null, if the queues is null, or if the jobTypes is null or empty
+	 * @throws IllegalArgumentException if the config is null, 
+	 * if the queues is null, or if the jobTypes is null or empty
 	 */
-	public WorkerImpl(final Config config, final Collection<String> queues, final Collection<? extends Class<?>> jobTypes)
+	public WorkerImpl(final Config config, final Collection<String> queues, 
+			final Collection<? extends Class<?>> jobTypes)
 	{
 		if (config == null)
 		{
@@ -151,7 +153,7 @@ public class WorkerImpl implements Worker
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
 		this.jedis.select(config.getDatabase());
 		this.queueNames = new LinkedBlockingDeque<String>((queues == ALL_QUEUES) // Using object equality on purpose
-				? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
+				? this.jedis.smembers(key(QUEUES)) // Like '*' in other implementations
 				: queues);
 		this.jobTypes = new ConcurrentHashSet<Class<?>>(jobTypes);
 		this.name = createName();
@@ -170,13 +172,16 @@ public class WorkerImpl implements Worker
 			{
 				this.workerThreadRef.set(Thread.currentThread());
 				this.jedis.sadd(key(WORKERS), this.name);
-				this.jedis.set(key(WORKER, this.name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
-				this.listenerDelegate.fireEvent(WorkerEvent.WORKER_START, this, null, null, null, null, null);
+				this.jedis.set(key(WORKER, this.name, STARTED), 
+					new SimpleDateFormat(DATE_FORMAT).format(new Date()));
+				this.listenerDelegate.fireEvent(WorkerEvent.WORKER_START, 
+					this, null, null, null, null, null);
 				poll();
 			}
 			finally
 			{
-				this.listenerDelegate.fireEvent(WorkerEvent.WORKER_STOP, this, null, null, null, null, null);
+				this.listenerDelegate.fireEvent(WorkerEvent.WORKER_STOP, 
+					this, null, null, null, null, null);
 				this.jedis.srem(key(WORKERS), this.name);
 				this.jedis.del(
 					key(WORKER, this.name), 
@@ -549,10 +554,10 @@ public class WorkerImpl implements Worker
 		{
 			sb.append(InetAddress.getLocalHost().getHostName()).append(':')
 				.append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
-				.append('-').append(this.workerId);
+				.append('-').append(this.workerId).append(":JAVA_DYNAMIC_QUEUES");
 			for (final String queueName : this.queueNames)
 			{
-				sb.append(':').append(queueName);
+				sb.append(',').append(queueName);
 			}
 		}
 		catch (UnknownHostException uhe)
