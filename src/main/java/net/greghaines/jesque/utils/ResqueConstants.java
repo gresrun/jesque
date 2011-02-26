@@ -24,6 +24,8 @@ public interface ResqueConstants
 {
 	String DATE_FORMAT = "EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)";
 	
+	String JAVA_DYNAMIC_QUEUES = "JAVA_DYNAMIC_QUEUES";
+	
 	String COLON = ":";
 	String FAILED = "failed";
 	String PROCESSED = "processed";

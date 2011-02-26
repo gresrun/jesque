@@ -15,8 +15,10 @@
  */
 package net.greghaines.jesque.worker;
 
+import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 import static net.greghaines.jesque.utils.ResqueConstants.DATE_FORMAT;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
+import static net.greghaines.jesque.utils.ResqueConstants.JAVA_DYNAMIC_QUEUES;
 import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
@@ -549,12 +551,12 @@ public class WorkerImpl implements Worker
 	 */
 	private String createName()
 	{
-		final StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder(128);
 		try
 		{
-			sb.append(InetAddress.getLocalHost().getHostName()).append(':')
+			sb.append(InetAddress.getLocalHost().getHostName()).append(COLON)
 				.append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
-				.append('-').append(this.workerId).append(":JAVA_DYNAMIC_QUEUES");
+				.append('-').append(this.workerId).append(COLON).append(JAVA_DYNAMIC_QUEUES);
 			for (final String queueName : this.queueNames)
 			{
 				sb.append(',').append(queueName);
@@ -591,6 +593,6 @@ public class WorkerImpl implements Worker
 	@Override
 	public String toString()
 	{
-		return this.namespace + ":" + WORKER + ":" + this.name;
+		return this.namespace + COLON + WORKER + COLON + this.name;
 	}
 }
