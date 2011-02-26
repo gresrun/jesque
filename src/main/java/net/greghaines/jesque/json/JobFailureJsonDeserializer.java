@@ -60,7 +60,6 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 			else if ("payload".equals(jp.getText()))
 			{
 				jp.nextToken();
-				
 				jobFailure.setPayload(jp.readValueAs(Job.class));
 			}
 			else if ("exception".equals(jp.getText()))
