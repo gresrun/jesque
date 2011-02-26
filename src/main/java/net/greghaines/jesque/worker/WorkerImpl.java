@@ -26,6 +26,14 @@ import static net.greghaines.jesque.utils.ResqueConstants.STARTED;
 import static net.greghaines.jesque.utils.ResqueConstants.STAT;
 import static net.greghaines.jesque.utils.ResqueConstants.WORKER;
 import static net.greghaines.jesque.utils.ResqueConstants.WORKERS;
+import static net.greghaines.jesque.worker.WorkerEvent.JOB_EXECUTE;
+import static net.greghaines.jesque.worker.WorkerEvent.JOB_FAILURE;
+import static net.greghaines.jesque.worker.WorkerEvent.JOB_PROCESS;
+import static net.greghaines.jesque.worker.WorkerEvent.JOB_SUCCESS;
+import static net.greghaines.jesque.worker.WorkerEvent.WORKER_ERROR;
+import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
+import static net.greghaines.jesque.worker.WorkerEvent.WORKER_START;
+import static net.greghaines.jesque.worker.WorkerEvent.WORKER_STOP;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -39,7 +47,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -67,12 +74,30 @@ import redis.clients.jedis.Jedis;
  */
 public class WorkerImpl implements Worker
 {
+	/**
+	 * Used by WorkerImpl to manage internal state.
+	 * 
+	 * @author Greg Haines
+	 */
+	private enum WorkerState
+	{
+		/**
+		 * The Worker has not started running.
+		 */
+		NEW,
+		/**
+		 * The Worker is currently running.
+		 */
+		RUNNING,
+		/**
+		 * The Worker has shutdown.
+		 */
+		SHUTDOWN;
+	}
+	
 	private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
 	private static final AtomicLong workerCounter = new AtomicLong(0);
 	private static final long emptyQueueSleepTime = 500; // 500 ms
-	private static final int STATE_NEW = 0;
-	private static final int STATE_RUNNING = 1;
-	private static final int STATE_SHUTDOWN = 2;
 	
 	/**
 	 * Verify that the given queues are all valid.
@@ -125,17 +150,23 @@ public class WorkerImpl implements Worker
 	private final ConcurrentSet<Class<?>> jobTypes;
 	private final String name;
 	private final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
-	private final AtomicInteger state = new AtomicInteger(STATE_NEW);
+	private final AtomicReference<WorkerState> state = 
+		new AtomicReference<WorkerState>(WorkerState.NEW);
 	private final AtomicBoolean paused = new AtomicBoolean(false);
 	private final long workerId = workerCounter.getAndIncrement();
-	private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
-	private final AtomicReference<Thread> workerThreadRef = new AtomicReference<Thread>(null);
+	private final String threadNameBase = 
+		"Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
+	private final AtomicReference<Thread> workerThreadRef = 
+		new AtomicReference<Thread>(null);
 	
 	/**
-	 * Creates a new WorkerImpl, which creates it's own connection to Redis using values from the config.
-	 * The worker will only listen to the supplied queues and only execute jobs that are in the supplied job types.
+	 * Creates a new WorkerImpl, which creates it's own connection to 
+	 * Redis using values from the config. The worker will only listen 
+	 * to the supplied queues and only execute jobs that are in the 
+	 * supplied job types.
 	 * 
-	 * @param config used to create a connection to Redis and the package prefix for incoming jobs
+	 * @param config used to create a connection to Redis and the package 
+	 * prefix for incoming jobs
 	 * @param queues the list of queues to poll
 	 * @param jobTypes the list of job types to execute
 	 * @throws IllegalArgumentException if the config is null, 
@@ -168,7 +199,7 @@ public class WorkerImpl implements Worker
 	 */
 	public void run()
 	{
-		if (this.state.compareAndSet(STATE_NEW, STATE_RUNNING))
+		if (this.state.compareAndSet(WorkerState.NEW, WorkerState.RUNNING))
 		{
 			try
 			{
@@ -176,13 +207,13 @@ public class WorkerImpl implements Worker
 				this.jedis.sadd(key(WORKERS), this.name);
 				this.jedis.set(key(WORKER, this.name, STARTED), 
 					new SimpleDateFormat(DATE_FORMAT).format(new Date()));
-				this.listenerDelegate.fireEvent(WorkerEvent.WORKER_START, 
+				this.listenerDelegate.fireEvent(WORKER_START, 
 					this, null, null, null, null, null);
 				poll();
 			}
 			finally
 			{
-				this.listenerDelegate.fireEvent(WorkerEvent.WORKER_STOP, 
+				this.listenerDelegate.fireEvent(WORKER_STOP, 
 					this, null, null, null, null, null);
 				this.jedis.srem(key(WORKERS), this.name);
 				this.jedis.del(
@@ -196,13 +227,13 @@ public class WorkerImpl implements Worker
 		}
 		else
 		{
-			if (this.state.get() == STATE_RUNNING)
+			if (WorkerState.RUNNING.equals(this.state.get()))
 			{
 				throw new IllegalStateException("This WorkerImpl is already running");
 			}
 			else
 			{
-				throw new IllegalStateException("This WorkerImpl was shutdown");
+				throw new IllegalStateException("This WorkerImpl is shutdown");
 			}
 		}
 	}
@@ -215,7 +246,7 @@ public class WorkerImpl implements Worker
 	 */
 	public void end(final boolean now)
 	{
-		this.state.set(STATE_SHUTDOWN);
+		this.state.set(WorkerState.SHUTDOWN);
 		if (now)
 		{
 			final Thread workerThread = this.workerThreadRef.get();
@@ -224,6 +255,7 @@ public class WorkerImpl implements Worker
 				workerThread.interrupt();
 			}
 		}
+		togglePause(false); // Release any threads waiting in checkPaused()
 	}
 	
 	public void togglePause(final boolean paused)
@@ -344,7 +376,7 @@ public class WorkerImpl implements Worker
 	{
 		int missCount = 0;
 		String curQueue = null;
-		while (this.state.get() == STATE_RUNNING)
+		while (WorkerState.RUNNING.equals(this.state.get()))
 		{
 			try
 			{
@@ -354,9 +386,9 @@ public class WorkerImpl implements Worker
 				{
 					this.queueNames.add(curQueue); // Rotate the queues
 					checkPaused();
-					if (this.state.get() == STATE_RUNNING) // Might have been waiting in poll()/checkPaused() for a while
+					if (WorkerState.RUNNING.equals(this.state.get())) // Might have been waiting in poll()/checkPaused() for a while
 					{
-						this.listenerDelegate.fireEvent(WorkerEvent.WORKER_POLL, this, curQueue, null, null, null, null);
+						this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
 						final String payload = this.jedis.lpop(key(QUEUE, curQueue));
 						if (payload != null)
 						{
@@ -364,7 +396,7 @@ public class WorkerImpl implements Worker
 							process(job, curQueue);
 							missCount = 0;
 						}
-						else if (++missCount >= this.queueNames.size() && this.state.get() == STATE_RUNNING)
+						else if (++missCount >= this.queueNames.size() && WorkerState.RUNNING.equals(this.state.get()))
 						{ // Keeps worker from busy-spinning on empty queues
 							missCount = 0;
 							Thread.sleep(emptyQueueSleepTime);
@@ -374,7 +406,7 @@ public class WorkerImpl implements Worker
 			}
 			catch (Exception e)
 			{
-				this.listenerDelegate.fireEvent(WorkerEvent.WORKER_ERROR, this, curQueue, null, null, null, e);
+				this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, e);
 			}
 		}
 	}
@@ -404,7 +436,7 @@ public class WorkerImpl implements Worker
 	 */
 	private void process(final Job job, final String curQueue)
 	{
-		this.listenerDelegate.fireEvent(WorkerEvent.JOB_PROCESS, this, curQueue, job, null, null, null);
+		this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null);
 		renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
 		try
 		{
@@ -444,7 +476,7 @@ public class WorkerImpl implements Worker
 		try
 		{
 			final Object result;
-			this.listenerDelegate.fireEvent(WorkerEvent.JOB_EXECUTE, this, curQueue, job, instance, null, null);
+			this.listenerDelegate.fireEvent(JOB_EXECUTE, this, curQueue, job, instance, null, null);
 			if (instance instanceof Callable)
 			{
 				result = ((Callable<?>) instance).call(); // The job is executing!
@@ -478,7 +510,7 @@ public class WorkerImpl implements Worker
 	{
 		this.jedis.incr(key(STAT, PROCESSED));
 		this.jedis.incr(key(STAT, PROCESSED, this.name));
-		this.listenerDelegate.fireEvent(WorkerEvent.JOB_SUCCESS, this, curQueue, job, runner, result, null);
+		this.listenerDelegate.fireEvent(JOB_SUCCESS, this, curQueue, job, runner, result, null);
 	}
 
 	/**
@@ -498,9 +530,9 @@ public class WorkerImpl implements Worker
 		}
 		catch (Exception e)
 		{
-			log.error("Error during serialization of failure payload for exception=" + ex + " job=" + job, e);
+			log.warn("Error during serialization of failure payload for exception=" + ex + " job=" + job, e);
 		}
-		this.listenerDelegate.fireEvent(WorkerEvent.JOB_FAILURE, this, curQueue, job, null, null, ex);
+		this.listenerDelegate.fireEvent(JOB_FAILURE, this, curQueue, job, null, null, ex);
 	}
 
 	/**
