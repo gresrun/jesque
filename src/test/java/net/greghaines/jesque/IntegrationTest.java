@@ -15,6 +15,17 @@
  */
 package net.greghaines.jesque;
 
+import static net.greghaines.jesque.TestUtils.createJedis;
+import static net.greghaines.jesque.utils.JesqueUtils.createKey;
+import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
+import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
+import static net.greghaines.jesque.utils.ResqueConstants.STAT;
+import static net.greghaines.jesque.worker.WorkerEvent.JOB_FAILURE;
+import static net.greghaines.jesque.worker.WorkerEvent.JOB_PROCESS;
+import static net.greghaines.jesque.worker.WorkerEvent.JOB_SUCCESS;
+import static net.greghaines.jesque.worker.WorkerEvent.WORKER_ERROR;
+import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -22,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientImpl;
-import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.worker.UnpermittedJobException;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
@@ -46,12 +56,13 @@ public class IntegrationTest
 {
 	private static final Logger log = LoggerFactory.getLogger(IntegrationTest.class);
 	private static final Config config = new ConfigBuilder().withJobPackage("net.greghaines.jesque").build();
+	private static final String testQueue = "foo";
 	
 	@Before
 	public void resetRedis()
 	throws Exception
 	{
-		final Jedis jedis = TestUtils.createJedis(config);
+		final Jedis jedis = createJedis(config);
 		try
 		{
 			log.info("Resetting Redis for next test...");
@@ -91,21 +102,21 @@ public class IntegrationTest
 	public void successInSpiteOfListenerFailPoll()
 	{
 		log.info("Running successInSpiteOfListenerFailPoll()...");
-		assertSuccess(new FailingWorkerListener(), WorkerEvent.WORKER_POLL);
+		assertSuccess(new FailingWorkerListener(), WORKER_POLL);
 	}
 	
 	@Test
 	public void successInSpiteOfListenerFailJob()
 	{
 		log.info("Running successInSpiteOfListenerFailJob()...");
-		assertSuccess(new FailingWorkerListener(), WorkerEvent.JOB_PROCESS);
+		assertSuccess(new FailingWorkerListener(), JOB_PROCESS);
 	}
 	
 	@Test
 	public void successInSpiteOfListenerFailSuccess()
 	{
 		log.info("Running successInSpiteOfListenerFailSuccess()...");
-		assertSuccess(new FailingWorkerListener(), WorkerEvent.JOB_SUCCESS);
+		assertSuccess(new FailingWorkerListener(), JOB_SUCCESS);
 	}
 	
 	@Test
@@ -119,7 +130,7 @@ public class IntegrationTest
 	public void failureInSpiteOfListenerFailError()
 	{
 		log.info("Running failureInSpiteOfListenerFailError()...");
-		assertFailure(new FailingWorkerListener(), WorkerEvent.WORKER_ERROR);
+		assertFailure(new FailingWorkerListener(), WORKER_ERROR);
 	}
 	
 	@Test
@@ -147,19 +158,19 @@ public class IntegrationTest
 			public void onEvent(final WorkerEvent event, final Worker worker, final String queue,
 					final Job job, final Object runner, final Object result, final Exception ex)
 			{
-				if (WorkerEvent.JOB_FAILURE.equals(event) && (ex instanceof UnpermittedJobException))
+				if (JOB_FAILURE.equals(event) && (ex instanceof UnpermittedJobException))
 				{
 					didFailWithUnpermittedJob.set(true);
 				}
 			}
-		}, WorkerEvent.JOB_FAILURE);
+		}, JOB_FAILURE);
 		
-		final Jedis jedis = TestUtils.createJedis(config);
+		final Jedis jedis = createJedis(config);
 		try
 		{
 			Assert.assertTrue(didFailWithUnpermittedJob.get());
-			Assert.assertEquals("1", jedis.get(JesqueUtils.createKey(config.getNamespace(), "stat", "failed")));
-			Assert.assertNull(jedis.get(JesqueUtils.createKey(config.getNamespace(), "stat", "processed")));
+			Assert.assertEquals("1", jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
+			Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
 		}
 		finally
 		{
@@ -174,11 +185,11 @@ public class IntegrationTest
 		
 		doWork(Arrays.asList(job), Arrays.asList(TestAction.class), listener, events);
 		
-		final Jedis jedis = TestUtils.createJedis(config);
+		final Jedis jedis = createJedis(config);
 		try
 		{
-			Assert.assertEquals("1", jedis.get(JesqueUtils.createKey(config.getNamespace(), "stat", "processed")));
-			Assert.assertNull(jedis.get(JesqueUtils.createKey(config.getNamespace(), "stat", "failed")));
+			Assert.assertEquals("1", jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
+			Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
 		}
 		finally
 		{
@@ -193,11 +204,11 @@ public class IntegrationTest
 		
 		doWork(Arrays.asList(job), Arrays.asList(FailAction.class), listener, events);
 		
-		final Jedis jedis = TestUtils.createJedis(config);
+		final Jedis jedis = createJedis(config);
 		try
 		{
-			Assert.assertEquals("1", jedis.get(JesqueUtils.createKey(config.getNamespace(), "stat", "failed")));
-			Assert.assertNull(jedis.get(JesqueUtils.createKey(config.getNamespace(), "stat", "processed")));
+			Assert.assertEquals("1", jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
+			Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
 		}
 		finally
 		{
@@ -215,11 +226,11 @@ public class IntegrationTest
 		
 		doWork(Arrays.asList(job1, job2, job3, job4), Arrays.asList(FailAction.class, TestAction.class), listener, events);
 		
-		final Jedis jedis = TestUtils.createJedis(config);
+		final Jedis jedis = createJedis(config);
 		try
 		{
-			Assert.assertEquals("2", jedis.get(JesqueUtils.createKey(config.getNamespace(), "stat", "failed")));
-			Assert.assertEquals("2", jedis.get(JesqueUtils.createKey(config.getNamespace(), "stat", "processed")));
+			Assert.assertEquals("2", jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
+			Assert.assertEquals("2", jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
 		}
 		finally
 		{
@@ -230,26 +241,37 @@ public class IntegrationTest
 	private static void doWork(final List<Job> jobs, final Collection<? extends Class<? extends Runnable>> jobTypes,
 			final WorkerListener listener, final WorkerEvent... events)
 	{
-		final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), jobTypes);
+		final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue), jobTypes);
 		if (listener != null && events.length > 0)
 		{
 			worker.addListener(listener, events);
 		}
 		final Thread workerThread = new Thread(worker);
 		workerThread.start();
-		
-		for (final Job job : jobs)
+		try
 		{
-			enqueueJob(job);
+			enqueueJobs(testQueue, jobs);
 		}
-		stopWorker(worker, workerThread);
+		finally
+		{
+			stopWorker(worker, workerThread);
+		}
 	}
 
-	private static void enqueueJob(final Job job)
+	private static void enqueueJobs(final String queue, final List<Job> jobs)
 	{
 		final Client client = new ClientImpl(config);
-		client.enqueue("foo", job);
-		client.end();
+		try
+		{
+			for (final Job job : jobs)
+			{
+				client.enqueue(queue, job);
+			}
+		}
+		finally
+		{
+			client.end();
+		}
 	}
 	
 	private static void stopWorker(final Worker worker, final Thread workerThread)
