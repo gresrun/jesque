@@ -15,6 +15,14 @@
  */
 package net.greghaines.jesque;
 
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.greghaines.jesque.client.Client;
+import net.greghaines.jesque.client.ClientImpl;
+import net.greghaines.jesque.worker.Worker;
 import redis.clients.jedis.Jedis;
 
 /**
@@ -24,6 +32,8 @@ import redis.clients.jedis.Jedis;
  */
 public final class TestUtils
 {
+	private static final Logger log = LoggerFactory.getLogger(TestUtils.class);
+
 	/**
 	 * Create a connection to Redis from the given Config.
 	 * 
@@ -36,7 +46,43 @@ public final class TestUtils
 		{
 			throw new IllegalArgumentException("config must not be null");
 		}
-		return new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+		final Jedis jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+		if (config.getPassword() != null)
+		{
+			jedis.auth(config.getPassword());
+		}
+		jedis.select(config.getDatabase());
+		return jedis;
+	}
+	
+	public static void enqueueJobs(final String queue, final List<Job> jobs, final Config config)
+	{
+		final Client client = new ClientImpl(config);
+		try
+		{
+			for (final Job job : jobs)
+			{
+				client.enqueue(queue, job);
+			}
+		}
+		finally
+		{
+			client.end();
+		}
+	}
+	
+	public static void stopWorker(final Worker worker, final Thread workerThread)
+	{
+		try { Thread.sleep(1000); } catch (Exception e){} // Give worker time to process
+		worker.end(false);
+		try
+		{
+			workerThread.join();
+		}
+		catch (Exception e)
+		{
+			log.warn("Exception while waiting for workerThread to join", e);
+		}
 	}
 
 	private TestUtils(){} // Utility class

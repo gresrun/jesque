@@ -31,8 +31,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import net.greghaines.jesque.client.Client;
-import net.greghaines.jesque.client.ClientImpl;
 import net.greghaines.jesque.worker.UnpermittedJobException;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
@@ -250,41 +248,11 @@ public class IntegrationTest
 		workerThread.start();
 		try
 		{
-			enqueueJobs(testQueue, jobs);
+			TestUtils.enqueueJobs(testQueue, jobs, config);
 		}
 		finally
 		{
-			stopWorker(worker, workerThread);
-		}
-	}
-
-	private static void enqueueJobs(final String queue, final List<Job> jobs)
-	{
-		final Client client = new ClientImpl(config);
-		try
-		{
-			for (final Job job : jobs)
-			{
-				client.enqueue(queue, job);
-			}
-		}
-		finally
-		{
-			client.end();
-		}
-	}
-	
-	private static void stopWorker(final Worker worker, final Thread workerThread)
-	{
-		try { Thread.sleep(1000); } catch (Exception e){} // Give worker time to process
-		worker.end(false);
-		try
-		{
-			workerThread.join();
-		}
-		catch (Exception e)
-		{
-			log.warn("Exception while waiting for workerThread to join", e);
+			TestUtils.stopWorker(worker, workerThread);
 		}
 	}
 	
