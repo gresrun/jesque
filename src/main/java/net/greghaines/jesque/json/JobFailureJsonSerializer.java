@@ -39,6 +39,7 @@ public class JobFailureJsonSerializer extends JsonSerializer<JobFailure>
 	{
 		jgen.writeStartObject();
 		jgen.writeStringField("worker", jobFailure.getWorker());
+		jgen.writeStringField("queue", jobFailure.getQueue());
 		jgen.writeFieldName("payload");
 		ObjectMapperFactory.get().writeValue(jgen, jobFailure.getPayload());
 		jgen.writeStringField("exception", (jobFailure.getException() == null) ? null : 
@@ -50,6 +51,8 @@ public class JobFailureJsonSerializer extends JsonSerializer<JobFailure>
 			JesqueUtils.createBacktrace(jobFailure.getException()));
 		jgen.writeFieldName("failed_at");
 		ObjectMapperFactory.get().writeValue(jgen, jobFailure.getFailedAt());
+		jgen.writeFieldName("retried_at");
+		ObjectMapperFactory.get().writeValue(jgen, jobFailure.getRetriedAt());
 		jgen.writeEndObject();
 	}
 }

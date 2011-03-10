@@ -57,6 +57,11 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 				jp.nextToken();
 				jobFailure.setWorker(jp.readValueAs(String.class));
 			}
+			else if ("queue".equals(jp.getText()))
+			{
+				jp.nextToken();
+				jobFailure.setQueue(jp.readValueAs(String.class));
+			}
 			else if ("payload".equals(jp.getText()))
 			{
 				jp.nextToken();
@@ -81,6 +86,11 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 			{
 				jp.nextToken();
 				jobFailure.setFailedAt(jp.readValueAs(Date.class));
+			}
+			else if ("retried_at".equals(jp.getText()))
+			{
+				jp.nextToken();
+				jobFailure.setRetriedAt(jp.readValueAs(Date.class));
 			}
 			else if (jp.getCurrentToken() != JsonToken.END_OBJECT)
 			{

@@ -526,7 +526,7 @@ public class WorkerImpl implements Worker
 		this.jedis.incr(key(STAT, FAILED, this.name));
 		try
 		{
-			this.jedis.rpush(key(FAILED), failMsg(ex, job));
+			this.jedis.rpush(key(FAILED), failMsg(ex, curQueue, job));
 		}
 		catch (Exception e)
 		{
@@ -539,16 +539,18 @@ public class WorkerImpl implements Worker
 	 * Create and serialize a JobFailure.
 	 * 
 	 * @param ex the Exception that occured
+	 * @param queue the queue the job came from
 	 * @param job the Job that failed
 	 * @return the JSON representation of a new JobFailure
 	 * @throws IOException if there was an error serializing the JobFailure
 	 */
-	private String failMsg(final Exception ex, final Job job)
+	private String failMsg(final Exception ex, final String queue, final Job job)
 	throws IOException
 	{
 		final JobFailure f = new JobFailure();
 		f.setFailedAt(new Date());
 		f.setWorker(this.name);
+		f.setQueue(queue);
 		f.setPayload(job);
 		f.setException(ex);
 		final String failMsg = ObjectMapperFactory.get().writeValueAsString(f);

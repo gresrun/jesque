@@ -28,9 +28,11 @@ public class JobFailure implements Serializable
 	private static final long serialVersionUID = -2160045729341301316L;
 	
 	private String worker;
+	private String queue;
 	private Job payload;
 	private Throwable exception;
 	private Date failedAt;
+	private Date retriedAt;
 	
 	/**
 	 * No-arg constructor
@@ -50,9 +52,11 @@ public class JobFailure implements Serializable
 			throw new IllegalArgumentException("origFailure must not be null");
 		}
 		this.worker = origFailure.worker;
+		this.queue = origFailure.queue;
 		this.payload = origFailure.payload;
 		this.exception = origFailure.exception;
 		this.failedAt = origFailure.failedAt;
+		this.retriedAt = origFailure.retriedAt;
 	}
 
 	/**
@@ -70,6 +74,23 @@ public class JobFailure implements Serializable
 	public void setWorker(final String worker)
 	{
 		this.worker = worker;
+	}
+
+	/**
+	 * @return the queue the job came from
+	 */
+	public String getQueue()
+	{
+		return this.queue;
+	}
+
+	/**
+	 * Set the queue the job came from.
+	 * @param queue the queue the job came from
+	 */
+	public void setQueue(final String queue)
+	{
+		this.queue = queue;
 	}
 
 	/**
@@ -122,6 +143,23 @@ public class JobFailure implements Serializable
 	{
 		this.failedAt = failedAt;
 	}
+	
+	/**
+	 * @return when the job was retried
+	 */
+	public Date getRetriedAt()
+	{
+		return this.retriedAt;
+	}
+
+	/**
+	 * Set when the job was retries.
+	 * @param failedAt when the job was retried
+	 */
+	public void setRetriedAt(final Date retriedAt)
+	{
+		this.retriedAt = retriedAt;
+	}
 
 	@Override
 	public int hashCode()
@@ -130,8 +168,10 @@ public class JobFailure implements Serializable
 		int result = 1;
 		result = prime * result + ((this.exception == null) ? 0 : this.exception.hashCode());
 		result = prime * result + ((this.failedAt == null) ? 0 : this.failedAt.hashCode());
+		result = prime * result + ((this.retriedAt == null) ? 0 : this.retriedAt.hashCode());
 		result = prime * result + ((this.payload == null) ? 0 : this.payload.hashCode());
 		result = prime * result + ((this.worker == null) ? 0 : this.worker.hashCode());
+		result = prime * result + ((this.queue == null) ? 0 : this.queue.hashCode());
 		return result;
 	}
 
@@ -173,6 +213,17 @@ public class JobFailure implements Serializable
 		{
 			return false;
 		}
+		if (this.retriedAt == null)
+		{
+			if (other.retriedAt != null)
+			{
+				return false;
+			}
+		}
+		else if (!this.retriedAt.equals(other.retriedAt))
+		{
+			return false;
+		}
 		if (this.payload == null)
 		{
 			if (other.payload != null)
@@ -192,6 +243,17 @@ public class JobFailure implements Serializable
 			}
 		}
 		else if (!this.worker.equals(other.worker))
+		{
+			return false;
+		}
+		if (this.queue == null)
+		{
+			if (other.queue != null)
+			{
+				return false;
+			}
+		}
+		else if (!this.queue.equals(other.queue))
 		{
 			return false;
 		}
