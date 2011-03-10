@@ -184,6 +184,10 @@ public class WorkerImpl implements Worker
 		this.namespace = config.getNamespace();
 		this.jobPackage = config.getJobPackage();
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+		if (config.getPassword() != null)
+		{
+			this.jedis.auth(config.getPassword());
+		}
 		this.jedis.select(config.getDatabase());
 		this.queueNames = new LinkedBlockingDeque<String>((queues == ALL_QUEUES) // Using object equality on purpose
 				? this.jedis.smembers(key(QUEUES)) // Like '*' in other implementations

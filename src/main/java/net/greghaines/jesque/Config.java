@@ -29,7 +29,8 @@ public class Config implements Serializable
 	
 	private final String host;
 	private final int port;
-	private final int timeout; 
+	private final int timeout;
+	private final String password;
 	private final String namespace;
 	private final int database;
 	private final String jobPackage;
@@ -46,7 +47,7 @@ public class Config implements Serializable
 	 * or empty string if the full class names will be sent in the jobs
 	 * @see ConfigBuilder
 	 */
-	public Config(final String host, final int port, final int timeout,
+	public Config(final String host, final int port, final int timeout, final String password, 
 			final String namespace, final int database, final String jobPackage)
 	{
 		if (host == null || "".equals(host))
@@ -76,6 +77,7 @@ public class Config implements Serializable
 		this.host = host;
 		this.port = port;
 		this.timeout = timeout;
+		this.password = password;
 		this.namespace = namespace;
 		this.database = database;
 		this.jobPackage = jobPackage;
@@ -103,6 +105,14 @@ public class Config implements Serializable
 	public int getTimeout()
 	{
 		return this.timeout;
+	}
+
+	/**
+	 * @return the Redis password
+	 */
+	public String getPassword()
+	{
+		return this.password;
 	}
 
 	/**

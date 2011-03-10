@@ -33,6 +33,8 @@ public class ConfigBuilder implements Serializable
 	public static final int DEFAULT_PORT = 6379;
 	/** 5 seconds */
 	public static final int DEFAULT_TIMEOUT = 5000;
+	/** null */
+	public static final String DEFAULT_PASSWORD = null;
 	/** All resque clients use "resque" by default */
 	public static final String DEFAULT_NAMESPACE = "resque";
 	/** 0 */
@@ -51,6 +53,7 @@ public class ConfigBuilder implements Serializable
 	private String host = DEFAULT_HOST;
 	private int port = DEFAULT_PORT;
 	private int timeout = DEFAULT_TIMEOUT; 
+	private String password = DEFAULT_PASSWORD;
 	private String namespace = DEFAULT_NAMESPACE;
 	private int database = DEFAULT_DATABASE;
 	private String jobPackage = DEFAULT_JOB_PACKAGE;
@@ -126,6 +129,18 @@ public class ConfigBuilder implements Serializable
 		this.timeout = timeout;
 		return this;
 	}
+	
+	/**
+	 * Configs created by this ConfigBuilder will authenticate with the given Redis password.
+	 * 
+	 * @param password the Redis pasword
+	 * @return this ConfigBuilder
+	 */
+	public ConfigBuilder withPassword(final String password)
+	{
+		this.password = password;
+		return this;
+	}
 
 	/**
 	 * Configs created by this ConfigBuilder will have the given Redis namespace to prefix keys with.
@@ -180,7 +195,7 @@ public class ConfigBuilder implements Serializable
 	 */
 	public Config build()
 	{
-		return new Config(this.host, this.port, this.timeout, 
+		return new Config(this.host, this.port, this.timeout, this.password, 
 			this.namespace, this.database, this.jobPackage);
 	}
 }

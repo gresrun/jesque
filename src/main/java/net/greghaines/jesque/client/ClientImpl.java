@@ -56,6 +56,10 @@ public class ClientImpl implements Client
 		}
 		this.namespace = config.getNamespace();
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+		if (config.getPassword() != null)
+		{
+			this.jedis.auth(config.getPassword());
+		}
 		this.jedis.select(config.getDatabase());
 	}
 	
