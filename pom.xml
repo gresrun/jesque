@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.sonatype.oss</groupId>
 		<artifactId>oss-parent</artifactId>
-		<version>6</version>
+		<version>7</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>net.greghaines</groupId>
@@ -79,14 +79,14 @@
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-core-asl</artifactId>
-			<version>1.7.3</version>
+			<version>1.7.4</version>
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-mapper-asl</artifactId>
-			<version>1.7.3</version>
+			<version>1.7.4</version>
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
