@@ -49,7 +49,7 @@ Example usage (from IntegrationTest):
 	try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 For more usage examples check the tests. The tests require that Redis is running on localhost:6379.
 
-Use the resque-web application to see the status of your jobs and workers or, if you prefer Java, try [Jesque-Web](https://github.com/gresrun/jesque-web)(WARNING: still under heavy development).
+Use the resque-web application to see the status of your jobs and workers or, if you prefer Java, try [Jesque-Web](https://github.com/gresrun/jesque-web) (WARNING: still under heavy development).
 
 ***
 
