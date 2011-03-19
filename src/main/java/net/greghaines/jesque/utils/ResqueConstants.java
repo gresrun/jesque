@@ -22,7 +22,7 @@ package net.greghaines.jesque.utils;
  */
 public interface ResqueConstants
 {
-	String DATE_FORMAT = "EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)";
+	String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 	
 	String JAVA_DYNAMIC_QUEUES = "JAVA_DYNAMIC_QUEUES";
 	
