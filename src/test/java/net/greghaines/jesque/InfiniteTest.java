@@ -56,7 +56,7 @@ public class InfiniteTest
 			}
 			TestUtils.enqueueJobs("bar", jobs, config);
 		}
-		final Worker worker = new WorkerImpl(config, Arrays.asList("bar","baz"), Arrays.asList(TestAction.class, FailAction.class));
+		final Worker worker = new WorkerImpl(config, Arrays.asList("foo0", "bar","baz"), Arrays.asList(TestAction.class, FailAction.class));
 		final Thread workerThread = new Thread(worker);
 		workerThread.start();
 		
