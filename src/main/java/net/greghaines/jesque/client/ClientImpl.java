@@ -23,6 +23,7 @@ import java.io.IOException;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
 
 import org.slf4j.Logger;
@@ -81,6 +82,7 @@ public class ClientImpl implements Client
 		{
 			final String msg = ObjectMapperFactory.get().writeValueAsString(job);
 			log.debug("enqueue queue={} msg={}", queue, msg);
+			JedisUtils.ensureJedisConnection(this.jedis);
 			this.jedis.sadd(key(QUEUES), queue);
 			this.jedis.rpush(key(QUEUE, queue), msg);
 		}
