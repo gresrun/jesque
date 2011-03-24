@@ -16,6 +16,8 @@
 package net.greghaines.jesque.client;
 
 import net.greghaines.jesque.Config;
+import net.greghaines.jesque.utils.JedisUtils;
+
 import redis.clients.jedis.Jedis;
 
 /**
@@ -47,6 +49,7 @@ public class ClientImpl extends AbstractClient
 	@Override
 	protected void doEnqueue(final String queue, final String jobJson)
 	{
+		JedisUtils.ensureJedisConnection(this.jedis);
 		doEnqueue(this.jedis, getNamespace(), queue, jobJson);
 	}
 	
