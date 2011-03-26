@@ -19,44 +19,54 @@ import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 
 import net.greghaines.jesque.Config;
+import net.greghaines.jesque.utils.PoolUtils;
+import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.util.Pool;
 
 /**
- * Basic implementation of the Client interface.
+ * A Client implementation that gets its connection to Redis from a connection pool.
  * 
  * @author Greg Haines
  */
-public class ClientImpl extends AbstractClient
-{	
-	private final Jedis jedis;
-	
+public class ClientPoolImpl extends AbstractClient
+{
+	private final Pool<Jedis> jedisPool;
+
 	/**
-	 * Create a new ClientImpl, which creates it's own connection to Redis using values from the config.
+	 * Create a ClientPoolImpl.
 	 * 
-	 * @param config used to create a connection to Redis
-	 * @throws IllegalArgumentException if the config is null
+	 * @param config used to get the namespace for key creation 
+	 * @param jedisPool the connection pool
 	 */
-	public ClientImpl(final Config config)
+	public ClientPoolImpl(final Config config, final Pool<Jedis> jedisPool)
 	{
 		super(config);
-		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-		if (config.getPassword() != null)
+		if (jedisPool == null)
 		{
-			this.jedis.auth(config.getPassword());
+			throw new IllegalArgumentException("jedisPool must not be null");
 		}
-		this.jedis.select(config.getDatabase());
+		this.jedisPool = jedisPool;
 	}
-	
+
 	@Override
 	protected void doEnqueue(final String queue, final String msg)
+	throws Exception
 	{
-		this.jedis.sadd(key(QUEUES), queue);
-		this.jedis.rpush(key(QUEUE, queue), msg);
+		PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis,Void>()
+		{
+			public Void doWork(final Jedis jedis)
+			{
+				jedis.sadd(key(QUEUES), queue);
+				jedis.rpush(key(QUEUE, queue), msg);
+				return null;
+			}
+		});
 	}
-	
-	public void end()
-	{
-		this.jedis.quit();
-	}
+
+	/**
+	 * Does nothing.
+	 */
+	public void end(){} // Do nothing
 }
