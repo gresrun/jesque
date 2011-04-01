@@ -15,11 +15,7 @@
  */
 package net.greghaines.jesque.client;
 
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
-
 import net.greghaines.jesque.Config;
-
 import redis.clients.jedis.Jedis;
 
 /**
@@ -49,10 +45,9 @@ public class ClientImpl extends AbstractClient
 	}
 	
 	@Override
-	protected void doEnqueue(final String queue, final String msg)
+	protected void doEnqueue(final String queue, final String jobJson)
 	{
-		this.jedis.sadd(key(QUEUES), queue);
-		this.jedis.rpush(key(QUEUE, queue), msg);
+		doEnqueue(this.jedis, getNamespace(), queue, jobJson);
 	}
 	
 	public void end()

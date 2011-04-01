@@ -15,6 +15,8 @@
  */
 package net.greghaines.jesque.client;
 
+import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
+import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
@@ -22,6 +24,8 @@ import net.greghaines.jesque.utils.JesqueUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import redis.clients.jedis.Jedis;
 
 /**
  * Common logic for Client implementations.
@@ -44,6 +48,11 @@ public abstract class AbstractClient implements Client
 			throw new IllegalArgumentException("config must not be null");
 		}
 		this.namespace = config.getNamespace();
+	}
+	
+	protected String getNamespace()
+	{
+		return this.namespace;
 	}
 
 	public void enqueue(final String queue, final Job job)
@@ -94,5 +103,12 @@ public abstract class AbstractClient implements Client
 	protected String key(final String... parts)
 	{
 		return JesqueUtils.createKey(this.namespace, parts);
+	}
+	
+	public static void doEnqueue(final Jedis jedis, final String namespace, 
+			final String queue, final String jobJson)
+	{
+		jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+		jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
 	}
 }

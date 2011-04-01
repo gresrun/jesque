@@ -15,13 +15,9 @@
  */
 package net.greghaines.jesque.client;
 
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
-
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
-
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
@@ -51,15 +47,14 @@ public class ClientPoolImpl extends AbstractClient
 	}
 
 	@Override
-	protected void doEnqueue(final String queue, final String msg)
+	protected void doEnqueue(final String queue, final String jobJson)
 	throws Exception
 	{
 		PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis,Void>()
 		{
 			public Void doWork(final Jedis jedis)
 			{
-				jedis.sadd(key(QUEUES), queue);
-				jedis.rpush(key(QUEUE, queue), msg);
+				doEnqueue(jedis, getNamespace(), queue, jobJson);
 				return null;
 			}
 		});
