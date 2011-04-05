@@ -139,6 +139,21 @@ public class Config implements Serializable
 		return this.jobPackage;
 	}
 
+	/**
+	 * @return the Redis protocol URI this Config will connect to
+	 */
+	public String getURI()
+	{
+		return "redis://" + this.host + ":" + this.port + "/" + this.database;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "<" + getURI() + " namespace=" + this.namespace + 
+			" jobPackage=" + this.jobPackage + " timeout=" + this.timeout + ">";
+	}
+
 	@Override
 	public int hashCode()
 	{
