@@ -557,9 +557,7 @@ public class WorkerImpl implements Worker
 		f.setQueue(queue);
 		f.setPayload(job);
 		f.setException(ex);
-		final String failMsg = ObjectMapperFactory.get().writeValueAsString(f);
-		log.warn("failMsg={}", failMsg);
-		return failMsg;
+		return ObjectMapperFactory.get().writeValueAsString(f);
 	}
 	
 	/**
@@ -577,9 +575,7 @@ public class WorkerImpl implements Worker
 		s.setRunAt(new Date());
 		s.setQueue(queue);
 		s.setPayload(job);
-		final String statusMsg = ObjectMapperFactory.get().writeValueAsString(s);
-		log.debug("statusMsg={}", statusMsg);
-		return statusMsg;
+		return ObjectMapperFactory.get().writeValueAsString(s);
 	}
 
 	/**

@@ -71,9 +71,7 @@ public abstract class AbstractClient implements Client
 		}
 		try
 		{
-			final String msg = ObjectMapperFactory.get().writeValueAsString(job);
-			log.debug("enqueue queue={} msg={}", queue, msg);
-			doEnqueue(queue, msg);
+			doEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
 		}
 		catch (RuntimeException re)
 		{
