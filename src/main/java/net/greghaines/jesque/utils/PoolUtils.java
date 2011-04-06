@@ -88,6 +88,17 @@ public final class PoolUtils
 	}
 
 	/**
+	 * A simple helper method that creates a pool of connections to Redis using the supplied Config and the default pool config.
+	 *
+	 * @param jesqueConfig the config used to create the pooled Jedis connection
+	 * @return a configured Pool of Jedis connections
+	 */
+	public static Pool<Jedis> createJedisPool(final Config jesqueConfig)
+	{
+		return createJedisPool(jesqueConfig, getDefaultPoolConfig());
+	}
+
+	/**
 	 * A simple helper method that creates a pool of connections to Redis using the supplied configurations.
 	 * 
 	 * @param jesqueConfig the config used to create the pooled Jedis connections
