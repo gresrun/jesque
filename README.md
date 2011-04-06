@@ -19,7 +19,7 @@ Or, to use it in your Maven project, add it as a dependency:
 	<dependency>
 		<groupId>net.greghaines</groupId>
 		<artifactId>jesque</artifactId>
-		<version>0.9.3</version>
+		<version>0.9.4</version>
 		<type>jar</type>
 		<scope>compile</scope>
 	</dependency>
@@ -49,7 +49,7 @@ Example usage (from IntegrationTest):
 	try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 For more usage examples check the tests. The tests require that Redis is running on localhost:6379.
 
-Use the resque-web application to see the status of your jobs and workers or, if you prefer Java, try [Jesque-Web](https://github.com/gresrun/jesque-web) (WARNING: still under heavy development).
+Use the resque-web application to see the status of your jobs and workers or, if you prefer Java, try [Jesque-Web](https://github.com/gresrun/jesque-web).
 
 ***
 
