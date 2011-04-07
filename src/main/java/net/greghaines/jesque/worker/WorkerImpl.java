@@ -334,7 +334,12 @@ public class WorkerImpl implements Worker
 			this.queueNames.remove(queueName);
 		}
 	}
-	
+
+	public void removeAllQueues()
+	{
+		this.queueNames.clear();
+	}
+
 	public void setQueues(final Collection<String> queues)
 	{
 		checkQueues(queues);

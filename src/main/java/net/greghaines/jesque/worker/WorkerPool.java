@@ -197,6 +197,14 @@ public class WorkerPool implements Worker
 		}
 	}
 
+	public void removeAllQueues()
+	{
+		for (final Worker worker : this.workers)
+		{
+			worker.removeAllQueues();
+		}
+	}
+
 	public void setQueues(final Collection<String> queues)
 	{
 		for (final Worker worker : this.workers)
