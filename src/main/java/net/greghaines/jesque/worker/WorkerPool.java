@@ -65,11 +65,11 @@ public class WorkerPool implements Worker
 	 */
 	public WorkerPool(final Config config, final Collection<String> queues, 
 			final Collection<? extends Class<?>> jobTypes, 
-			final int numThreads, final ThreadFactory threadFactory)
+			final int numWorkers, final ThreadFactory threadFactory)
 	{
-		this.workers = new ArrayList<Worker>(numThreads);
-		this.threads = new ArrayList<Thread>(numThreads);
-		for (int i = 0; i < numThreads; i++)
+		this.workers = new ArrayList<Worker>(numWorkers);
+		this.threads = new ArrayList<Thread>(numWorkers);
+		for (int i = 0; i < numWorkers; i++)
 		{
 			final Worker worker = new WorkerImpl(config, queues, jobTypes);
 			this.workers.add(worker);

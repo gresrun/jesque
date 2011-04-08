@@ -153,8 +153,8 @@ public class JobFailure implements Serializable
 	}
 
 	/**
-	 * Set when the job was retries.
-	 * @param failedAt when the job was retried
+	 * Set when the job was retried.
+	 * @param retriedAt when the job was retried
 	 */
 	public void setRetriedAt(final Date retriedAt)
 	{
