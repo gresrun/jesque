@@ -15,7 +15,7 @@ Download the latest source at:
 
 	https://github.com/gresrun/jesque
 Or, to use it in your Maven project, add it as a dependency:
-``` xml
+```xml
 <dependency>
 	<groupId>net.greghaines</groupId>
 	<artifactId>jesque</artifactId>
@@ -25,7 +25,7 @@ Or, to use it in your Maven project, add it as a dependency:
 </dependency>
 ```
 Example usage (from IntegrationTest):
-``` java
+```java
 // Configuration
 final Config config = new ConfigBuilder()
 				.withJobPackage("net.greghaines.jesque")
@@ -76,7 +76,7 @@ Misc.
 -----
 
 If you are on Mac OS X, I highly recommend using the fantasic [Homebrew package manager](https://github.com/mxcl/homebrew). It makes installing and maintaining libraries, tools and applications a cinch. E.g.:
-``` bash
+```bash
 brew install redis
 brew install git
 brew install maven
