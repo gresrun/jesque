@@ -15,6 +15,7 @@ Download the latest source at:
 
 	https://github.com/gresrun/jesque
 Or, to use it in your Maven project, add it as a dependency:
+
 ```xml
 <dependency>
 	<groupId>net.greghaines</groupId>
@@ -24,7 +25,9 @@ Or, to use it in your Maven project, add it as a dependency:
 	<scope>compile</scope>
 </dependency>
 ```
+
 Example usage (from IntegrationTest):
+
 ```java
 // Configuration
 final Config config = new ConfigBuilder()
@@ -49,6 +52,7 @@ try { Thread.sleep(5000); } catch (Exception e){} // Give ourselves time to proc
 worker.end(true);
 try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 ```
+
 For more usage examples check the tests. The tests require that Redis is running on localhost:6379.
 
 Use the resque-web application to see the status of your jobs and workers or, if you prefer Java, try [Jesque-Web](https://github.com/gresrun/jesque-web).
@@ -76,12 +80,14 @@ Misc.
 -----
 
 If you are on Mac OS X, I highly recommend using the fantasic [Homebrew package manager](https://github.com/mxcl/homebrew). It makes installing and maintaining libraries, tools and applications a cinch. E.g.:
+
 ```bash
 brew install redis
 brew install git
 brew install maven
 gem install resque
 ```
+
 Boom! Ready to go!
 
 ***
