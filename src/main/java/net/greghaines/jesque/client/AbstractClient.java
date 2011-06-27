@@ -21,10 +21,6 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JesqueUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import redis.clients.jedis.Jedis;
 
 /**
@@ -34,10 +30,8 @@ import redis.clients.jedis.Jedis;
  */
 public abstract class AbstractClient implements Client
 {
-	private static final Logger log = LoggerFactory.getLogger(AbstractClient.class);
-	
 	private final String namespace;
-	
+
 	/**
 	 * @param config used to get the namespace for key creation
 	 */
@@ -49,7 +43,7 @@ public abstract class AbstractClient implements Client
 		}
 		this.namespace = config.getNamespace();
 	}
-	
+
 	protected String getNamespace()
 	{
 		return this.namespace;
@@ -102,7 +96,15 @@ public abstract class AbstractClient implements Client
 	{
 		return JesqueUtils.createKey(this.namespace, parts);
 	}
-	
+
+	/**
+	 * Helper method that encapsulates the minimum logic for adding a job to a queue.
+	 * 
+	 * @param jedis the connection to Redis
+	 * @param namespace the Resque namespace
+	 * @param queue the Resque queue name
+	 * @param jobJson the job serialized as JSON
+	 */
 	public static void doEnqueue(final Jedis jedis, final String namespace, 
 			final String queue, final String jobJson)
 	{
