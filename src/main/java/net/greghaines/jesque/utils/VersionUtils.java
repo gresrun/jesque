@@ -18,6 +18,7 @@ package net.greghaines.jesque.utils;
 import java.io.InputStream;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +32,13 @@ public final class VersionUtils
 {
 	public static final String DEVELOPMENT = "DEVELOPMENT";
 	public static final String ERROR = "ERROR";
-	
+
 	private static final Logger log = LoggerFactory.getLogger(VersionUtils.class);
 	private static final String pomPropertiesResName = "/META-INF/maven/net.greghaines/jesque/pom.properties";
 	private static final String versionPropName = "version";
 	private static final AtomicReference<String> versionRef = new AtomicReference<String>(null);
-	
+	private static final Pattern dotPattern = Pattern.compile("[\\.-]");
+
 	/**
 	 * @return the current version of this software
 	 */
@@ -49,6 +51,44 @@ public final class VersionUtils
 			version = versionRef.get();
 		}
 		return version;
+	}
+
+	/**
+	 * Returns an Object array of length four, where the first three elements are Integers
+	 * representing each of the version parts and the last, fourth, element is a String that
+	 * is either null, for releases, or "SNAPSHOT", for snapshots.
+	 * <br/><br/>
+	 * If this is a developement build, the array is [-1, -1, -1, "DEVELOPMENT"].<br/>
+	 * If there is an error determining the version, the array is [-1, -1, -1, "ERROR"].
+	 * 
+	 * @return the array described
+	 */
+	public static Object[] getVersionParts()
+	{
+		final String version = getVersion();
+		final Object[] versionParts = new Object[4];
+		if (DEVELOPMENT.equals(version) || ERROR.equals(version))
+		{
+			versionParts[0] = -1;
+			versionParts[1] = -1;
+			versionParts[2] = -1;
+			versionParts[3] = version;
+		}
+		else
+		{
+			final String[] versionStrParts = dotPattern.split(version);
+			final boolean isSnapshot = (versionStrParts.length == 4);
+			final int stop = isSnapshot ? versionStrParts.length - 1 : versionStrParts.length;
+			for (int i = 0; i < stop; i++)
+			{
+				versionParts[i] = Integer.valueOf(versionStrParts[i]);
+			}
+			if (isSnapshot)
+			{
+				versionParts[versionStrParts.length - 1] = versionStrParts[versionStrParts.length - 1];
+			}
+		}
+		return versionParts;
 	}
 
 	private static String readVersion()
@@ -75,6 +115,6 @@ public final class VersionUtils
 		}
 		return version;
 	}
-	
+
 	private VersionUtils(){} // Utiltity class
 }
