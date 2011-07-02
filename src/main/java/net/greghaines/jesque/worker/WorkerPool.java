@@ -95,7 +95,24 @@ public class WorkerPool implements Worker
 			}
 		}
 	}
-	
+
+	/**
+	 * Wait untill all threads are finished.
+	 * 
+	 * @throws InterruptedException
+	 */
+	public void join()
+	throws InterruptedException
+	{
+		for (final Thread thread : this.threads)
+		{
+			while (thread.isAlive())
+			{
+				thread.join();
+			}
+		}
+	}
+
 	public String getName()
 	{
 		final StringBuilder sb = new StringBuilder(128 * this.threads.size());
