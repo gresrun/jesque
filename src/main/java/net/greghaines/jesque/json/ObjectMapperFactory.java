@@ -18,14 +18,12 @@ package net.greghaines.jesque.json;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
+import net.greghaines.jesque.utils.VersionUtils;
 
-import org.codehaus.jackson.map.JsonDeserializer;
-import org.codehaus.jackson.map.JsonSerializer;
+import org.codehaus.jackson.Version;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.map.deser.CustomDeserializerFactory;
-import org.codehaus.jackson.map.deser.StdDeserializerProvider;
-import org.codehaus.jackson.map.ser.CustomSerializerFactory;
+import org.codehaus.jackson.map.module.SimpleModule;
 
 /**
  * A helper that creates a fully-configured singleton ObjectMapper.
@@ -35,54 +33,25 @@ import org.codehaus.jackson.map.ser.CustomSerializerFactory;
 public final class ObjectMapperFactory
 {
 	private static final ObjectMapper mapper = new ObjectMapper();
-	private static final CustomDeserializerFactory cdf = new CustomDeserializerFactory();
-	private static final CustomSerializerFactory csf = new CustomSerializerFactory();
 
 	static
 	{
+		final SimpleModule jesqueModule = new SimpleModule("net.greghaines.jesque", createJacksonVersion());
+		jesqueModule.addSerializer(Job.class, new JobJsonSerializer());
+		jesqueModule.addDeserializer(Job.class, new JobJsonDeserializer());
+		jesqueModule.addSerializer(JobFailure.class, new JobFailureJsonSerializer());
+		jesqueModule.addDeserializer(JobFailure.class, new JobFailureJsonDeserializer());
+		jesqueModule.addSerializer(WorkerStatus.class, new WorkerStatusJsonSerializer());
+		jesqueModule.addDeserializer(WorkerStatus.class, new WorkerStatusJsonDeserializer());
+		mapper.registerModule(jesqueModule);
 		mapper.configure(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
-		mapper.setDeserializerProvider(new StdDeserializerProvider(cdf));
-		mapper.setSerializerFactory(csf);
-		cdf.addSpecificMapping(Job.class, new JobJsonDeserializer());
-		csf.addSpecificMapping(Job.class, new JobJsonSerializer());
-		cdf.addSpecificMapping(JobFailure.class, new JobFailureJsonDeserializer());
-		csf.addSpecificMapping(JobFailure.class, new JobFailureJsonSerializer());
-		cdf.addSpecificMapping(WorkerStatus.class, new WorkerStatusJsonDeserializer());
-		csf.addSpecificMapping(WorkerStatus.class, new WorkerStatusJsonSerializer());
 	}
 
-	/**
-	 * Add a custom JSON serializer for the given type.
-	 * 
-	 * @param <T> the type to map
-	 * @param forClass the class of the type
-	 * @param ser the custom serializer
-	 * @param specific whether to add as a specific or generic mapping
-	 */
-	public static <T> void addSerializer(final Class<? extends T> forClass, 
-			final JsonSerializer<T> ser, final boolean specific)
+	private static Version createJacksonVersion()
 	{
-		if (specific)
-		{
-			csf.addSpecificMapping(forClass, ser);
-		}
-		else
-		{
-			csf.addGenericMapping(forClass, ser);
-		}
+		final Object[] versionParts = VersionUtils.getVersionParts();
+		return new Version((Integer) versionParts[0], (Integer) versionParts[1], (Integer) versionParts[2], (String) versionParts[3]);
 	}
-
-	/**
-	 * Add a custom JSON deserializer for the given type.
-	 * 
-	 * @param <T> the type to map
-	 * @param forClass the class of the type
-	 * @param deser the custom deserializer
-	 */
-	public static <T> void addDeserializer(final Class<T> forClass, final JsonDeserializer<? extends T> deser)
-    {
-		cdf.addSpecificMapping(forClass, deser);
-    }
 	
 	/**
 	 * @return a fully-configured ObjectMapper
