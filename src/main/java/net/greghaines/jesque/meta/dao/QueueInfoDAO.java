@@ -29,7 +29,7 @@ public interface QueueInfoDAO
 	
 	List<QueueInfo> getQueueInfos();
 	
-	QueueInfo getQueueInfo(String name, int jobOffset, int jobCount);
+	QueueInfo getQueueInfo(String name, long jobOffset, long jobCount);
 	
 	void removeQueue(String name);
 }

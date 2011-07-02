@@ -24,11 +24,11 @@ public interface FailureDAO
 {
 	long getCount();
 	
-	List<JobFailure> getFailures(int offset, int count);
+	List<JobFailure> getFailures(long offset, long count);
 	
 	void clear();
 	
-	Date requeue(int index);
+	Date requeue(long index);
 	
-	void remove(int index);
+	void remove(long index);
 }

@@ -68,7 +68,7 @@ public class FailureDAORedisImpl implements FailureDAO
 		});
 	}
 
-	public List<JobFailure> getFailures(final int offset, final int count)
+	public List<JobFailure> getFailures(final long offset, final long count)
 	{
 		return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,List<JobFailure>>()
 		{
@@ -99,7 +99,7 @@ public class FailureDAORedisImpl implements FailureDAO
 		});
 	}
 
-	public Date requeue(final int index)
+	public Date requeue(final long index)
 	{
 		final List<JobFailure> failures = getFailures(index, 1);
 		return (failures.isEmpty()) ? null : PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,Date>()
@@ -117,7 +117,7 @@ public class FailureDAORedisImpl implements FailureDAO
 		});
 	}
 	
-	public void remove(final int index)
+	public void remove(final long index)
 	{
 		PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,Void>()
 		{

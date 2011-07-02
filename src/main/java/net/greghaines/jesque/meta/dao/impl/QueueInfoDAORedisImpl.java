@@ -122,7 +122,7 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
 		});
 	}
 
-	public QueueInfo getQueueInfo(final String name, final int jobOffset, final int jobCount)
+	public QueueInfo getQueueInfo(final String name, final long jobOffset, final long jobCount)
 	{
 		return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,QueueInfo>()
 		{
