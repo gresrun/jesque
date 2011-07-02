@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class VersionUtils
 {
+	public static final String SNAPSHOT = "SNAPSHOT";
 	public static final String DEVELOPMENT = "DEVELOPMENT";
 	public static final String ERROR = "ERROR";
 
