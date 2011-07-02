@@ -15,6 +15,9 @@
  */
 package net.greghaines.jesque.json;
 
+import static net.greghaines.jesque.utils.VersionUtils.DEVELOPMENT;
+import static net.greghaines.jesque.utils.VersionUtils.ERROR;
+
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
@@ -49,7 +52,9 @@ public final class ObjectMapperFactory
 	private static Version createJacksonVersion()
 	{
 		final Object[] versionParts = VersionUtils.getVersionParts();
-		return new Version((Integer) versionParts[0], (Integer) versionParts[1], (Integer) versionParts[2], (String) versionParts[3]);
+		return (DEVELOPMENT.equals(versionParts[3]) || ERROR.equals(versionParts[3])) 
+				? Version.unknownVersion() 
+				: new Version((Integer) versionParts[0], (Integer) versionParts[1], (Integer) versionParts[2], (String) versionParts[3]);
 	}
 	
 	/**
