@@ -36,14 +36,13 @@ public final class ObjectMapperFactory
 
 	static
 	{
-		final SimpleModule jesqueModule = new SimpleModule("net.greghaines.jesque", createJacksonVersion());
-		jesqueModule.addSerializer(Job.class, new JobJsonSerializer());
-		jesqueModule.addDeserializer(Job.class, new JobJsonDeserializer());
-		jesqueModule.addSerializer(JobFailure.class, new JobFailureJsonSerializer());
-		jesqueModule.addDeserializer(JobFailure.class, new JobFailureJsonDeserializer());
-		jesqueModule.addSerializer(WorkerStatus.class, new WorkerStatusJsonSerializer());
-		jesqueModule.addDeserializer(WorkerStatus.class, new WorkerStatusJsonDeserializer());
-		mapper.registerModule(jesqueModule);
+		mapper.registerModule(new SimpleModule("net.greghaines.jesque", createJacksonVersion())
+			.addSerializer(Job.class, new JobJsonSerializer())
+			.addDeserializer(Job.class, new JobJsonDeserializer())
+			.addSerializer(JobFailure.class, new JobFailureJsonSerializer())
+			.addDeserializer(JobFailure.class, new JobFailureJsonDeserializer())
+			.addSerializer(WorkerStatus.class, new WorkerStatusJsonSerializer())
+			.addDeserializer(WorkerStatus.class, new WorkerStatusJsonDeserializer()));
 		mapper.configure(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
 	}
 
