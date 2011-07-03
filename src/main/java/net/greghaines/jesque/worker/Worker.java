@@ -17,6 +17,7 @@ package net.greghaines.jesque.worker;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * A Worker polls for Jobs from a specified list of queues, executing 
@@ -41,7 +42,7 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	/**
 	 * Special value to tell a Worker to poll all currently available queues.
 	 */
-	Collection<String> ALL_QUEUES = Arrays.asList("*");
+	Collection<String> ALL_QUEUES = Collections.unmodifiableList(Arrays.asList("*"));
 	
 	/**
 	 * Returns the name of this Worker.
@@ -85,7 +86,7 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	void removeQueue(String queueName, boolean all);
 
 	/**
-         * Stop polling all queues.
+	 * Stop polling all queues.
 	 */
 	void removeAllQueues();
 	
