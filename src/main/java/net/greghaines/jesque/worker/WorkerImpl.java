@@ -41,7 +41,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Set;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -194,6 +196,30 @@ public class WorkerImpl implements Worker
 				: queues);
 		this.jobTypes = new ConcurrentHashSet<Class<?>>(jobTypes);
 		this.name = createName();
+	}
+
+	/**
+	 * @return an unmodifiable view of the queues this worker is listening to
+	 */
+	public Collection<String> getQueues()
+	{
+		return Collections.unmodifiableCollection(this.queueNames);
+	}
+
+	/**
+	 * @return this worker's identifier
+	 */
+	public long getWorkerId()
+	{
+		return this.workerId;
+	}
+
+	/**
+	 * @return an unmodifiable view of the job types this worker will execute
+	 */
+	public Set<Class<?>> getJobTypes()
+	{
+		return Collections.unmodifiableSet(this.jobTypes);
 	}
 	
 	/**
@@ -588,7 +614,7 @@ public class WorkerImpl implements Worker
 	 * 
 	 * @return a unique name for this worker
 	 */
-	private String createName()
+	protected String createName()
 	{
 		final StringBuilder sb = new StringBuilder(128);
 		try
