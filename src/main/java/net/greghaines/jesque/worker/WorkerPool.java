@@ -18,10 +18,9 @@ package net.greghaines.jesque.worker;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-
-import net.greghaines.jesque.Config;
 
 /**
  * Creates a fixed number of identical <code>Workers</code>, each on a 
@@ -38,42 +37,44 @@ public class WorkerPool implements Worker
 	 * Create a WorkerPool with the given number of Workers and the
 	 * default <code>ThreadFactory</code>.
 	 * 
-	 * @param config used to create a connection to Redis and the package 
-	 * prefix for incoming jobs
-	 * @param queues the list of queues to poll
-	 * @param jobTypes the list of job types to execute
+	 * @param workerFactory a Callable that returns an implementation of Worker
 	 * @param numWorkers the number of Workers to create
 	 */
-	public WorkerPool(final Config config, final Collection<String> queues, 
-			final Collection<? extends Class<?>> jobTypes, 
+	public WorkerPool(final Callable<? extends Worker> workerFactory, 
 			final int numWorkers)
 	{
-		this(config, queues, jobTypes, numWorkers, 
-			Executors.defaultThreadFactory());
+		this(workerFactory, numWorkers, Executors.defaultThreadFactory());
 	}
 
 	/**
 	 * Create a WorkerPool with the given number of Workers and the
 	 * given <code>ThreadFactory</code>.
 	 * 
-	 * @param config used to create a connection to Redis and the package 
-	 * prefix for incoming jobs
-	 * @param queues the list of queues to poll
-	 * @param jobTypes the list of job types to execute
+	 * @param workerFactory a Callable that returns an implementation of Worker
 	 * @param numWorkers the number of Workers to create
 	 * @param threadFactory the factory to create pre-configured Threads
 	 */
-	public WorkerPool(final Config config, final Collection<String> queues, 
-			final Collection<? extends Class<?>> jobTypes, 
+	public WorkerPool(final Callable<? extends Worker> workerFactory, 
 			final int numWorkers, final ThreadFactory threadFactory)
 	{
 		this.workers = new ArrayList<Worker>(numWorkers);
 		this.threads = new ArrayList<Thread>(numWorkers);
 		for (int i = 0; i < numWorkers; i++)
 		{
-			final Worker worker = new WorkerImpl(config, queues, jobTypes);
-			this.workers.add(worker);
-			this.threads.add(threadFactory.newThread(worker));
+			try
+			{
+				final Worker worker = workerFactory.call();
+				this.workers.add(worker);
+				this.threads.add(threadFactory.newThread(worker));
+			}
+			catch (RuntimeException re)
+			{
+				throw re;
+			}
+			catch (Exception e)
+			{
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
