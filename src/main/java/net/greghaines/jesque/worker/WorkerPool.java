@@ -190,6 +190,11 @@ public class WorkerPool implements Worker
 		}
 	}
 
+	public boolean isPaused()
+	{
+		return this.workers.get(0).isPaused();
+	}
+
 	public void togglePause(final boolean paused)
 	{
 		for (final Worker worker : this.workers)

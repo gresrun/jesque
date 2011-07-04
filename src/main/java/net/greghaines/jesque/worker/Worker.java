@@ -57,6 +57,14 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @param now if true, an effort will be made to stop any job in progress
 	 */
 	void end(boolean now);
+
+	/**
+	 * Returns whether this worker is paused.
+	 * 
+	 * @return whether this worker is paused. If true, the worker is not processing any new jobs; 
+	 * if false, the worker is processing new jobs
+	 */
+	boolean isPaused();
 	
 	/**
 	 * Toggle whether this worker will process any new jobs.

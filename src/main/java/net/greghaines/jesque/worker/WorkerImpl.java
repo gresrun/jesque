@@ -287,6 +287,11 @@ public class WorkerImpl implements Worker
 		}
 		togglePause(false); // Release any threads waiting in checkPaused()
 	}
+
+	public boolean isPaused()
+	{
+		return this.paused.get();
+	}
 	
 	public void togglePause(final boolean paused)
 	{
