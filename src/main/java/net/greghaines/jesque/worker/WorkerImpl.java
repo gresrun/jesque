@@ -63,6 +63,7 @@ import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.ReflectionUtils;
 import net.greghaines.jesque.utils.VersionUtils;
 
+import org.apache.commons.pool.ObjectPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +82,7 @@ public class WorkerImpl implements Worker
 	 * 
 	 * @author Greg Haines
 	 */
-	private enum WorkerState
+	protected enum WorkerState
 	{
 		/**
 		 * The Worker has not started running.
@@ -97,16 +98,16 @@ public class WorkerImpl implements Worker
 		SHUTDOWN;
 	}
 	
-	private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
-	private static final AtomicLong workerCounter = new AtomicLong(0);
-	private static final long emptyQueueSleepTime = 500; // 500 ms
+	protected static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
+	protected static final AtomicLong workerCounter = new AtomicLong(0);
+	protected static final long emptyQueueSleepTime = 500; // 500 ms
 	
 	/**
 	 * Verify that the given queues are all valid.
 	 * 
 	 * @param queues the given queues
 	 */
-	private static void checkQueues(final Iterable<String> queues)
+	protected static void checkQueues(final Iterable<String> queues)
 	{
 		if (queues == null)
 		{
@@ -126,7 +127,7 @@ public class WorkerImpl implements Worker
 	 * 
 	 * @param jobTypes the given job types
 	 */
-	private static void checkJobTypes(final Collection<? extends Class<?>> jobTypes)
+	protected void checkJobTypes(final Collection<? extends Class<?>> jobTypes)
 	{
 		if (jobTypes == null)
 		{
@@ -145,20 +146,20 @@ public class WorkerImpl implements Worker
 		}
 	}
 	
-	private final Jedis jedis;
-	private final String namespace;
-	private final String jobPackage;
-	private final BlockingDeque<String> queueNames;
-	private final ConcurrentSet<Class<?>> jobTypes;
-	private final String name;
-	private final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
-	private final AtomicReference<WorkerState> state = 
+	protected final Jedis jedis;
+	protected final String namespace;
+	protected final String jobPackage;
+	protected final BlockingDeque<String> queueNames;
+	protected final ConcurrentSet<Class<?>> jobTypes;
+	protected final String name;
+	protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
+	protected final AtomicReference<WorkerState> state =
 		new AtomicReference<WorkerState>(WorkerState.NEW);
-	private final AtomicBoolean paused = new AtomicBoolean(false);
-	private final long workerId = workerCounter.getAndIncrement();
-	private final String threadNameBase = 
+	protected final AtomicBoolean paused = new AtomicBoolean(false);
+	protected final long workerId = workerCounter.getAndIncrement();
+	protected final String threadNameBase =
 		"Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
-	private final AtomicReference<Thread> workerThreadRef = 
+	protected final AtomicReference<Thread> workerThreadRef =
 		new AtomicReference<Thread>(null);
 	
 	/**
@@ -412,7 +413,7 @@ public class WorkerImpl implements Worker
 	/**
 	 * Polls the queues for jobs and executes them.
 	 */
-	private void poll()
+	protected void poll()
 	{
 		int missCount = 0;
 		String curQueue = null;
@@ -454,7 +455,7 @@ public class WorkerImpl implements Worker
 	/**
 	 * Checks to see if worker is paused. If so, wait until unpaused.
 	 */
-	private void checkPaused()
+	protected void checkPaused()
 	{
 		if (this.paused.get())
 		{
@@ -474,7 +475,7 @@ public class WorkerImpl implements Worker
 	 * @param job the Job to process
 	 * @param curQueue the queue the payload came from
 	 */
-	private void process(final Job job, final String curQueue)
+	protected void process(final Job job, final String curQueue)
 	{
 		this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null);
 		renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
@@ -509,7 +510,7 @@ public class WorkerImpl implements Worker
 	 * @param instance the materialized job
 	 * @throws Exception if the instance is a callable and throws an exception
 	 */
-	private void execute(final Job job, final String curQueue, final Object instance)
+	protected void execute(final Job job, final String curQueue, final Object instance)
 	throws Exception
 	{
 		this.jedis.set(key(WORKER, this.name), statusMsg(curQueue, job));
@@ -546,7 +547,7 @@ public class WorkerImpl implements Worker
 	 * @param runner the materialized Job
 	 * @param curQueue the queue the Job came from
 	 */
-	private void success(final Job job, final Object runner, final Object result, final String curQueue)
+	protected void success(final Job job, final Object runner, final Object result, final String curQueue)
 	{
 		this.jedis.incr(key(STAT, PROCESSED));
 		this.jedis.incr(key(STAT, PROCESSED, this.name));
@@ -560,7 +561,7 @@ public class WorkerImpl implements Worker
 	 * @param job the Job that failed
 	 * @param curQueue the queue the Job came from
 	 */
-	private void failure(final Exception ex, final Job job, final String curQueue)
+	protected void failure(final Exception ex, final Job job, final String curQueue)
 	{
 		this.jedis.incr(key(STAT, FAILED));
 		this.jedis.incr(key(STAT, FAILED, this.name));
@@ -584,7 +585,7 @@ public class WorkerImpl implements Worker
 	 * @return the JSON representation of a new JobFailure
 	 * @throws IOException if there was an error serializing the JobFailure
 	 */
-	private String failMsg(final Exception ex, final String queue, final Job job)
+	protected String failMsg(final Exception ex, final String queue, final Job job)
 	throws IOException
 	{
 		final JobFailure f = new JobFailure();
@@ -604,7 +605,7 @@ public class WorkerImpl implements Worker
 	 * @return the JSON representation of a new WorkerStatus
 	 * @throws IOException if there was an error serializing the WorkerStatus
 	 */
-	private String statusMsg(final String queue, final Job job)
+	protected String statusMsg(final String queue, final Job job)
 	throws IOException
 	{
 		final WorkerStatus s = new WorkerStatus();
@@ -645,7 +646,7 @@ public class WorkerImpl implements Worker
 	 * @param parts the key parts to be joined
 	 * @return an assembled String key
 	 */
-	private String key(final String... parts)
+	protected String key(final String... parts)
 	{
 		return JesqueUtils.createKey(this.namespace, parts);
 	}
@@ -655,7 +656,7 @@ public class WorkerImpl implements Worker
 	 * 
 	 * @param msg the message to add to the thread name
 	 */
-	private void renameThread(final String msg)
+	protected void renameThread(final String msg)
 	{
 		Thread.currentThread().setName(this.threadNameBase + msg);
 	}
