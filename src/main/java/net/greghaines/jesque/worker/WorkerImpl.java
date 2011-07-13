@@ -63,7 +63,6 @@ import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.ReflectionUtils;
 import net.greghaines.jesque.utils.VersionUtils;
 
-import org.apache.commons.pool.ObjectPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,9 +97,9 @@ public class WorkerImpl implements Worker
 		SHUTDOWN;
 	}
 	
-	protected static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
-	protected static final AtomicLong workerCounter = new AtomicLong(0);
-	protected static final long emptyQueueSleepTime = 500; // 500 ms
+	private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
+	private static final AtomicLong workerCounter = new AtomicLong(0);
+	private static final long emptyQueueSleepTime = 500; // 500 ms
 	
 	/**
 	 * Verify that the given queues are all valid.
@@ -149,17 +148,17 @@ public class WorkerImpl implements Worker
 	protected final Jedis jedis;
 	protected final String namespace;
 	protected final String jobPackage;
-	protected final BlockingDeque<String> queueNames;
-	protected final ConcurrentSet<Class<?>> jobTypes;
-	protected final String name;
+	private final BlockingDeque<String> queueNames;
+	private final ConcurrentSet<Class<?>> jobTypes;
+	private final String name;
 	protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
-	protected final AtomicReference<WorkerState> state =
+	private final AtomicReference<WorkerState> state =
 		new AtomicReference<WorkerState>(WorkerState.NEW);
-	protected final AtomicBoolean paused = new AtomicBoolean(false);
-	protected final long workerId = workerCounter.getAndIncrement();
-	protected final String threadNameBase =
+	private final AtomicBoolean paused = new AtomicBoolean(false);
+	private final long workerId = workerCounter.getAndIncrement();
+	private final String threadNameBase =
 		"Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
-	protected final AtomicReference<Thread> workerThreadRef =
+	private final AtomicReference<Thread> workerThreadRef =
 		new AtomicReference<Thread>(null);
 	
 	/**
