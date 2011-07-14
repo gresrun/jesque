@@ -33,4 +33,6 @@ public interface WorkerInfoDAO
 	WorkerInfo getWorker(String workerName);
 	
 	Map<String,List<WorkerInfo>> getWorkerHostMap();
+
+	void removeWorker(String workerName);
 }
