@@ -235,4 +235,26 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO
 		}
 		return workerInfo;
 	}
+
+	/**
+	 * Remove the metadata about a worker
+	 *
+	 * @param workerName The worker name to remove
+	 */
+	public void removeWorker(final String workerName) {
+		PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,Void>()
+		{
+			public Void doWork(final Jedis jedis)
+			throws Exception
+			{
+				jedis.srem(key(WORKERS), workerName);
+				jedis.del(
+					key(WORKER, workerName),
+					key(WORKER, workerName, STARTED),
+					key(STAT, FAILED, workerName),
+					key(STAT, PROCESSED, workerName));
+				return null;
+			}
+		});
+	}
 }
