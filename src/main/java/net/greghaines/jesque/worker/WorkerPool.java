@@ -18,6 +18,7 @@ package net.greghaines.jesque.worker;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -190,6 +191,11 @@ public class WorkerPool implements Worker
 			worker.end(now);
 		}
 	}
+	
+	public boolean isShutdown()
+	{
+		return this.workers.get(0).isShutdown();
+	}
 
 	public boolean isPaused()
 	{
@@ -202,6 +208,11 @@ public class WorkerPool implements Worker
 		{
 			worker.togglePause(paused);
 		}
+	}
+
+	public Collection<String> getQueues()
+	{
+		return this.workers.get(0).getQueues();
 	}
 
 	public void addQueue(final String queueName)
@@ -234,6 +245,11 @@ public class WorkerPool implements Worker
 		{
 			worker.setQueues(queues);
 		}
+	}
+
+	public Set<Class<?>> getJobTypes()
+	{
+		return this.workers.get(0).getJobTypes();
 	}
 
 	public void addJobType(final Class<?> jobType)

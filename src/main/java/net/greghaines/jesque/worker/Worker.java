@@ -18,6 +18,7 @@ package net.greghaines.jesque.worker;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 
 /**
  * A Worker polls for Jobs from a specified list of queues, executing 
@@ -57,6 +58,13 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @param now if true, an effort will be made to stop any job in progress
 	 */
 	void end(boolean now);
+	
+	/**
+	 * Returns whether this worker is either shutdown or in the process of shutting down.
+	 * 
+	 * @return whether this worker is either shutdown or in the process of shutting down.
+	 */
+	boolean isShutdown();
 
 	/**
 	 * Returns whether this worker is paused.
@@ -73,6 +81,13 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * if false, the worker will process new jobs
 	 */
 	void togglePause(boolean paused);
+
+	/**
+	 * The queues that this Worker will poll.
+	 * 
+	 * @return an unmodifiable view of the queues to be polled
+	 */
+	Collection<String> getQueues();
 	
 	/**
 	 * Poll the given queue. If the queue exists multiple times, 
@@ -104,6 +119,13 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @param queues the queues to poll
 	 */
 	void setQueues(Collection<String> queues);
+
+	/**
+	 * The allowed job types that this Worker will execute.
+	 * 
+	 * @return an unmodifiable view of the allowed job types
+	 */
+	Set<Class<?>> getJobTypes();
 
 	/**
 	 * Allow the given job type to be executed.

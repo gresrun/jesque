@@ -199,27 +199,11 @@ public class WorkerImpl implements Worker
 	}
 
 	/**
-	 * @return an unmodifiable view of the queues this worker is listening to
-	 */
-	public Collection<String> getQueues()
-	{
-		return Collections.unmodifiableCollection(this.queueNames);
-	}
-
-	/**
 	 * @return this worker's identifier
 	 */
 	public long getWorkerId()
 	{
 		return this.workerId;
-	}
-
-	/**
-	 * @return an unmodifiable view of the job types this worker will execute
-	 */
-	public Set<Class<?>> getJobTypes()
-	{
-		return Collections.unmodifiableSet(this.jobTypes);
 	}
 	
 	/**
@@ -287,6 +271,11 @@ public class WorkerImpl implements Worker
 		}
 		togglePause(false); // Release any threads waiting in checkPaused()
 	}
+	
+	public boolean isShutdown()
+	{
+		return WorkerState.SHUTDOWN.equals(this.state.get());
+	}
 
 	public boolean isPaused()
 	{
@@ -336,7 +325,12 @@ public class WorkerImpl implements Worker
 	{
 		this.listenerDelegate.removeAllListeners(events);
 	}
-	
+
+	public Collection<String> getQueues()
+	{
+		return Collections.unmodifiableCollection(this.queueNames);
+	}
+
 	public void addQueue(final String queueName)
 	{
 		if (queueName == null || "".equals(queueName))
@@ -379,7 +373,12 @@ public class WorkerImpl implements Worker
 			? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
 			: queues);
 	}
-	
+
+	public Set<Class<?>> getJobTypes()
+	{
+		return Collections.unmodifiableSet(this.jobTypes);
+	}
+
 	public void addJobType(final Class<?> jobType)
 	{
 		if (jobType == null)
