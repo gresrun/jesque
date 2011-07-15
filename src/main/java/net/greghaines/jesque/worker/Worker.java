@@ -44,21 +44,21 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * Special value to tell a Worker to poll all currently available queues.
 	 */
 	Collection<String> ALL_QUEUES = Collections.unmodifiableList(Arrays.asList("*"));
-	
+
 	/**
 	 * Returns the name of this Worker.
 	 * 
 	 * @return the name of this Worker
 	 */
 	String getName();
-	
+
 	/**
 	 * Shutdown this Worker.
 	 * 
 	 * @param now if true, an effort will be made to stop any job in progress
 	 */
 	void end(boolean now);
-	
+
 	/**
 	 * Returns whether this worker is either shutdown or in the process of shutting down.
 	 * 
@@ -73,7 +73,7 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * if false, the worker is processing new jobs
 	 */
 	boolean isPaused();
-	
+
 	/**
 	 * Toggle whether this worker will process any new jobs.
 	 * 
@@ -88,7 +88,7 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @return an unmodifiable view of the queues to be polled
 	 */
 	Collection<String> getQueues();
-	
+
 	/**
 	 * Poll the given queue. If the queue exists multiple times, 
 	 * it will be checked that many times per loop. This allows for a 
@@ -97,7 +97,7 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @param queueName the name of the queue to poll
 	 */
 	void addQueue(String queueName);
-	
+
 	/**
 	 * Stop polling the given queue. If the <code>all</code> argument is 
 	 * true, all instances of the queue will be removed, otherwise, only 
@@ -112,7 +112,7 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * Stop polling all queues.
 	 */
 	void removeAllQueues();
-	
+
 	/**
 	 * Clear any current queues and poll the given queues.
 	 * 

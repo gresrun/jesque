@@ -99,8 +99,8 @@ public class WorkerImpl implements Worker
 	
 	private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
 	private static final AtomicLong workerCounter = new AtomicLong(0);
-	private static final long emptyQueueSleepTime = 500; // 500 ms
-	
+	protected static final long emptyQueueSleepTime = 500; // 500 ms
+
 	/**
 	 * Verify that the given queues are all valid.
 	 * 
@@ -121,30 +121,6 @@ public class WorkerImpl implements Worker
 		}
 	}
 
-	/**
-	 * Verify the given job types are all valid.
-	 * 
-	 * @param jobTypes the given job types
-	 */
-	protected void checkJobTypes(final Collection<? extends Class<?>> jobTypes)
-	{
-		if (jobTypes == null)
-		{
-			throw new IllegalArgumentException("jobTypes must not be null");
-		}
-		for (final Class<?> jobType : jobTypes)
-		{
-			if (jobType == null)
-			{
-				throw new IllegalArgumentException("jobType's members must not be null: " + jobTypes);
-			}
-			if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType)))
-			{
-				throw new IllegalArgumentException("jobType's members must implement either Runnable or Callable: " + jobTypes);
-			}
-		}
-	}
-	
 	protected final Jedis jedis;
 	protected final String namespace;
 	protected final String jobPackage;
@@ -160,7 +136,7 @@ public class WorkerImpl implements Worker
 		"Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
 	private final AtomicReference<Thread> workerThreadRef =
 		new AtomicReference<Thread>(null);
-	
+
 	/**
 	 * Creates a new WorkerImpl, which creates it's own connection to 
 	 * Redis using values from the config. The worker will only listen 
@@ -205,7 +181,7 @@ public class WorkerImpl implements Worker
 	{
 		return this.workerId;
 	}
-	
+
 	/**
 	 * Starts this worker.
 	 * Registers the worker in Redis and begins polling the queues for jobs.
@@ -251,7 +227,7 @@ public class WorkerImpl implements Worker
 			}
 		}
 	}
-	
+
 	/**
 	 * Shutdown this Worker.<br/>
 	 * <b>The worker cannot be started again; create a new worker in this case.</b>
@@ -271,7 +247,7 @@ public class WorkerImpl implements Worker
 		}
 		togglePause(false); // Release any threads waiting in checkPaused()
 	}
-	
+
 	public boolean isShutdown()
 	{
 		return WorkerState.SHUTDOWN.equals(this.state.get());
@@ -281,7 +257,7 @@ public class WorkerImpl implements Worker
 	{
 		return this.paused.get();
 	}
-	
+
 	public void togglePause(final boolean paused)
 	{
 		this.paused.set(paused);
@@ -290,7 +266,7 @@ public class WorkerImpl implements Worker
 			this.paused.notifyAll();
 		}
 	}
-	
+
 	public String getName()
 	{
 		return this.name;
@@ -339,7 +315,7 @@ public class WorkerImpl implements Worker
 		}
 		this.queueNames.add(queueName);
 	}
-	
+
 	public void removeQueue(final String queueName, final boolean all)
 	{
 		if (queueName == null || "".equals(queueName))
@@ -391,7 +367,7 @@ public class WorkerImpl implements Worker
 		}
 		this.jobTypes.add(jobType);
 	}
-	
+
 	public void removeJobType(final Class<?> jobType)
 	{
 		if (jobType == null)
@@ -400,7 +376,7 @@ public class WorkerImpl implements Worker
 		}
 		this.jobTypes.remove(jobType);
 	}
-	
+
 	public void setJobTypes(final Collection<? extends Class<?>> jobTypes)
 	{
 		checkJobTypes(jobTypes);
@@ -537,7 +513,7 @@ public class WorkerImpl implements Worker
 			this.jedis.del(key(WORKER, this.name));
 		}
 	}
-	
+
 	/**
 	 * Update the status in Redis on success.
 	 * 
@@ -594,7 +570,7 @@ public class WorkerImpl implements Worker
 		f.setException(ex);
 		return ObjectMapperFactory.get().writeValueAsString(f);
 	}
-	
+
 	/**
 	 * Create and serialize a WorkerStatus.
 	 * 
@@ -637,7 +613,7 @@ public class WorkerImpl implements Worker
 		}
 		return sb.toString();
 	}
-	
+
 	/**
 	 * Builds a namespaced Redis key with the given arguments.
 	 * 
@@ -648,7 +624,7 @@ public class WorkerImpl implements Worker
 	{
 		return JesqueUtils.createKey(this.namespace, parts);
 	}
-	
+
 	/**
 	 * Rename the current thread with the given message.
 	 * 
@@ -658,7 +634,31 @@ public class WorkerImpl implements Worker
 	{
 		Thread.currentThread().setName(this.threadNameBase + msg);
 	}
-	
+
+	/**
+	 * Verify the given job types are all valid.
+	 * 
+	 * @param jobTypes the given job types
+	 */
+	protected void checkJobTypes(final Collection<? extends Class<?>> jobTypes)
+	{
+		if (jobTypes == null)
+		{
+			throw new IllegalArgumentException("jobTypes must not be null");
+		}
+		for (final Class<?> jobType : jobTypes)
+		{
+			if (jobType == null)
+			{
+				throw new IllegalArgumentException("jobType's members must not be null: " + jobTypes);
+			}
+			if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType)))
+			{
+				throw new IllegalArgumentException("jobType's members must implement either Runnable or Callable: " + jobTypes);
+			}
+		}
+	}
+
 	@Override
 	public String toString()
 	{

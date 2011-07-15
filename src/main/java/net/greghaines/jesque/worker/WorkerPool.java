@@ -126,7 +126,7 @@ public class WorkerPool implements Worker
 		}
 		return sb.toString();
 	}
-	
+
 	public void run()
 	{
 		for (final Thread thread : this.threads)
@@ -191,7 +191,7 @@ public class WorkerPool implements Worker
 			worker.end(now);
 		}
 	}
-	
+
 	public boolean isShutdown()
 	{
 		return this.workers.get(0).isShutdown();
