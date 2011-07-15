@@ -15,58 +15,31 @@
  */
 package net.greghaines.jesque.worker;
 
-import static net.greghaines.jesque.utils.ResqueConstants.COLON;
-import static net.greghaines.jesque.utils.ResqueConstants.DATE_FORMAT;
-import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
-import static net.greghaines.jesque.utils.ResqueConstants.JAVA_DYNAMIC_QUEUES;
-import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
-import static net.greghaines.jesque.utils.ResqueConstants.STARTED;
-import static net.greghaines.jesque.utils.ResqueConstants.STAT;
-import static net.greghaines.jesque.utils.ResqueConstants.WORKER;
-import static net.greghaines.jesque.utils.ResqueConstants.WORKERS;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_EXECUTE;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_FAILURE;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_PROCESS;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_SUCCESS;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_ERROR;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_START;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_STOP;
+import net.greghaines.jesque.Config;
+import net.greghaines.jesque.Job;
+import net.greghaines.jesque.JobFailure;
+import net.greghaines.jesque.WorkerStatus;
+import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.utils.JesqueUtils;
+import net.greghaines.jesque.utils.ReflectionUtils;
+import net.greghaines.jesque.utils.VersionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Set;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.Callable;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import net.greghaines.jesque.Config;
-import net.greghaines.jesque.Job;
-import net.greghaines.jesque.JobFailure;
-import net.greghaines.jesque.WorkerStatus;
-import net.greghaines.jesque.json.ObjectMapperFactory;
-import net.greghaines.jesque.utils.ConcurrentHashSet;
-import net.greghaines.jesque.utils.ConcurrentSet;
-import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.utils.ReflectionUtils;
-import net.greghaines.jesque.utils.VersionUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import redis.clients.jedis.Jedis;
+import static net.greghaines.jesque.utils.ResqueConstants.*;
+import static net.greghaines.jesque.worker.WorkerEvent.*;
 
 /**
  * Basic implementation of the Worker interface.
@@ -123,9 +96,8 @@ public class WorkerImpl implements Worker
 
 	protected final Jedis jedis;
 	protected final String namespace;
-	protected final String jobPackage;
 	private final BlockingDeque<String> queueNames;
-	private final ConcurrentSet<Class<?>> jobTypes;
+	private final ConcurrentHashMap<String, Class<?>> jobTypes;
 	private final String name;
 	protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
 	private final AtomicReference<WorkerState> state =
@@ -160,7 +132,6 @@ public class WorkerImpl implements Worker
 		checkQueues(queues);
 		checkJobTypes(jobTypes);
 		this.namespace = config.getNamespace();
-		this.jobPackage = config.getJobPackage();
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
 		if (config.getPassword() != null)
 		{
@@ -170,7 +141,10 @@ public class WorkerImpl implements Worker
 		this.queueNames = new LinkedBlockingDeque<String>((queues == ALL_QUEUES) // Using object equality on purpose
 				? this.jedis.smembers(key(QUEUES)) // Like '*' in other implementations
 				: queues);
-		this.jobTypes = new ConcurrentHashSet<Class<?>>(jobTypes);
+
+        this.jobTypes = new ConcurrentHashMap<String, Class<?>>();
+        setJobTypes(jobTypes);
+
 		this.name = createName();
 	}
 
@@ -352,7 +326,7 @@ public class WorkerImpl implements Worker
 
 	public Set<Class<?>> getJobTypes()
 	{
-		return Collections.unmodifiableSet(this.jobTypes);
+		return Collections.unmodifiableSet(new HashSet<Class<?>>(this.jobTypes.values()));
 	}
 
 	public void addJobType(final Class<?> jobType)
@@ -365,8 +339,8 @@ public class WorkerImpl implements Worker
 		{
 			throw new IllegalArgumentException("jobType must implement either Runnable or Callable: " + jobType);
 		}
-		this.jobTypes.add(jobType);
-	}
+        this.jobTypes.put(jobType.getSimpleName(), jobType);
+    }
 
 	public void removeJobType(final Class<?> jobType)
 	{
@@ -374,14 +348,16 @@ public class WorkerImpl implements Worker
 		{
 			throw new IllegalArgumentException("jobType must not be null");
 		}
-		this.jobTypes.remove(jobType);
+		this.jobTypes.remove(jobType.getSimpleName());
 	}
 
 	public void setJobTypes(final Collection<? extends Class<?>> jobTypes)
 	{
 		checkJobTypes(jobTypes);
 		this.jobTypes.clear();
-		this.jobTypes.addAll(jobTypes);
+
+        for (Class jobType : jobTypes)
+            addJobType(jobType);
 	}
 
 	/**
@@ -455,13 +431,12 @@ public class WorkerImpl implements Worker
 		renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
 		try
 		{
-			final String fullClassName = (this.jobPackage.length() == 0) 
-				? job.getClassName() 
-				: this.jobPackage + "." + job.getClassName();
-			final Class<?> clazz = ReflectionUtils.forName(fullClassName);
-			if (!this.jobTypes.contains(clazz))
+
+            final Class clazz = jobTypes.get(job.getClassName());
+
+			if (clazz == null)
 			{
-				throw new UnpermittedJobException(clazz);
+				throw new UnpermittedJobException(job.getClassName());
 			}
 			if (!Runnable.class.isAssignableFrom(clazz) && !Callable.class.isAssignableFrom(clazz))
 			{

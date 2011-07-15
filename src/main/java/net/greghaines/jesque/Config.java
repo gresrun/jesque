@@ -33,8 +33,7 @@ public class Config implements Serializable
 	private final String password;
 	private final String namespace;
 	private final int database;
-	private final String jobPackage;
-	
+
 	/**
 	 * Using a ConfigBuilder is recommended...
 	 * 
@@ -43,12 +42,11 @@ public class Config implements Serializable
 	 * @param timeout the Redis connection timeout
 	 * @param namespace the Redis namespace to prefix keys with
 	 * @param database the Redis database to use
-	 * @param jobPackage the Java package base where Job implementations are, 
 	 * or empty string if the full class names will be sent in the jobs
 	 * @see ConfigBuilder
 	 */
 	public Config(final String host, final int port, final int timeout, final String password, 
-			final String namespace, final int database, final String jobPackage)
+			final String namespace, final int database)
 	{
 		if (host == null || "".equals(host))
 		{
@@ -70,17 +68,12 @@ public class Config implements Serializable
 		{
 			throw new IllegalArgumentException("database must not be negative: " + database);
 		}
-		if (jobPackage == null)
-		{
-			throw new IllegalArgumentException("jobPackage must not be null");
-		}
 		this.host = host;
 		this.port = port;
 		this.timeout = timeout;
 		this.password = password;
 		this.namespace = namespace;
 		this.database = database;
-		this.jobPackage = jobPackage;
 	}
 
 	/**
@@ -132,14 +125,6 @@ public class Config implements Serializable
 	}
 
 	/**
-	 * @return the Java package base where Job implementations are
-	 */
-	public String getJobPackage()
-	{
-		return this.jobPackage;
-	}
-
-	/**
 	 * @return the Redis protocol URI this Config will connect to
 	 */
 	public String getURI()
@@ -151,7 +136,7 @@ public class Config implements Serializable
 	public String toString()
 	{
 		return "<" + getURI() + " namespace=" + this.namespace + 
-			" jobPackage=" + this.jobPackage + " timeout=" + this.timeout + ">";
+			" timeout=" + this.timeout + ">";
 	}
 
 	@Override
@@ -161,7 +146,6 @@ public class Config implements Serializable
 		int result = 1;
 		result = prime * result + this.database;
 		result = prime * result + ((this.host == null) ? 0 : this.host.hashCode());
-		result = prime * result + ((this.jobPackage == null) ? 0 : this.jobPackage.hashCode());
 		result = prime * result + ((this.namespace == null) ? 0 : this.namespace.hashCode());
 		result = prime * result + this.port;
 		result = prime * result + this.timeout;
@@ -204,17 +188,6 @@ public class Config implements Serializable
 			}
 		}
 		else if (!this.host.equals(other.host))
-		{
-			return false;
-		}
-		if (this.jobPackage == null)
-		{
-			if (other.jobPackage != null)
-			{
-				return false;
-			}
-		}
-		else if (!this.jobPackage.equals(other.jobPackage))
 		{
 			return false;
 		}
