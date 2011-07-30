@@ -79,7 +79,6 @@ public class ConfigBuilder implements Serializable
 		this.timeout = startingPoint.getTimeout();
 		this.namespace = startingPoint.getNamespace();
 		this.database = startingPoint.getDatabase();
-		this.jobPackage = startingPoint.getJobPackage();
 	}
 
 	/**
@@ -196,6 +195,6 @@ public class ConfigBuilder implements Serializable
 	public Config build()
 	{
 		return new Config(this.host, this.port, this.timeout, this.password, 
-			this.namespace, this.database, this.jobPackage);
+			this.namespace, this.database);
 	}
 }
