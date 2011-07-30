@@ -18,7 +18,7 @@ package net.greghaines.jesque.worker;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -247,16 +247,16 @@ public class WorkerPool implements Worker
 		}
 	}
 
-	public Set<Class<?>> getJobTypes()
+	public Map<String,Class<?>> getJobTypes()
 	{
 		return this.workers.get(0).getJobTypes();
 	}
 
-	public void addJobType(final Class<?> jobType)
+	public void addJobType(final String jobName, final Class<?> jobType)
 	{
 		for (final Worker worker : this.workers)
 		{
-			worker.addJobType(jobType);
+			worker.addJobType(jobName, jobType);
 		}
 	}
 
@@ -268,7 +268,15 @@ public class WorkerPool implements Worker
 		}
 	}
 
-	public void setJobTypes(final Collection<? extends Class<?>> jobTypes)
+	public void removeJobName(final String jobName)
+	{
+		for (final Worker worker : this.workers)
+		{
+			worker.removeJobName(jobName);
+		}
+	}
+
+	public void setJobTypes(final Map<String,? extends Class<?>> jobTypes)
 	{
 		for (final Worker worker : this.workers)
 		{

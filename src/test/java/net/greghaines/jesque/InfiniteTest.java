@@ -1,6 +1,8 @@
 package net.greghaines.jesque;
 
 import static net.greghaines.jesque.TestUtils.createJedis;
+import static net.greghaines.jesque.utils.JesqueUtils.entry;
+import static net.greghaines.jesque.utils.JesqueUtils.map;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +21,7 @@ import redis.clients.jedis.Jedis;
 public class InfiniteTest
 {
 	private static final Logger log = LoggerFactory.getLogger(InfiniteTest.class);
-	private static final Config config = new ConfigBuilder().withJobPackage("net.greghaines.jesque").build();
+	private static final Config config = new ConfigBuilder().build();
 	
 	@Before
 	public void resetRedis()
@@ -59,12 +61,14 @@ public class InfiniteTest
 			}
 			TestUtils.enqueueJobs("bar", jobs, config);
 		}
-		final Worker worker = new WorkerImpl(config, Arrays.asList("foo0", "bar","baz"), Arrays.asList(TestAction.class, FailAction.class));
+		final Worker worker = new WorkerImpl(config, Arrays.asList("foo0", "bar","baz"), 
+			map(entry("TestAction", TestAction.class), entry("FailAction", FailAction.class)));
 		final Thread workerThread = new Thread(worker);
 		workerThread.start();
 		
 		TestUtils.enqueueJobs("inf", Arrays.asList(new Job("InfiniteAction")), config);
-		final Worker worker2 = new WorkerImpl(config, Arrays.asList("inf"), Arrays.asList(InfiniteAction.class));
+		final Worker worker2 = new WorkerImpl(config, Arrays.asList("inf"), 
+			map(entry("InfiniteAction", InfiniteAction.class)));
 		final Thread workerThread2 = new Thread(worker2);
 		workerThread2.start();
 		
@@ -76,7 +80,8 @@ public class InfiniteTest
 	public void issue6()
 	throws InterruptedException
 	{
-		final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), Arrays.asList(TestAction.class, FailAction.class));
+		final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), 
+			map(entry("TestAction", TestAction.class), entry("FailAction", FailAction.class)));
 		final Thread workerThread = new Thread(worker);
 		workerThread.start();
 		

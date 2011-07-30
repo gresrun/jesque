@@ -39,8 +39,6 @@ public class ConfigBuilder implements Serializable
 	public static final String DEFAULT_NAMESPACE = "resque";
 	/** 0 */
 	public static final int DEFAULT_DATABASE = 0;
-	/** &lt;empty string&gt; */ 
-	public static final String DEFAULT_JOB_PACKAGE = "";
 
 	/**
 	 * @return a Config with all the default values set
@@ -56,7 +54,6 @@ public class ConfigBuilder implements Serializable
 	private String password = DEFAULT_PASSWORD;
 	private String namespace = DEFAULT_NAMESPACE;
 	private int database = DEFAULT_DATABASE;
-	private String jobPackage = DEFAULT_JOB_PACKAGE;
 
 	/**
 	 * No-arg constructor
@@ -79,7 +76,6 @@ public class ConfigBuilder implements Serializable
 		this.timeout = startingPoint.getTimeout();
 		this.namespace = startingPoint.getNamespace();
 		this.database = startingPoint.getDatabase();
-		this.jobPackage = startingPoint.getJobPackage();
 	}
 
 	/**
@@ -175,27 +171,11 @@ public class ConfigBuilder implements Serializable
 	}
 
 	/**
-	 * Configs created by this ConfigBuilder will have the given Java package base where Job implementations are.
-	 * 
-	 * @param jobPackage the Java package base where Job implementations are
-	 * @return this ConfigBuilder
-	 */
-	public ConfigBuilder withJobPackage(final String jobPackage)
-	{
-		if (jobPackage == null)
-		{
-			throw new IllegalArgumentException("jobPackage must not be null");
-		}
-		this.jobPackage = jobPackage;
-		return this;
-	}
-
-	/**
 	 * @return a new Config initialized with the current values
 	 */
 	public Config build()
 	{
 		return new Config(this.host, this.port, this.timeout, this.password, 
-			this.namespace, this.database, this.jobPackage);
+			this.namespace, this.database);
 	}
 }

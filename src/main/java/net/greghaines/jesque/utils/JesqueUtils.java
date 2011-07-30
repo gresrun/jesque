@@ -20,9 +20,13 @@ import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 /**
@@ -315,6 +319,34 @@ public final class JesqueUtils
 			}
 		}
 		return stes.toArray(new StackTraceElement[stes.size()]);
+	}
+
+	/**
+	 * A convenient way of creating a map on the fly.
+	 * 
+	 * @param entries Map.Entry objects to be added to the map
+	 * @return a LinkedHashMap with the supplied entries
+	 */
+	public static <K,V> Map<K,V> map(final Entry<? extends K,? extends V>... entries)
+	{
+		final Map<K,V> map = new LinkedHashMap<K,V>(entries.length);
+		for (final Entry<? extends K,? extends V> entry : entries)
+		{
+			map.put(entry.getKey(), entry.getValue());
+		}
+		return map;
+	}
+
+	/**
+	 * Creates a Map.Entry out of the given key and value. Commonly used in conjunction with map(Entry...)
+	 * 
+	 * @param key the key
+	 * @param value the value
+	 * @return a Map.Entry object with the give key and value
+	 */
+	public static <K,V> Entry<K,V> entry(final K key, final V value)
+	{
+		return new SimpleImmutableEntry<K,V>(key, value);
 	}
 
 	private JesqueUtils(){} // Utility class

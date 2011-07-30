@@ -43,9 +43,12 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Set;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,8 +60,6 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
-import net.greghaines.jesque.utils.ConcurrentHashSet;
-import net.greghaines.jesque.utils.ConcurrentSet;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.ReflectionUtils;
 import net.greghaines.jesque.utils.VersionUtils;
@@ -126,9 +127,8 @@ public class WorkerImpl implements Worker
 
 	protected final Jedis jedis;
 	protected final String namespace;
-	protected final String jobPackage;
 	private final BlockingDeque<String> queueNames;
-	private final ConcurrentSet<Class<?>> jobTypes;
+	private final ConcurrentMap<String,Class<?>> jobTypes = new ConcurrentHashMap<String,Class<?>>();
 	private final String name;
 	protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
 	private final AtomicReference<WorkerState> state =
@@ -156,7 +156,7 @@ public class WorkerImpl implements Worker
 	 * if the queues is null, or if the jobTypes is null or empty
 	 */
 	public WorkerImpl(final Config config, final Collection<String> queues, 
-			final Collection<? extends Class<?>> jobTypes)
+			final Map<String,? extends Class<?>> jobTypes)
 	{
 		if (config == null)
 		{
@@ -165,7 +165,6 @@ public class WorkerImpl implements Worker
 		checkQueues(queues);
 		checkJobTypes(jobTypes);
 		this.namespace = config.getNamespace();
-		this.jobPackage = config.getJobPackage();
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
 		if (config.getPassword() != null)
 		{
@@ -175,7 +174,7 @@ public class WorkerImpl implements Worker
 		this.queueNames = new LinkedBlockingDeque<String>((queues == ALL_QUEUES) // Using object equality on purpose
 				? this.jedis.smembers(key(QUEUES)) // Like '*' in other implementations
 				: queues);
-		this.jobTypes = new ConcurrentHashSet<Class<?>>(jobTypes);
+		this.jobTypes.putAll(jobTypes);
 		this.name = createName();
 	}
 
@@ -355,13 +354,17 @@ public class WorkerImpl implements Worker
 			: queues);
 	}
 
-	public Set<Class<?>> getJobTypes()
+	public Map<String,Class<?>> getJobTypes()
 	{
-		return Collections.unmodifiableSet(this.jobTypes);
+		return Collections.unmodifiableMap(this.jobTypes);
 	}
 
-	public void addJobType(final Class<?> jobType)
+	public void addJobType(final String jobName, final Class<?> jobType)
 	{
+		if (jobName == null)
+		{
+			throw new IllegalArgumentException("jobName must not be null");
+		}
 		if (jobType == null)
 		{
 			throw new IllegalArgumentException("jobType must not be null");
@@ -370,7 +373,7 @@ public class WorkerImpl implements Worker
 		{
 			throw new IllegalArgumentException("jobType must implement either Runnable or Callable: " + jobType);
 		}
-		this.jobTypes.add(jobType);
+		this.jobTypes.put(jobName, jobType);
 	}
 
 	public void removeJobType(final Class<?> jobType)
@@ -379,14 +382,26 @@ public class WorkerImpl implements Worker
 		{
 			throw new IllegalArgumentException("jobType must not be null");
 		}
-		this.jobTypes.remove(jobType);
+		this.jobTypes.values().remove(jobType);
+	}
+	
+	public void removeJobName(final String jobName)
+	{
+		if (jobName == null)
+		{
+			throw new IllegalArgumentException("jobName must not be null");
+		}
+		this.jobTypes.remove(jobName);
 	}
 
-	public void setJobTypes(final Collection<? extends Class<?>> jobTypes)
+	public void setJobTypes(final Map<String,? extends Class<?>> jobTypes)
 	{
 		checkJobTypes(jobTypes);
 		this.jobTypes.clear();
-		this.jobTypes.addAll(jobTypes);
+		for (final Entry<String,? extends Class<?>> entry : jobTypes.entrySet())
+		{
+			addJobType(entry.getKey(), entry.getValue());
+		}
 	}
 
 	public WorkerExceptionHandler getExceptionHandler()
@@ -519,16 +534,13 @@ public class WorkerImpl implements Worker
 		renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
 		try
 		{
-			final String fullClassName = (this.jobPackage.length() == 0) 
-				? job.getClassName() 
-				: this.jobPackage + "." + job.getClassName();
-			final Class<?> clazz = ReflectionUtils.forName(fullClassName);
-			if (!this.jobTypes.contains(clazz))
+			final Class<?> clazz = this.jobTypes.get(job.getClassName());
+			if (clazz == null)
 			{
-				throw new UnpermittedJobException(clazz);
+				throw new UnpermittedJobException(job.getClassName());
 			}
 			if (!Runnable.class.isAssignableFrom(clazz) && !Callable.class.isAssignableFrom(clazz))
-			{
+			{ // A bit redundant since we check when the job type is added but better safe than sorry...
 				throw new ClassCastException("jobs must be a Runnable or a Callable: " + 
 					clazz.getName() + " - " + job);
 			}
@@ -704,21 +716,26 @@ public class WorkerImpl implements Worker
 	 * 
 	 * @param jobTypes the given job types
 	 */
-	protected void checkJobTypes(final Collection<? extends Class<?>> jobTypes)
+	protected void checkJobTypes(final Map<String,? extends Class<?>> jobTypes)
 	{
 		if (jobTypes == null)
 		{
 			throw new IllegalArgumentException("jobTypes must not be null");
 		}
-		for (final Class<?> jobType : jobTypes)
+		for (final Entry<String,? extends Class<?>> entry : jobTypes.entrySet())
 		{
+			if (entry.getKey() == null)
+			{
+				throw new IllegalArgumentException("jobType's keys must not be null: " + jobTypes);
+			}
+			final Class<?> jobType = entry.getValue();
 			if (jobType == null)
 			{
-				throw new IllegalArgumentException("jobType's members must not be null: " + jobTypes);
+				throw new IllegalArgumentException("jobType's values must not be null: " + jobTypes);
 			}
 			if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType)))
 			{
-				throw new IllegalArgumentException("jobType's members must implement either Runnable or Callable: " + jobTypes);
+				throw new IllegalArgumentException("jobType's values must implement either Runnable or Callable: " + jobTypes);
 			}
 		}
 	}

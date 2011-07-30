@@ -18,7 +18,7 @@ package net.greghaines.jesque.worker;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * A Worker polls for Jobs from a specified list of queues, executing 
@@ -125,28 +125,36 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * 
 	 * @return an unmodifiable view of the allowed job types
 	 */
-	Set<Class<?>> getJobTypes();
+	Map<String,Class<?>> getJobTypes();
 
 	/**
 	 * Allow the given job type to be executed.
 	 * 
+	 * @param jobName the job name as seen
 	 * @param jobType the job type to allow
 	 */
-	void addJobType(Class<?> jobType);
+	void addJobType(String jobName, Class<?> jobType);
 
 	/**
 	 * Disallow the job type from being executed.
 	 * 
-	 * @param jobType the jot type to disallow
+	 * @param jobType the job type to disallow
 	 */
 	void removeJobType(Class<?> jobType);
+	
+	/**
+	 * Disallow the job name from being executed.
+	 * 
+	 * @param jobName the job name to disallow
+	 */
+	void removeJobName(String jobName);
 
 	/**
 	 * Clear any current allowed job types and use the given set.
 	 * 
 	 * @param jobTypes the job types to allow
 	 */
-	void setJobTypes(Collection<? extends Class<?>> jobTypes);
+	void setJobTypes(Map<String,? extends Class<?>> jobTypes);
 	
 	/**
 	 * The current exception handler.

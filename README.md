@@ -20,7 +20,7 @@ Or, to use it in your Maven project, add it as a dependency:
 <dependency>
 	<groupId>net.greghaines</groupId>
 	<artifactId>jesque</artifactId>
-	<version>0.9.6</version>
+	<version>1.0.0</version>
 	<type>jar</type>
 	<scope>compile</scope>
 </dependency>
@@ -30,9 +30,7 @@ Example usage (from IntegrationTest):
 
 ```java
 // Configuration
-final Config config = new ConfigBuilder()
-				.withJobPackage("net.greghaines.jesque")
-				.build();
+final Config config = new ConfigBuilder().build();
 
 // Add a job to the queue
 final Job job = new Job("TestAction", 
@@ -43,7 +41,7 @@ client.end();
 
 // Start a worker to run jobs from the queue
 final Worker worker = new WorkerImpl(config, 
-	Arrays.asList("foo"), Arrays.asList(TestAction.class));
+	Arrays.asList("foo"), map(entry("TestAction", TestAction.class)));
 final Thread workerThread = new Thread(worker);
 workerThread.start();
 
@@ -107,4 +105,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-

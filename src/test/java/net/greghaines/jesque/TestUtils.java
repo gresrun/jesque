@@ -17,12 +17,13 @@ package net.greghaines.jesque;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientImpl;
 import net.greghaines.jesque.worker.Worker;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import redis.clients.jedis.Jedis;
 
 /**

@@ -17,6 +17,8 @@ package net.greghaines.jesque;
 
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
+import static net.greghaines.jesque.utils.JesqueUtils.entry;
+import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
 import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
 import static net.greghaines.jesque.utils.ResqueConstants.STAT;
@@ -27,8 +29,8 @@ import static net.greghaines.jesque.worker.WorkerEvent.WORKER_ERROR;
 import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.greghaines.jesque.worker.UnpermittedJobException;
@@ -53,7 +55,7 @@ import redis.clients.jedis.Jedis;
 public class IntegrationTest
 {
 	private static final Logger log = LoggerFactory.getLogger(IntegrationTest.class);
-	private static final Config config = new ConfigBuilder().withJobPackage("net.greghaines.jesque").build();
+	private static final Config config = new ConfigBuilder().build();
 	private static final String testQueue = "foo";
 	
 	@Before
@@ -151,7 +153,7 @@ public class IntegrationTest
 	{
 		final Job job = new Job("TestAction", new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 		final AtomicBoolean didFailWithUnpermittedJob = new AtomicBoolean(false);
-		doWork(Arrays.asList(job), Arrays.asList(FailAction.class), new WorkerListener()
+		doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)), new WorkerListener()
 		{
 			public void onEvent(final WorkerEvent event, final Worker worker, final String queue,
 					final Job job, final Object runner, final Object result, final Exception ex)
@@ -181,7 +183,7 @@ public class IntegrationTest
 	{
 		final Job job = new Job("TestAction", new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 		
-		doWork(Arrays.asList(job), Arrays.asList(TestAction.class), listener, events);
+		doWork(Arrays.asList(job), map(entry("TestAction", TestAction.class)), listener, events);
 		
 		final Jedis jedis = createJedis(config);
 		try
@@ -200,7 +202,7 @@ public class IntegrationTest
 	{
 		final Job job = new Job("FailAction");
 		
-		doWork(Arrays.asList(job), Arrays.asList(FailAction.class), listener, events);
+		doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)), listener, events);
 		
 		final Jedis jedis = createJedis(config);
 		try
@@ -222,7 +224,7 @@ public class IntegrationTest
 		final Job job3 = new Job("FailAction");
 		final Job job4 = new Job("TestAction", new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 		
-		doWork(Arrays.asList(job1, job2, job3, job4), Arrays.asList(FailAction.class, TestAction.class), listener, events);
+		doWork(Arrays.asList(job1, job2, job3, job4), map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)), listener, events);
 		
 		final Jedis jedis = createJedis(config);
 		try
@@ -236,7 +238,7 @@ public class IntegrationTest
 		}
 	}
 	
-	private static void doWork(final List<Job> jobs, final Collection<? extends Class<? extends Runnable>> jobTypes,
+	private static void doWork(final List<Job> jobs, final Map<String,? extends Class<? extends Runnable>> jobTypes,
 			final WorkerListener listener, final WorkerEvent... events)
 	{
 		final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue), jobTypes);
