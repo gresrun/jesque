@@ -15,6 +15,8 @@
  */
 package net.greghaines.jesque.meta.dao.impl;
 
+import static net.greghaines.jesque.utils.ResqueConstants.DATE_FORMAT_PHP;
+import static net.greghaines.jesque.utils.ResqueConstants.DATE_FORMAT_RUBY;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
 import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
 import static net.greghaines.jesque.utils.ResqueConstants.STARTED;
@@ -23,11 +25,12 @@ import static net.greghaines.jesque.utils.ResqueConstants.WORKER;
 import static net.greghaines.jesque.utils.ResqueConstants.WORKERS;
 
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,8 +44,8 @@ import net.greghaines.jesque.meta.WorkerInfo;
 import net.greghaines.jesque.meta.dao.WorkerInfoDAO;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.PoolUtils;
-import net.greghaines.jesque.utils.ResqueDateFormatThreadLocal;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
+import net.greghaines.jesque.utils.ResqueDateFormatThreadLocal;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
@@ -212,8 +215,7 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO
 		final String startedStr = jedis.get(key(WORKER, workerName, STARTED));
 		if (startedStr != null)
 		{
-			final DateFormat df = ResqueDateFormatThreadLocal.getInstance();
-			workerInfo.setStarted(df.parse(startedStr));
+			workerInfo.setStarted(parseDate(startedStr));
 		}
 		final String failedStr = jedis.get(key(STAT, FAILED, workerName));
 		if (failedStr != null)
@@ -241,7 +243,8 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO
 	 *
 	 * @param workerName The worker name to remove
 	 */
-	public void removeWorker(final String workerName) {
+	public void removeWorker(final String workerName)
+	{
 		PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,Void>()
 		{
 			public Void doWork(final Jedis jedis)
@@ -256,5 +259,44 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO
 				return null;
 			}
 		});
+	}
+	
+	/**
+	 * Keep trying to parse the date using all known formats
+	 * 
+	 * @param dateStr the string to be parsed
+	 * @return the parsed date
+	 * @throws ParseException if the date format is unknown
+	 */
+	private static Date parseDate(final String dateStr)
+	throws ParseException
+	{
+		Date date = null;
+		try
+		{
+			date = ResqueDateFormatThreadLocal.getInstance().parse(dateStr);
+		}
+		catch (ParseException pe){}
+		if (date == null)
+		{
+			try
+			{
+				date = new SimpleDateFormat(DATE_FORMAT_RUBY).parse(dateStr);
+			}
+			catch (ParseException pe){}
+		}
+		if (date == null)
+		{
+			try
+			{
+				date = new SimpleDateFormat(DATE_FORMAT_PHP).parse(dateStr);
+			}
+			catch (ParseException pe){}
+		}
+		if (date == null)
+		{
+			throw new ParseException("Unparseable date: \"" + dateStr + "\"" , 0);
+		}
+		return date;
 	}
 }

@@ -26,6 +26,14 @@ public interface ResqueConstants
 	 * ISO-8601 compliant format
 	 */
 	String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+	/**
+	 * For interoperability with php-resque
+	 */
+	String DATE_FORMAT_PHP = "EEE MMM dd HH:mm:ss z yyyy";
+	/**
+	 * For interoperability with Resque (ruby)
+	 */
+	String DATE_FORMAT_RUBY = "yyyy-MM-dd HH:mm:ss Z";
 	
 	String JAVA_DYNAMIC_QUEUES = "JAVA_DYNAMIC_QUEUES";
 	

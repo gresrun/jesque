@@ -274,5 +274,18 @@ public class WorkerPool implements Worker
 		{
 			worker.setJobTypes(jobTypes);
 		}
-	}	
+	}
+
+	public WorkerExceptionHandler getExceptionHandler()
+	{
+		return this.workers.get(0).getExceptionHandler();
+	}
+
+	public void setExceptionHandler(final WorkerExceptionHandler exceptionHandler)
+	{
+		for (final Worker worker : this.workers)
+		{
+			worker.setExceptionHandler(exceptionHandler);
+		}
+	}
 }

@@ -147,4 +147,18 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @param jobTypes the job types to allow
 	 */
 	void setJobTypes(Collection<? extends Class<?>> jobTypes);
+	
+	/**
+	 * The current exception handler.
+	 * 
+	 * @return the current exception handler.
+	 */
+	WorkerExceptionHandler getExceptionHandler();
+	
+	/**
+	 * Set this Worker's exception handler to the given handler.
+	 * 
+	 * @param exceptionHandler the exception handler to use
+	 */
+	void setExceptionHandler(WorkerExceptionHandler exceptionHandler);
 }

@@ -11,11 +11,14 @@ import net.greghaines.jesque.worker.WorkerImpl;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
 
 public class InfiniteTest
 {
+	private static final Logger log = LoggerFactory.getLogger(InfiniteTest.class);
 	private static final Config config = new ConfigBuilder().withJobPackage("net.greghaines.jesque").build();
 	
 	@Before
@@ -34,7 +37,7 @@ public class InfiniteTest
 	}
 	
 	@Test
-	public void dummy(){}
+	public void dummy(){} // Makes JUnit happy that there's at least one test if the others are commented out
 	
 	@SuppressWarnings("unchecked")
 //	@Test
@@ -65,6 +68,29 @@ public class InfiniteTest
 		final Thread workerThread2 = new Thread(worker2);
 		workerThread2.start();
 		
+		workerThread.join();
+	}
+	
+	@SuppressWarnings("unchecked")
+//	@Test
+	public void issue6()
+	throws InterruptedException
+	{
+		final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), Arrays.asList(TestAction.class, FailAction.class));
+		final Thread workerThread = new Thread(worker);
+		workerThread.start();
+		
+		for (int i = 0; i < 10; i++)
+		{
+			final List<Job> jobs = new ArrayList<Job>(30);
+			for (int j = 0; j < 30; j++)
+			{
+				jobs.add(new Job("TestAction", new Object[]{j, 2.3, true, "test", Arrays.asList("inner", 4.5)}));
+			}
+			TestUtils.enqueueJobs("foo", jobs, config);
+			Thread.sleep(1000);
+		}
+		log.info("DO IT NOW!!!");
 		workerThread.join();
 	}
 }

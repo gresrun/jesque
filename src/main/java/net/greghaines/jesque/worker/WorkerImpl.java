@@ -67,6 +67,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.exceptions.JedisConnectionException;
 
 /**
  * Basic implementation of the Worker interface.
@@ -100,6 +101,8 @@ public class WorkerImpl implements Worker
 	private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
 	private static final AtomicLong workerCounter = new AtomicLong(0);
 	protected static final long emptyQueueSleepTime = 500; // 500 ms
+	private static final long reconnectSleepTime = 5000; // 5s
+	private static final int reconnectAttempts = 120; // Total time: 10min
 
 	/**
 	 * Verify that the given queues are all valid.
@@ -136,6 +139,8 @@ public class WorkerImpl implements Worker
 		"Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
 	private final AtomicReference<Thread> workerThreadRef =
 		new AtomicReference<Thread>(null);
+	private final AtomicReference<WorkerExceptionHandler> exceptionHandlerRef = 
+		new AtomicReference<WorkerExceptionHandler>(new DefaultWorkerExceptionHandler());
 
 	/**
 	 * Creates a new WorkerImpl, which creates it's own connection to 
@@ -384,6 +389,28 @@ public class WorkerImpl implements Worker
 		this.jobTypes.addAll(jobTypes);
 	}
 
+	public WorkerExceptionHandler getExceptionHandler()
+	{
+		return this.exceptionHandlerRef.get();
+	}
+
+	public void setExceptionHandler(final WorkerExceptionHandler exceptionHandler)
+	{
+		if (exceptionHandler == null)
+		{
+			throw new IllegalArgumentException("exceptionHandler must not be null");
+		}
+		this.exceptionHandlerRef.set(exceptionHandler);
+	}
+
+	/**
+	 * @return the number of times this Worker will attempt to reconnect to Redis before giving up
+	 */
+	protected int getReconnectAttempts()
+	{
+		return reconnectAttempts;
+	}
+
 	/**
 	 * Polls the queues for jobs and executes them.
 	 */
@@ -421,7 +448,44 @@ public class WorkerImpl implements Worker
 			}
 			catch (Exception e)
 			{
-				this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, e);
+				final WorkerRecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, e, curQueue);
+				final int reconAttempts = getReconnectAttempts();
+				switch (recoveryStrategy)
+				{
+				case RECONNECT:
+					int i = 1;
+					do 
+					{
+						log.info("Reconnecting to Redis in response to exception - Attempt " + i + " of " + reconAttempts, e);
+						try
+						{
+							this.jedis.disconnect();
+							try { Thread.sleep(reconnectSleepTime); } catch (Exception e2){}
+							this.jedis.connect();
+						}
+						catch (JedisConnectionException jce){} // Ignore bad connection attempts
+					} while (++i <= reconAttempts && !this.jedis.isConnected());
+					if (!this.jedis.isConnected())
+					{
+						log.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
+						end(false);
+					}
+					else
+					{
+						log.info("Reconnected to Redis after {} attempts", i - 1);
+					}
+					break;
+				case TERMINATE:
+					log.warn("Terminating in response to exception", e);
+					end(false);
+					break;
+				case PROCEED:
+					this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, e);
+					break;
+				default:
+					log.error("Unknown WorkerRecoveryStrategy: {} - Proceeding...", recoveryStrategy);
+					break;
+				}
 			}
 		}
 	}
