@@ -151,7 +151,7 @@ public class WorkerImpl implements Worker
 	 * @param config used to create a connection to Redis and the package 
 	 * prefix for incoming jobs
 	 * @param queues the list of queues to poll
-	 * @param jobTypes the list of job types to execute
+	 * @param jobTypes the map of job names and types to execute
 	 * @throws IllegalArgumentException if the config is null, 
 	 * if the queues is null, or if the jobTypes is null or empty
 	 */

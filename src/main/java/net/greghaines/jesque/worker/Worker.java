@@ -121,9 +121,9 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	void setQueues(Collection<String> queues);
 
 	/**
-	 * The allowed job types that this Worker will execute.
+	 * The allowed job names and types that this Worker will execute.
 	 * 
-	 * @return an unmodifiable view of the allowed job types
+	 * @return an unmodifiable view of the allowed job names and types
 	 */
 	Map<String,Class<?>> getJobTypes();
 

@@ -42,8 +42,6 @@ public class Config implements Serializable
 	 * @param timeout the Redis connection timeout
 	 * @param namespace the Redis namespace to prefix keys with
 	 * @param database the Redis database to use
-	 * @param jobPackage the Java package base where Job implementations are, 
-	 * or empty string if the full class names will be sent in the jobs
 	 * @see ConfigBuilder
 	 */
 	public Config(final String host, final int port, final int timeout, final String password, 
