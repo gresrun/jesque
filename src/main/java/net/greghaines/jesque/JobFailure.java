@@ -17,6 +17,7 @@ package net.greghaines.jesque;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * A bean to hold information about a job that failed.
@@ -31,6 +32,9 @@ public class JobFailure implements Serializable
 	private String queue;
 	private Job payload;
 	private Throwable exception;
+	private String exceptionString;
+	private List<String> backtrace;
+	private String error;
 	private Date failedAt;
 	private Date retriedAt;
 	
@@ -125,6 +129,57 @@ public class JobFailure implements Serializable
 	public void setException(final Throwable exception)
 	{
 		this.exception = exception;
+	}
+
+	/**
+	 * @return the exception that occured as a string
+	 */
+	public String getExceptionString()
+	{
+		return this.exceptionString;
+	}
+
+	/**
+	 * Set the exception that occured.
+	 * @param exceptionString the kind of exception that occured as a string
+	 */
+	public void setExceptionString(final String exceptionString)
+	{
+		this.exceptionString = exceptionString;
+	}
+
+	/**
+	 * @return the error that occurred
+	 */
+	public String getError()
+	{
+		return this.error;
+	}
+
+	/**
+	 * Set the error that occurred
+	 * @param error the error that occurred
+	 */
+	public void setError(final String error)
+	{
+		this.error = error;
+	}
+
+	/**
+	 * @return the backtrace of the exception
+	 */
+	public List<String> getBacktrace()
+	{
+		return this.backtrace;
+	}
+
+	/**
+	 * Set the backtrace of the exception
+	 * @param backtrace the backtrace of the exception
+	 */
+	public void setBacktrace(final List<String> backtrace)
+	{
+		this.backtrace = backtrace;
 	}
 
 	/**
