@@ -3,6 +3,9 @@ package net.greghaines.jesque.utils;
 import static net.greghaines.jesque.utils.JesqueUtils.createBacktrace;
 import static net.greghaines.jesque.utils.JesqueUtils.recreateThrowable;
 
+import net.greghaines.jesque.JobFailure;
+import net.greghaines.jesque.json.ObjectMapperFactory;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -189,7 +192,18 @@ public class TestExceptionSerialization
 			serialize(t2);
 		}
 	}
-	
+
+	@Test
+	public void testDeseralize()
+	throws Exception
+	{
+		String payload = "{\"worker\":\"test5:12385-1:JAVA_DYNAMIC_QUEUES,SomeQueue\",\"queue\":\"audioTranscode\",\"payload\":{\"class\":\"SomeClass\",\"args\":[1234]},\"exception\":\"groovy.lang.MissingMethodException\",\"error\":\"SomeError\",\"backtrace\":[\"\\tat sompackage.someclass(somefile.java:42)\"],\"failed_at\":\"2011-10-17T18:01:33.185+0000\",\"retried_at\":null}";
+
+		JobFailure jobFailure = ObjectMapperFactory.get().readValue(payload, JobFailure.class);
+
+		assert jobFailure.getException() == null;
+	}
+
 	private static void serialize(final Throwable t)
 	throws Exception
 	{
