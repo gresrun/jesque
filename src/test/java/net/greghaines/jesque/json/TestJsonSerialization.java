@@ -23,6 +23,7 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 
+import net.greghaines.jesque.utils.JesqueUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -56,6 +57,9 @@ public class TestJsonSerialization
 		jobFailure.setPayload(job);
 		jobFailure.setFailedAt(new Date());
 		jobFailure.setException(e);
+		jobFailure.setExceptionString(e.getClass().getName());
+		jobFailure.setError(e.getMessage());
+		jobFailure.setBacktrace(JesqueUtils.createBacktrace(e));
 		jobFailure.setWorker("foo");
 		assertSerializeRoundTrip(jobFailure);
 	}

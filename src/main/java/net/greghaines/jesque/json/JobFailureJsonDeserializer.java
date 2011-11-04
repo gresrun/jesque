@@ -46,9 +46,6 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 	throws IOException, JsonProcessingException
 	{
 		final JobFailure jobFailure = new JobFailure();
-		String exception = null;
-		String error = null;
-		List<String> backtrace = null;
 		while (jp.getCurrentToken() != JsonToken.END_OBJECT)
 		{
 			jp.nextToken();
@@ -70,17 +67,17 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 			else if ("exception".equals(jp.getText()))
 			{
 				jp.nextToken();
-				exception = jp.readValueAs(String.class);
+				jobFailure.setExceptionString(jp.readValueAs(String.class));
 			}
 			else if ("error".equals(jp.getText()))
 			{
 				jp.nextToken();
-				error = jp.readValueAs(String.class);
+				jobFailure.setError(jp.readValueAs(String.class));
 			}
 			else if ("backtrace".equals(jp.getText()))
 			{
 				jp.nextToken();
-				backtrace = jp.<List<String>>readValueAs(stringListTypeRef);
+				jobFailure.setBacktrace(jp.<List<String>>readValueAs(stringListTypeRef));
 			}
 			else if ("failed_at".equals(jp.getText()))
 			{
@@ -97,15 +94,14 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
 				throw new JsonMappingException("Unexpected field for JobFailure: " + jp.getText(), jp.getCurrentLocation());
 			}
 		}
-		if (exception != null)
+		if (jobFailure.getExceptionString() != null)
 		{
 			try
 			{
-				jobFailure.setException(JesqueUtils.recreateThrowable(exception, error, backtrace));
+				jobFailure.setException(JesqueUtils.recreateThrowable(jobFailure.getExceptionString(), jobFailure.getError(), jobFailure.getBacktrace()));
 			}
-			catch (Exception e)
+			catch (Exception ignore)
 			{
-				throw new JsonMappingException("Unable to recreate exception for JobFailure", e);
 			}
 		}
 		return jobFailure;

@@ -17,6 +17,7 @@ package net.greghaines.jesque;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * A bean to hold information about a job that failed.
@@ -31,6 +32,9 @@ public class JobFailure implements Serializable
 	private String queue;
 	private Job payload;
 	private Throwable exception;
+	private String exceptionString;
+	private List<String> backtrace;
+	private String error;
 	private Date failedAt;
 	private Date retriedAt;
 	
@@ -57,6 +61,9 @@ public class JobFailure implements Serializable
 		this.exception = origFailure.exception;
 		this.failedAt = origFailure.failedAt;
 		this.retriedAt = origFailure.retriedAt;
+		this.exceptionString = origFailure.exceptionString;
+		this.error = origFailure.error;
+		this.backtrace = origFailure.backtrace;
 	}
 
 	/**
@@ -128,6 +135,57 @@ public class JobFailure implements Serializable
 	}
 
 	/**
+	 * @return the exception that occured as a string
+	 */
+	public String getExceptionString()
+	{
+		return this.exceptionString;
+	}
+
+	/**
+	 * Set the exception that occured.
+	 * @param exceptionString the kind of exception that occured as a string
+	 */
+	public void setExceptionString(final String exceptionString)
+	{
+		this.exceptionString = exceptionString;
+	}
+
+	/**
+	 * @return the error that occurred
+	 */
+	public String getError()
+	{
+		return this.error;
+	}
+
+	/**
+	 * Set the error that occurred
+	 * @param error the error that occurred
+	 */
+	public void setError(final String error)
+	{
+		this.error = error;
+	}
+
+	/**
+	 * @return the backtrace of the exception
+	 */
+	public List<String> getBacktrace()
+	{
+		return this.backtrace;
+	}
+
+	/**
+	 * Set the backtrace of the exception
+	 * @param backtrace the backtrace of the exception
+	 */
+	public void setBacktrace(final List<String> backtrace)
+	{
+		this.backtrace = backtrace;
+	}
+
+	/**
 	 * @return when the error occurred
 	 */
 	public Date getFailedAt()
@@ -172,6 +230,9 @@ public class JobFailure implements Serializable
 		result = prime * result + ((this.payload == null) ? 0 : this.payload.hashCode());
 		result = prime * result + ((this.worker == null) ? 0 : this.worker.hashCode());
 		result = prime * result + ((this.queue == null) ? 0 : this.queue.hashCode());
+		result = prime * result + ((this.exceptionString == null) ? 0 : this.exceptionString.hashCode());
+		result = prime * result + ((this.error == null) ? 0 : this.error.hashCode());
+		result = prime * result + ((this.backtrace == null) ? 0 : this.backtrace.hashCode());
 		return result;
 	}
 
@@ -254,6 +315,39 @@ public class JobFailure implements Serializable
 			}
 		}
 		else if (!this.queue.equals(other.queue))
+		{
+			return false;
+		}
+		if (this.exceptionString == null)
+		{
+			if (other.exceptionString != null)
+			{
+				return false;
+			}
+		}
+		else if (!this.exceptionString.equals(other.exceptionString))
+		{
+			return false;
+		}
+		if (this.error == null)
+		{
+			if (other.error != null)
+			{
+				return false;
+			}
+		}
+		else if (!this.error.equals(other.error))
+		{
+			return false;
+		}
+		if (this.backtrace == null)
+		{
+			if (other.backtrace != null)
+			{
+				return false;
+			}
+		}
+		else if (!this.backtrace.equals(other.backtrace))
 		{
 			return false;
 		}
