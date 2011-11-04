@@ -61,6 +61,9 @@ public class JobFailure implements Serializable
 		this.exception = origFailure.exception;
 		this.failedAt = origFailure.failedAt;
 		this.retriedAt = origFailure.retriedAt;
+		this.exceptionString = origFailure.exceptionString;
+		this.error = origFailure.error;
+		this.backtrace = origFailure.backtrace;
 	}
 
 	/**
@@ -227,6 +230,9 @@ public class JobFailure implements Serializable
 		result = prime * result + ((this.payload == null) ? 0 : this.payload.hashCode());
 		result = prime * result + ((this.worker == null) ? 0 : this.worker.hashCode());
 		result = prime * result + ((this.queue == null) ? 0 : this.queue.hashCode());
+		result = prime * result + ((this.exceptionString == null) ? 0 : this.exceptionString.hashCode());
+		result = prime * result + ((this.error == null) ? 0 : this.error.hashCode());
+		result = prime * result + ((this.backtrace == null) ? 0 : this.backtrace.hashCode());
 		return result;
 	}
 
@@ -309,6 +315,39 @@ public class JobFailure implements Serializable
 			}
 		}
 		else if (!this.queue.equals(other.queue))
+		{
+			return false;
+		}
+		if (this.exceptionString == null)
+		{
+			if (other.exceptionString != null)
+			{
+				return false;
+			}
+		}
+		else if (!this.exceptionString.equals(other.exceptionString))
+		{
+			return false;
+		}
+		if (this.error == null)
+		{
+			if (other.error != null)
+			{
+				return false;
+			}
+		}
+		else if (!this.error.equals(other.error))
+		{
+			return false;
+		}
+		if (this.backtrace == null)
+		{
+			if (other.backtrace != null)
+			{
+				return false;
+			}
+		}
+		else if (!this.backtrace.equals(other.backtrace))
 		{
 			return false;
 		}
