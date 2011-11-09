@@ -19,6 +19,11 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * Encapsulates information about a key in Redis.
+ * 
+ * @author Greg Haines
+ */
 public class KeyInfo implements Comparable<KeyInfo>, Serializable
 {
 	private static final long serialVersionUID = 6243902746964006352L;
@@ -34,7 +39,15 @@ public class KeyInfo implements Comparable<KeyInfo>, Serializable
 	
 	public KeyInfo(final String fullKey, final KeyType type)
 	{
+		if (fullKey == null)
+		{
+			throw new IllegalArgumentException("fullKey must not be null");
+		}
 		final String[] keyParts = colonPattern.split(fullKey, 2);
+		if (keyParts.length != 2)
+		{
+			throw new IllegalArgumentException("Malformed fullKey: " + fullKey);
+		}
 		this.namespace = keyParts[0];
 		this.name = keyParts[1];
 		this.type = type;
