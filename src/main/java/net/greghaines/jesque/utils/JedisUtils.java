@@ -21,7 +21,7 @@ public final class JedisUtils
 		boolean jedisOK = false;
 		try
 		{
-			jedisOK = (jedis.isConnected() && jedis.ping().equals(PONG));
+			jedisOK = (jedis.isConnected() && PONG.equals(jedis.ping()));
 		}
 		catch (Exception e)
 		{
