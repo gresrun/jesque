@@ -20,9 +20,7 @@ Or, to use it in your Maven project, add it as a dependency:
 <dependency>
 	<groupId>net.greghaines</groupId>
 	<artifactId>jesque</artifactId>
-	<version>1.0.0</version>
-	<type>jar</type>
-	<scope>compile</scope>
+	<version>1.0.1</version>
 </dependency>
 ```
 
