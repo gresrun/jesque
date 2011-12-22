@@ -59,8 +59,19 @@ public class ClientPoolImpl extends AbstractClient
 			}
 		});
 	}
+	
+	@Override
+    protected boolean doAcquireLock(final String lockName, final String lockHolder, final Integer timeout) throws Exception {
+		return PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis,Boolean>()
+		{
+			public Boolean doWork(final Jedis jedis)
+			{
+			    return doAcquireLock(jedis, getNamespace(), lockName, lockHolder, timeout);
+			}
+		});
+    }
 
-	/**
+    /**
 	 * Does nothing.
 	 */
 	public void end(){} // Do nothing
