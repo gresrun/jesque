@@ -296,4 +296,8 @@ public class WorkerPool implements Worker
 			worker.setExceptionHandler(exceptionHandler);
 		}
 	}
+
+	public List<Thread> getThreads() {
+		 return this.threads;
+	}
 }

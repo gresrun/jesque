@@ -40,9 +40,11 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.BlockingDeque;
@@ -93,6 +95,10 @@ public class WorkerImpl implements Worker
 		 * The Worker is currently running.
 		 */
 		RUNNING,
+		/**
+		 * The Worker is no longer taking jobs, but is finishing currently running jobs.
+		 */
+		SET_FOR_SHUTDOWN,
 		/**
 		 * The Worker has shutdown.
 		 */
@@ -263,14 +269,18 @@ public class WorkerImpl implements Worker
 	 */
 	public void end(final boolean now)
 	{
-		this.state.set(WorkerState.SHUTDOWN);
 		if (now)
 		{
+			this.state.set(WorkerState.SHUTDOWN);
 			final Thread workerThread = this.workerThreadRef.get();
 			if (workerThread != null)
 			{
 				workerThread.interrupt();
 			}
+		}
+		else
+		{
+			this.state.set(WorkerState.SET_FOR_SHUTDOWN);
 		}
 		togglePause(false); // Release any threads waiting in checkPaused()
 	}
@@ -774,5 +784,12 @@ public class WorkerImpl implements Worker
 	public String toString()
 	{
 		return this.namespace + COLON + WORKER + COLON + this.name;
+	}
+
+	@Override
+	public List<Thread> getThreads() {
+		List<Thread> threadList = new ArrayList<Thread>();
+		threadList.add(workerThreadRef.get());
+		return threadList;
 	}
 }
