@@ -34,6 +34,16 @@ public interface Client
 	void enqueue(String queue, Job job);
 	
 	/**
+	 * Queues a job at the head of the given queue to run.
+	 * 
+	 * @param queue the queue to add the Job to
+	 * @param job the job to be enqueued
+	 * @throws IllegalArgumentException if the queue is null or empty or if the job is null
+	 */
+	void headQueue(String queue, Job job);
+		
+	
+	/**
 	 * Quits the connection to the Redis server.
 	 */
 	void end();

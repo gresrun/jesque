@@ -48,15 +48,7 @@ public abstract class AbstractClient implements Client {
     }
 
     public void enqueue(final String queue, final Job job) {
-        if ((queue == null) || "".equals(queue)) {
-            throw new IllegalArgumentException("queue must not be null or empty: " + queue);
-        }
-        if (job == null) {
-            throw new IllegalArgumentException("job must not be null");
-        }
-        if (!job.isValid()) {
-            throw new IllegalStateException("job is not valid: " + job);
-        }
+        validateArguments(queue, job);
         try {
             doEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
         } catch (RuntimeException re) {
@@ -66,6 +58,30 @@ public abstract class AbstractClient implements Client {
         }
     }
 
+	private void validateArguments(final String queue, final Job job) {
+		if ((queue == null) || "".equals(queue)) {
+            throw new IllegalArgumentException("queue must not be null or empty: " + queue);
+        }
+        if (job == null) {
+            throw new IllegalArgumentException("job must not be null");
+        }
+        if (!job.isValid()) {
+            throw new IllegalStateException("job is not valid: " + job);
+        }
+	}
+
+    public void headQueue(final String queue, final Job job) {
+        validateArguments(queue, job);
+        try {
+        	doHeadQueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+  
+    
     /**
      * Actually enqueue the serialized job.
      *
@@ -75,6 +91,8 @@ public abstract class AbstractClient implements Client {
      * @throws  Exception  in case something goes wrong
      */
     protected abstract void doEnqueue(String queue, String msg) throws Exception;
+    
+    protected abstract void doHeadQueue(final String queue, final String jobJson) throws Exception;
 
     /**
      * Builds a namespaced Redis key with the given arguments.
@@ -98,6 +116,11 @@ public abstract class AbstractClient implements Client {
     public static void doEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
         jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
         jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+    }
+    
+    public static void doHeadQueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
+        jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+        jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
     }
 
     public boolean acquireLock(final String lockName, final String lockHolder, final Integer timeout) {

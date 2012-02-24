@@ -108,6 +108,17 @@ public class ClientImpl extends AbstractClient
 	}
 	
 	@Override
+	protected void doHeadQueue(final String queue, final String jobJson)
+	{
+		if (this.checkConnectionBeforeUse)
+		{
+			JedisUtils.ensureJedisConnection(this.jedis);
+		}
+		doHeadQueue(this.jedis, getNamespace(), queue, jobJson);
+	}
+
+	
+	@Override
     protected boolean doAcquireLock(String lockName, String lockHolder, Integer timeout) throws Exception {
 		if (this.checkConnectionBeforeUse)
 		{
