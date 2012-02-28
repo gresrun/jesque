@@ -9,15 +9,18 @@
 	<groupId>net.greghaines</groupId>
 	<artifactId>jesque</artifactId>
 	<version>1.0.2-SNAPSHOT</version>
+	<packaging>jar</packaging>
 	<name>Jesque</name>
 	<description>An implementation of Resque in Java</description>
 	<url>https://github.com/gresrun/jesque</url>
 	<inceptionYear>2011</inceptionYear>
-	<packaging>jar</packaging>
+	<prerequisites>
+		<maven>2.2.0</maven>
+	</prerequisites>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jedis.version>2.0.0</jedis.version>
-		<jackson.version>1.9.2</jackson.version>
+		<jackson.version>1.9.4</jackson.version>
 		<slf4j.version>1.6.4</slf4j.version>
 		<logback.version>1.0.0</logback.version>
 		<junit.version>4.10</junit.version>
@@ -84,7 +87,7 @@
 		<dependency>
 			<groupId>commons-pool</groupId>
 			<artifactId>commons-pool</artifactId>
-			<version>1.5.6</version>
+			<version>1.6</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
