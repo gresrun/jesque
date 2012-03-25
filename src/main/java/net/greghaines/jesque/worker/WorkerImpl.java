@@ -104,6 +104,7 @@ public class WorkerImpl implements Worker
 	protected static final long emptyQueueSleepTime = 500; // 500 ms
 	private static final long reconnectSleepTime = 5000; // 5s
 	private static final int reconnectAttempts = 120; // Total time: 10min
+	private static final int maxLoopsOnEmptyQueues = 3;
 
 	/**
 	 * Verify that the given queues are all valid.
@@ -141,6 +142,7 @@ public class WorkerImpl implements Worker
 		new AtomicReference<Thread>(null);
 	private final AtomicReference<WorkerExceptionHandler> exceptionHandlerRef = 
 		new AtomicReference<WorkerExceptionHandler>(new DefaultWorkerExceptionHandler());
+	private final boolean exitOnEmptyQueues;
 
 	/**
 	 * Creates a new WorkerImpl, which creates it's own connection to 
@@ -157,6 +159,26 @@ public class WorkerImpl implements Worker
 	 */
 	public WorkerImpl(final Config config, final Collection<String> queues, 
 			final Map<String,? extends Class<?>> jobTypes)
+	{
+		this(config, queues, jobTypes, false);
+	}
+	/**
+	 * Creates a new WorkerImpl, which creates it's own connection to 
+	 * Redis using values from the config. The worker will only listen 
+	 * to the supplied queues and only execute jobs that are in the 
+	 * supplied job types.
+	 * 
+	 * @param config used to create a connection to Redis and the package 
+	 * prefix for incoming jobs
+	 * @param queues the list of queues to poll
+	 * @param jobTypes the map of job names and types to execute
+	 * @param exitOnEmptyQueues  exit poll loop if queues are empty to long
+	 * @throws IllegalArgumentException if the config is null, 
+	 * if the queues is null, or if the jobTypes is null or empty
+	 */
+	public WorkerImpl(final Config config, final Collection<String> queues, 
+			final Map<String,? extends Class<?>> jobTypes, 
+			final boolean exitOnEmptyQueues)
 	{
 		if (config == null)
 		{
@@ -176,6 +198,7 @@ public class WorkerImpl implements Worker
 				: queues);
 		this.jobTypes.putAll(jobTypes);
 		this.name = createName();
+		this.exitOnEmptyQueues = exitOnEmptyQueues;
 	}
 
 	/**
@@ -437,6 +460,7 @@ public class WorkerImpl implements Worker
 		{
 			try
 			{
+				int allQueuesEmptyCount = 0;
 				renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
 				curQueue = this.queueNames.poll(emptyQueueSleepTime, TimeUnit.MILLISECONDS);
 				if (curQueue != null)
@@ -452,11 +476,17 @@ public class WorkerImpl implements Worker
 							final Job job = ObjectMapperFactory.get().readValue(payload, Job.class);
 							process(job, curQueue);
 							missCount = 0;
+							allQueuesEmptyCount = 0;
 						}
 						else if (++missCount >= this.queueNames.size() && WorkerState.RUNNING.equals(this.state.get()))
 						{ // Keeps worker from busy-spinning on empty queues
 							missCount = 0;
+							allQueuesEmptyCount++;
 							Thread.sleep(emptyQueueSleepTime);
+						}
+						if (exitOnEmptyQueues && (allQueuesEmptyCount > maxLoopsOnEmptyQueues)) {
+							end(false);
+							return;
 						}
 					}
 				}
