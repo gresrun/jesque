@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import net.greghaines.jesque.client.ClientImpl;
 import net.greghaines.jesque.worker.UnpermittedJobException;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
@@ -79,16 +80,34 @@ public class IntegrationTest
 	throws Exception
 	{
 		log.info("Running jobSuccess()...");
-		assertSuccess(null);
+		assertSuccess(null, false);
 	}
+	
+	@Test
+	public void jobSuccessUseHeadQueue()
+	throws Exception
+	{
+		log.info("Running jobSuccess()...");
+		assertSuccess(null, true);
+	}
+
 	
 	@Test
 	public void jobFailure()
 	throws Exception
 	{
 		log.info("Running jobFailure()...");
-		assertFailure(null);
+		assertFailure(null, false);
 	}
+	
+	@Test
+	public void jobFailureUseHeadQueue()
+	throws Exception
+	{
+		log.info("Running jobFailure()...");
+		assertFailure(null, true);
+	}
+
 	
 	@Test
 	public void jobMixed()
@@ -102,42 +121,42 @@ public class IntegrationTest
 	public void successInSpiteOfListenerFailPoll()
 	{
 		log.info("Running successInSpiteOfListenerFailPoll()...");
-		assertSuccess(new FailingWorkerListener(), WORKER_POLL);
+		assertSuccess(new FailingWorkerListener(), false, WORKER_POLL);
 	}
 	
 	@Test
 	public void successInSpiteOfListenerFailJob()
 	{
 		log.info("Running successInSpiteOfListenerFailJob()...");
-		assertSuccess(new FailingWorkerListener(), JOB_PROCESS);
+		assertSuccess(new FailingWorkerListener(), false, JOB_PROCESS);
 	}
 	
 	@Test
 	public void successInSpiteOfListenerFailSuccess()
 	{
 		log.info("Running successInSpiteOfListenerFailSuccess()...");
-		assertSuccess(new FailingWorkerListener(), JOB_SUCCESS);
+		assertSuccess(new FailingWorkerListener(), false, JOB_SUCCESS);
 	}
 	
 	@Test
 	public void successInSpiteOfListenerFailAll()
 	{
 		log.info("Running successInSpiteOfListenerFailAll()...");
-		assertSuccess(new FailingWorkerListener(), WorkerEvent.values());
+		assertSuccess(new FailingWorkerListener(), false, WorkerEvent.values());
 	}
 	
 	@Test
 	public void failureInSpiteOfListenerFailError()
 	{
 		log.info("Running failureInSpiteOfListenerFailError()...");
-		assertFailure(new FailingWorkerListener(), WORKER_ERROR);
+		assertFailure(new FailingWorkerListener(), false, WORKER_ERROR);
 	}
 	
 	@Test
 	public void failureInSpiteOfListenerFailAll()
 	{
 		log.info("Running failureInSpiteOfListenerFailAll()...");
-		assertFailure(new FailingWorkerListener(), WorkerEvent.values());
+		assertFailure(new FailingWorkerListener(), false, WorkerEvent.values());
 	}
 	
 	@Test
@@ -178,13 +197,16 @@ public class IntegrationTest
 		}
 	}
 	
+
+
+	
 	@SuppressWarnings("unchecked")
-	private static void assertSuccess(final WorkerListener listener, final WorkerEvent... events)
+	private static void assertSuccess(final WorkerListener listener, boolean isHeadQueue, final WorkerEvent... events)
 	{
 		final Job job = new Job("TestAction", new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 		
-		doWork(Arrays.asList(job), map(entry("TestAction", TestAction.class)), listener, events);
-		
+		doWork(Arrays.asList(job), map(entry("TestAction", TestAction.class)), listener, isHeadQueue, events);
+
 		final Jedis jedis = createJedis(config);
 		try
 		{
@@ -197,12 +219,14 @@ public class IntegrationTest
 		}
 	}
 
+
+	
 	@SuppressWarnings("unchecked")
-	private static void assertFailure(final WorkerListener listener, final WorkerEvent... events)
+	private static void assertFailure(final WorkerListener listener, boolean isHeadQueue, final WorkerEvent... events)
 	{
 		final Job job = new Job("FailAction");
 		
-		doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)), listener, events);
+		doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)), listener, isHeadQueue, events);
 		
 		final Jedis jedis = createJedis(config);
 		try
@@ -238,8 +262,14 @@ public class IntegrationTest
 		}
 	}
 	
+	
 	private static void doWork(final List<Job> jobs, final Map<String,? extends Class<? extends Runnable>> jobTypes,
-			final WorkerListener listener, final WorkerEvent... events)
+			final WorkerListener listener, final WorkerEvent... events) {
+		doWork(jobs, jobTypes, listener, false, events);
+	}
+	
+	private static void doWork(final List<Job> jobs, final Map<String,? extends Class<? extends Runnable>> jobTypes,
+			final WorkerListener listener, boolean isHeadQueue, final WorkerEvent... events)
 	{
 		final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue), jobTypes);
 		if (listener != null && events.length > 0)
@@ -250,7 +280,8 @@ public class IntegrationTest
 		workerThread.start();
 		try
 		{
-			TestUtils.enqueueJobs(testQueue, jobs, config);
+			if(isHeadQueue) TestUtils.headQueueJobs(testQueue, jobs, config);
+			else 			TestUtils.enqueueJobs(testQueue, jobs, config);
 		}
 		finally
 		{
@@ -265,5 +296,23 @@ public class IntegrationTest
 		{
 			throw new RuntimeException("Listener FAIL");
 		}
+	}
+	
+	@Test
+	public void acquireLockSuccess(){
+        log.info("Running acquireLockSuccess()");
+	    ClientImpl client = new ClientImpl(config);
+	    Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
+	    Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
+	    Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
+	}
+	
+	@Test
+	public void acquireLockFail(){
+        log.info("Running acquireLockFail()");
+	    ClientImpl client = new ClientImpl(config);
+	    Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "pete", 10000));
+	    Assert.assertFalse("Acquired lock that should have been in use.", client.acquireLock("systemLockA", "george", 10));
+	    Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "pete", 10000));
 	}
 }

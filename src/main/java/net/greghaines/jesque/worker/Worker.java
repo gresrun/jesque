@@ -18,6 +18,7 @@ package net.greghaines.jesque.worker;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -169,4 +170,13 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @param exceptionHandler the exception handler to use
 	 */
 	void setExceptionHandler(WorkerExceptionHandler exceptionHandler);
+	
+	/**
+	 * Returns the list of threads the worker is using to run the jobs.
+	 * These threads can be used to join against if you shutdown the worker using end(false).
+	 * Some implementation of workers use single thread.  
+	 * 
+	 * @return Worker's threads
+	 */
+	List<Thread> getThreads();
 }

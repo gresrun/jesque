@@ -72,6 +72,22 @@ public final class TestUtils
 		}
 	}
 	
+	public static void headQueueJobs(final String queue, final List<Job> jobs, final Config config)
+	{
+		final Client client = new ClientImpl(config);
+		try
+		{
+			for (final Job job : jobs)
+			{
+				client.headQueue(queue, job);
+			}
+		}
+		finally
+		{
+			client.end();
+		}
+	}
+	
 	public static void stopWorker(final Worker worker, final Thread workerThread)
 	{
 		try { Thread.sleep(1000); } catch (Exception e){} // Give worker time to process
