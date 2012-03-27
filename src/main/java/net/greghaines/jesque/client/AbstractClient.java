@@ -53,21 +53,27 @@ public abstract class AbstractClient implements Client
 
 	public void enqueue(final String queue, final Job job)
 	{
-		if (queue == null || "".equals(queue))
-		{
-			throw new IllegalArgumentException("queue must not be null or empty: " + queue);
-		}
-		if (job == null)
-		{
-			throw new IllegalArgumentException("job must not be null");
-		}
-		if (!job.isValid())
-		{
-			throw new IllegalStateException("job is not valid: " + job);
-		}
+		validateArguments(queue, job);
 		try
 		{
 			doEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+		}
+		catch (RuntimeException re)
+		{
+			throw re;
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+
+	public void priorityEnqueue(final String queue, final Job job)
+	{
+		validateArguments(queue, job);
+		try
+		{
+			doPriorityEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
 		}
 		catch (RuntimeException re)
 		{
@@ -87,6 +93,15 @@ public abstract class AbstractClient implements Client
 	 * @throws Exception in case something goes wrong
 	 */
 	protected abstract void doEnqueue(String queue, String msg) throws Exception;
+
+	/**
+	 * Actually enqueue the serialized job with high priority.
+	 * 
+	 * @param queue the queue to add the Job to
+	 * @param msg the serialized Job
+	 * @throws Exception in case something goes wrong
+	 */
+	protected abstract void doPriorityEnqueue(String queue, String msg) throws Exception;
 
 	/**
 	 * Builds a namespaced Redis key with the given arguments.
@@ -112,6 +127,21 @@ public abstract class AbstractClient implements Client
 	{
 		jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
 		jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+	}
+
+	/**
+	 * Helper method that encapsulates the minimum logic for adding a high priority job to a queue.
+	 * 
+	 * @param jedis the connection to Redis
+	 * @param namespace the Resque namespace
+	 * @param queue the Resque queue name
+	 * @param jobJson the job serialized as JSON
+	 */
+	public static void doPriorityEnqueue(final Jedis jedis, final String namespace, 
+			final String queue, final String jobJson)
+	{
+		jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+		jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
 	}
 
 	public boolean acquireLock(final String lockName, final String lockHolder, final Integer timeout)
@@ -257,5 +287,21 @@ public abstract class AbstractClient implements Client
 		}
 		// failed to create the lock
 		return false;
+	}
+
+	private static void validateArguments(final String queue, final Job job)
+	{
+		if (queue == null || "".equals(queue))
+		{
+			throw new IllegalArgumentException("queue must not be null or empty: " + queue);
+		}
+		if (job == null)
+		{
+			throw new IllegalArgumentException("job must not be null");
+		}
+		if (!job.isValid())
+		{
+			throw new IllegalStateException("job is not valid: " + job);
+		}
 	}
 }

@@ -106,6 +106,16 @@ public class ClientImpl extends AbstractClient
 		}
 		doEnqueue(this.jedis, getNamespace(), queue, jobJson);
 	}
+
+	@Override
+	protected void doPriorityEnqueue(final String queue, final String jobJson)
+	{
+		if (this.checkConnectionBeforeUse)
+		{
+			JedisUtils.ensureJedisConnection(this.jedis);
+		}
+		doPriorityEnqueue(this.jedis, getNamespace(), queue, jobJson);
+	}
 	
 	@Override
     protected boolean doAcquireLock(final String lockName, final String lockHolder, final Integer timeout)
