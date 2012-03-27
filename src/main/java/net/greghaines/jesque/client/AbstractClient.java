@@ -46,9 +46,23 @@ public abstract class AbstractClient implements Client
 		this.namespace = config.getNamespace();
 	}
 
+	/**
+	 * @return the namespace this client will use
+	 */
 	protected String getNamespace()
 	{
 		return this.namespace;
+	}
+
+	/**
+	 * Builds a namespaced Redis key with the given arguments.
+	 * 
+	 * @param parts the key parts to be joined
+	 * @return an assembled String key
+	 */
+	protected String key(final String... parts)
+	{
+		return JesqueUtils.createKey(this.namespace, parts);
 	}
 
 	public void enqueue(final String queue, final Job job)
@@ -85,65 +99,6 @@ public abstract class AbstractClient implements Client
 		}
 	}
 
-	/**
-	 * Actually enqueue the serialized job.
-	 * 
-	 * @param queue the queue to add the Job to
-	 * @param msg the serialized Job
-	 * @throws Exception in case something goes wrong
-	 */
-	protected abstract void doEnqueue(String queue, String msg) throws Exception;
-
-	/**
-	 * Actually enqueue the serialized job with high priority.
-	 * 
-	 * @param queue the queue to add the Job to
-	 * @param msg the serialized Job
-	 * @throws Exception in case something goes wrong
-	 */
-	protected abstract void doPriorityEnqueue(String queue, String msg) throws Exception;
-
-	/**
-	 * Builds a namespaced Redis key with the given arguments.
-	 * 
-	 * @param parts the key parts to be joined
-	 * @return an assembled String key
-	 */
-	protected String key(final String... parts)
-	{
-		return JesqueUtils.createKey(this.namespace, parts);
-	}
-
-	/**
-	 * Helper method that encapsulates the minimum logic for adding a job to a queue.
-	 * 
-	 * @param jedis the connection to Redis
-	 * @param namespace the Resque namespace
-	 * @param queue the Resque queue name
-	 * @param jobJson the job serialized as JSON
-	 */
-	public static void doEnqueue(final Jedis jedis, final String namespace, 
-			final String queue, final String jobJson)
-	{
-		jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-		jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
-	}
-
-	/**
-	 * Helper method that encapsulates the minimum logic for adding a high priority job to a queue.
-	 * 
-	 * @param jedis the connection to Redis
-	 * @param namespace the Resque namespace
-	 * @param queue the Resque queue name
-	 * @param jobJson the job serialized as JSON
-	 */
-	public static void doPriorityEnqueue(final Jedis jedis, final String namespace, 
-			final String queue, final String jobJson)
-	{
-		jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-		jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
-	}
-
 	public boolean acquireLock(final String lockName, final String lockHolder, final Integer timeout)
 	{
 		if ((lockName == null) || "".equals(lockName))
@@ -177,7 +132,25 @@ public abstract class AbstractClient implements Client
 	}
 
 	/**
-	 * Acquire the lock based upon the client acquisition model
+	 * Actually enqueue the serialized job.
+	 * 
+	 * @param queue the queue to add the Job to
+	 * @param msg the serialized Job
+	 * @throws Exception in case something goes wrong
+	 */
+	protected abstract void doEnqueue(String queue, String msg) throws Exception;
+
+	/**
+	 * Actually enqueue the serialized job with high priority.
+	 * 
+	 * @param queue the queue to add the Job to
+	 * @param msg the serialized Job
+	 * @throws Exception in case something goes wrong
+	 */
+	protected abstract void doPriorityEnqueue(String queue, String msg) throws Exception;
+
+	/**
+	 * Actually acquire the lock based upon the client acquisition model
 	 * @param lockName
 	 *            all calls to this method will contend for a unique lock with
 	 *            the name of lockName
@@ -192,7 +165,37 @@ public abstract class AbstractClient implements Client
 			final String lockHolder, final Integer timeout) throws Exception;
 
 	/**
-	 * Acquisition logic to acquire a lock on the Redis system.
+	 * Helper method that encapsulates the minimum logic for adding a job to a queue.
+	 * 
+	 * @param jedis the connection to Redis
+	 * @param namespace the Resque namespace
+	 * @param queue the Resque queue name
+	 * @param jobJson the job serialized as JSON
+	 */
+	public static void doEnqueue(final Jedis jedis, final String namespace, 
+			final String queue, final String jobJson)
+	{
+		jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+		jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+	}
+
+	/**
+	 * Helper method that encapsulates the minimum logic for adding a high priority job to a queue.
+	 * 
+	 * @param jedis the connection to Redis
+	 * @param namespace the Resque namespace
+	 * @param queue the Resque queue name
+	 * @param jobJson the job serialized as JSON
+	 */
+	public static void doPriorityEnqueue(final Jedis jedis, final String namespace, 
+			final String queue, final String jobJson)
+	{
+		jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+		jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+	}
+
+	/**
+	 * Helper method that encapsulates the logic to acquire a lock.
 	 * @param jedis
 	 *            the connection to Redis
 	 * @param namespace
