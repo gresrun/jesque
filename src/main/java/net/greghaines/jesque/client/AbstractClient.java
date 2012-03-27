@@ -17,10 +17,12 @@ package net.greghaines.jesque.client;
 
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
+
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JesqueUtils;
+
 import redis.clients.jedis.Jedis;
 
 /**
@@ -110,5 +112,150 @@ public abstract class AbstractClient implements Client
 	{
 		jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
 		jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+	}
+
+	public boolean acquireLock(final String lockName, final String lockHolder, final Integer timeout)
+	{
+		if ((lockName == null) || "".equals(lockName))
+		{
+			throw new IllegalArgumentException("lockName must not be null or empty: " + lockName);
+		}
+		if ((lockHolder == null) || "".equals(lockHolder))
+		{
+			throw new IllegalArgumentException("lockHolder must not be null or empty: " + lockHolder);
+		}
+		if (timeout == null)
+		{
+			throw new IllegalArgumentException("job must not be null");
+		}
+		if (timeout < 1)
+		{
+			throw new IllegalArgumentException("timeout must be a positive number");
+		}
+		try
+		{
+			return doAcquireLock(lockName, lockHolder, timeout);
+		}
+		catch (RuntimeException re)
+		{
+			throw re;
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Acquire the lock based upon the client acquisition model
+	 * @param lockName
+	 *            all calls to this method will contend for a unique lock with
+	 *            the name of lockName
+	 * @param timeout
+	 *            millis until the lock will expire
+	 * @param lockHolder
+	 *            a unique string used to tell if you are the current holder of
+	 *            a lock for both acquisition, and extension
+	 * @return Whether or not the lock was acquired.
+	 */
+	protected abstract boolean doAcquireLock(final String lockName,
+			final String lockHolder, final Integer timeout) throws Exception;
+
+	/**
+	 * Acquisition logic to acquire a lock on the Redis system.
+	 * @param jedis
+	 *            the connection to Redis
+	 * @param namespace
+	 *            the Resque namespace
+	 * @param lockName
+	 *            all calls to this method will contend for a unique lock with
+	 *            the name of lockName
+	 * @param timeout
+	 *            millis until the lock will expire
+	 * @param lockHolder
+	 *            a unique string used to tell if you are the current holder of
+	 *            a lock for both acquisition, and extension
+	 * @return Whether or not the lock was acquired.
+	 */
+	public static boolean doAcquireLock(final Jedis jedis,
+			final String namespace, final String lockName,
+			final String lockHolder, Integer timeout)
+	{
+		final String key = JesqueUtils.createKey(namespace, lockName);
+
+		// if lock already exists, extend it
+		String existingLockHolder = jedis.get(key);
+		if ((existingLockHolder != null)
+				&& existingLockHolder.equals(lockHolder))
+		{
+			if (jedis.expire(key, timeout) == 1)
+			{
+				existingLockHolder = jedis.get(key);
+				if ((existingLockHolder != null)
+						&& existingLockHolder.equals(lockHolder))
+				{
+					return true;
+				}
+			}
+		}
+
+		// check to see if the key exists and is expired for cleanup purposes
+		if (jedis.exists(key) && (jedis.ttl(key) < 0))
+		{ // it is expired, but it may be in the process of being created, so sleep and check again
+			try
+			{
+				Thread.sleep(2000);
+			}
+			catch (InterruptedException ie){} // ignore interruptions
+			if (jedis.ttl(key) < 0)
+			{
+				existingLockHolder = jedis.get(key);
+
+				// if it is our lock mark the time to live
+				if ((existingLockHolder != null)
+						&& existingLockHolder.equals(lockHolder))
+				{
+					if (jedis.expire(key, timeout) == 1)
+					{
+						existingLockHolder = jedis.get(key);
+						if ((existingLockHolder != null)
+								&& existingLockHolder.equals(lockHolder))
+						{
+							return true;
+						}
+					}
+				}
+				else
+				{ // the key is expired, whack it!
+					jedis.del(key);
+				}
+			}
+			else
+			{ // someone else locked it while we were sleeping
+				return false;
+			}
+		}
+
+		// ignore the cleanup steps above, start with no assumptions
+
+		// test creating the key
+		if (jedis.setnx(key, lockHolder) == 1)
+		{ // yay, created the lock, now set the expiration
+			if (jedis.expire(key, timeout) == 1)
+			{ // set the timeout
+				existingLockHolder = jedis.get(key);
+				if ((existingLockHolder != null)
+						&& existingLockHolder.equals(lockHolder))
+				{
+					return true;
+				}
+			}
+			else
+			{ // don't know why it failed, but for now just report failed acquisition
+				return false;
+			}
+		}
+		// failed to create the lock
+		return false;
 	}
 }

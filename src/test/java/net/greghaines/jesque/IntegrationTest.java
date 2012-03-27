@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import net.greghaines.jesque.client.Client;
+import net.greghaines.jesque.client.ClientImpl;
 import net.greghaines.jesque.worker.UnpermittedJobException;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
@@ -146,7 +148,27 @@ public class IntegrationTest
 		log.info("Running mixedInSpiteOfListenerFailAll()...");
 		assertMixed(new FailingWorkerListener(), WorkerEvent.values());
 	}
-	
+
+	@Test
+	public void acquireLockSuccess()
+	{
+		log.info("Running acquireLockSuccess()...");
+		final Client client = new ClientImpl(config);
+		Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
+		Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
+		Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
+	}
+
+	@Test
+	public void acquireLockFail()
+	{
+		log.info("Running acquireLockFail()...");
+		final Client client = new ClientImpl(config);
+		Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "pete", 10000));
+		Assert.assertFalse("Acquired lock that should have been in use.", client.acquireLock("systemLockA", "george", 10));
+		Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "pete", 10000));
+	}
+
 	@SuppressWarnings("unchecked")
 	@Test
 	public void unpermittedJob()
