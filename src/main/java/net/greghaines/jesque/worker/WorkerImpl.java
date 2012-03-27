@@ -417,6 +417,16 @@ public class WorkerImpl implements Worker
 		}
 		this.exceptionHandlerRef.set(exceptionHandler);
 	}
+	
+	public void join(final long millis)
+	throws InterruptedException
+	{
+		final Thread workerThread = this.workerThreadRef.get();
+		if (workerThread != null && workerThread.isAlive())
+		{
+			workerThread.join(millis);
+		}
+	}
 
 	/**
 	 * @return the number of times this Worker will attempt to reconnect to Redis before giving up

@@ -83,9 +83,12 @@ public class WorkerPool implements Worker
 	 * Shutdown this pool and wait untill all threads are finished.
 	 * 
 	 * @param now if true, an effort will be made to stop any jobs in progress
-	 * @throws InterruptedException
+	 * @param millis the time to wait in milliseconds for the threads to join; 
+	 * 				 a timeout of 0 means to wait forever.
+	 * @throws InterruptedException if any thread has interrupted the current thread. 
+	 * The interrupted status of the current thread is cleared when this exception is thrown.
 	 */
-	public void endAndJoin(final boolean now)
+	public void endAndJoin(final boolean now, final long millis)
 	throws InterruptedException
 	{
 		end(now);
@@ -97,20 +100,21 @@ public class WorkerPool implements Worker
 			}
 		}
 	}
-
-	/**
-	 * Wait untill all threads are finished.
-	 * 
-	 * @throws InterruptedException
-	 */
-	public void join()
+	
+	public void join(final long millis)
 	throws InterruptedException
 	{
+		final long startTime = System.currentTimeMillis();
+		long timeRemaining = millis;
 		for (final Thread thread : this.threads)
 		{
 			while (thread.isAlive())
 			{
-				thread.join();
+				timeRemaining = millis - (System.currentTimeMillis() - startTime);
+				if (timeRemaining > 0)
+				{
+					thread.join(timeRemaining);
+				}
 			}
 		}
 	}
