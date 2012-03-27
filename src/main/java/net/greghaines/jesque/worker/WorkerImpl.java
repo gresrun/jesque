@@ -463,45 +463,57 @@ public class WorkerImpl implements Worker
 			}
 			catch (Exception e)
 			{
-				final WorkerRecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, e, curQueue);
-				final int reconAttempts = getReconnectAttempts();
-				switch (recoveryStrategy)
-				{
-				case RECONNECT:
-					int i = 1;
-					do 
-					{
-						log.info("Reconnecting to Redis in response to exception - Attempt " + i + " of " + reconAttempts, e);
-						try
-						{
-							this.jedis.disconnect();
-							try { Thread.sleep(reconnectSleepTime); } catch (Exception e2){}
-							this.jedis.connect();
-						}
-						catch (JedisConnectionException jce){} // Ignore bad connection attempts
-					} while (++i <= reconAttempts && !this.jedis.isConnected());
-					if (!this.jedis.isConnected())
-					{
-						log.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
-						end(false);
-					}
-					else
-					{
-						log.info("Reconnected to Redis after {} attempts", i - 1);
-					}
-					break;
-				case TERMINATE:
-					log.warn("Terminating in response to exception", e);
-					end(false);
-					break;
-				case PROCEED:
-					this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, e);
-					break;
-				default:
-					log.error("Unknown WorkerRecoveryStrategy: {} - Proceeding...", recoveryStrategy);
-					break;
-				}
+				recoverFromException(curQueue, e);
 			}
+		}
+	}
+
+	/**
+	 * Handle an exception that was thrown from inside {@link #poll()}
+	 * 
+	 * @param curQueue the name of the queue that was being processed when the exception was thrown
+	 * @param e the exception that was thrown
+	 */
+	protected void recoverFromException(final String curQueue, final Exception e)
+	{
+		final WorkerRecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, e, curQueue);
+		final int reconAttempts = getReconnectAttempts();
+		switch (recoveryStrategy)
+		{
+		case RECONNECT:
+			int i = 1;
+			do 
+			{
+				log.info("Reconnecting to Redis in response to exception - Attempt " + i + " of " + reconAttempts, e);
+				try
+				{
+					this.jedis.disconnect();
+					try { Thread.sleep(reconnectSleepTime); } catch (Exception e2){}
+					this.jedis.connect();
+				}
+				catch (JedisConnectionException jce){} // Ignore bad connection attempts
+			} while (++i <= reconAttempts && !this.jedis.isConnected());
+			if (!this.jedis.isConnected())
+			{
+				log.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
+				end(false);
+			}
+			else
+			{
+				log.info("Reconnected to Redis after {} attempts", i - 1);
+			}
+			break;
+		case TERMINATE:
+			log.warn("Terminating in response to exception", e);
+			end(false);
+			break;
+		case PROCEED:
+			this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, e);
+			break;
+		default:
+			log.error("Unknown WorkerRecoveryStrategy: " + recoveryStrategy + 
+				" while attempting to recover from the following exception; worker proceeding...", e);
+			break;
 		}
 	}
 
