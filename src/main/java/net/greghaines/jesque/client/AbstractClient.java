@@ -155,7 +155,7 @@ public abstract class AbstractClient implements Client
 	 *            all calls to this method will contend for a unique lock with
 	 *            the name of lockName
 	 * @param timeout
-	 *            millis until the lock will expire
+	 *            seconds until the lock will expire
 	 * @param lockHolder
 	 *            a unique string used to tell if you are the current holder of
 	 *            a lock for both acquisition, and extension
@@ -204,7 +204,7 @@ public abstract class AbstractClient implements Client
 	 *            all calls to this method will contend for a unique lock with
 	 *            the name of lockName
 	 * @param timeout
-	 *            millis until the lock will expire
+	 *            seconds until the lock will expire
 	 * @param lockHolder
 	 *            a unique string used to tell if you are the current holder of
 	 *            a lock for both acquisition, and extension
