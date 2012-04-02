@@ -5,7 +5,6 @@ import static net.greghaines.jesque.utils.JesqueUtils.recreateThrowable;
 
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.json.ObjectMapperFactory;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
