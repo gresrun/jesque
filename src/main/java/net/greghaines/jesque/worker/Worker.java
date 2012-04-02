@@ -169,4 +169,15 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @param exceptionHandler the exception handler to use
 	 */
 	void setExceptionHandler(WorkerExceptionHandler exceptionHandler);
+
+	/**
+	 *  Wait for this worker to complete. A timeout of 0 means to wait forever.
+	 * <p/>
+	 * This method will only return after a thread has called {@link #end(boolean)}.
+	 * 
+	 * @param millis the time to wait in milliseconds
+	 * @throws InterruptedException if any thread has interrupted the current thread. 
+	 * The interrupted status of the current thread is cleared when this exception is thrown.
+	 */
+	void join(long millis) throws InterruptedException;
 }
