@@ -127,11 +127,11 @@ public class WorkerImpl implements Worker
 
 	protected final Jedis jedis;
 	protected final String namespace;
-	private final BlockingDeque<String> queueNames;
+	protected final BlockingDeque<String> queueNames;
 	private final ConcurrentMap<String,Class<?>> jobTypes = new ConcurrentHashMap<String,Class<?>>();
 	private final String name;
 	protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
-	private final AtomicReference<WorkerState> state =
+	protected final AtomicReference<WorkerState> state =
 		new AtomicReference<WorkerState>(WorkerState.NEW);
 	private final AtomicBoolean paused = new AtomicBoolean(false);
 	private final long workerId = workerCounter.getAndIncrement();
