@@ -37,7 +37,9 @@ public class WorkerExitOnEmpty extends WorkerImpl {
 
         while (WorkerState.RUNNING.equals(this.state.get())) {
             try {
-                renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
+                if(debugThreadNameChange) {
+                    renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
+                }
                 curQueue = this.queueNames.poll(emptyQueueSleepTime, TimeUnit.MILLISECONDS);
                 if (curQueue != null) {
                     this.queueNames.add(curQueue); // Rotate the queues
