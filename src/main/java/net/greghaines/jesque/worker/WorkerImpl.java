@@ -104,6 +104,7 @@ public class WorkerImpl implements Worker
 	protected static final long emptyQueueSleepTime = 500; // 500 ms
 	private static final long reconnectSleepTime = 5000; // 5s
 	private static final int reconnectAttempts = 120; // Total time: 10min
+    protected static final boolean debugThreadNameChange = false; // set the thread name to the message for debugging
 
 	/**
 	 * Verify that the given queues are all valid.
@@ -447,7 +448,9 @@ public class WorkerImpl implements Worker
 		{
 			try
 			{
-				renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
+                if(debugThreadNameChange) {
+				    renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
+                }
 				curQueue = this.queueNames.poll(emptyQueueSleepTime, TimeUnit.MILLISECONDS);
 				if (curQueue != null)
 				{
@@ -553,7 +556,9 @@ public class WorkerImpl implements Worker
 	protected void process(final Job job, final String curQueue)
 	{
 		this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null);
-		renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
+        if(debugThreadNameChange) {
+    		renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
+        }
 		try
 		{
 			final Class<?> clazz = this.jobTypes.get(job.getClassName());
