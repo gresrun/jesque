@@ -104,7 +104,30 @@ public class WorkerImpl implements Worker
 	protected static final long emptyQueueSleepTime = 500; // 500 ms
 	private static final long reconnectSleepTime = 5000; // 5s
 	private static final int reconnectAttempts = 120; // Total time: 10min
+	private static volatile boolean threadNameChangingEnabled = false; // set the thread name to the message for debugging
 
+	/**
+	 * @return true if worker threads names will change during normal operation
+	 */
+	public static boolean isThreadNameChangingEnabled()
+	{
+		return threadNameChangingEnabled;
+	}
+
+	/**
+	 * Enable/disable worker thread renaming during normal operation. (Disabled by default)
+	 * <p/>
+	 * <strong>Warning: Enabling this feature is very expensive CPU-wise!</strong><br/>
+	 * This feature is designed to assist in debugging worker state but should be 
+	 * disabled in production environments for performance reasons.
+	 * 
+	 * @param enabled whether threads' names should change during normal operation
+	 */
+	public static void setThreadNameChangingEnabled(final boolean enabled)
+	{
+		threadNameChangingEnabled = enabled;
+	}
+	
 	/**
 	 * Verify that the given queues are all valid.
 	 * 
@@ -197,6 +220,7 @@ public class WorkerImpl implements Worker
 		{
 			try
 			{
+				renameThread("RUNNING");
 				this.workerThreadRef.set(Thread.currentThread());
 				this.jedis.sadd(key(WORKERS), this.name);
 				this.jedis.set(key(WORKER, this.name, STARTED), 
@@ -207,6 +231,7 @@ public class WorkerImpl implements Worker
 			}
 			finally
 			{
+				renameThread("STOPPING");
 				this.listenerDelegate.fireEvent(WORKER_STOP, 
 					this, null, null, null, null, null);
 				this.jedis.srem(key(WORKERS), this.name);
@@ -447,7 +472,10 @@ public class WorkerImpl implements Worker
 		{
 			try
 			{
-				renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
+				if (threadNameChangingEnabled)
+				{
+					renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
+				}
 				curQueue = this.queueNames.poll(emptyQueueSleepTime, TimeUnit.MILLISECONDS);
 				if (curQueue != null)
 				{
@@ -553,7 +581,10 @@ public class WorkerImpl implements Worker
 	protected void process(final Job job, final String curQueue)
 	{
 		this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null);
-		renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
+		if (threadNameChangingEnabled)
+		{
+			renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
+		}
 		try
 		{
 			final Class<?> clazz = this.jobTypes.get(job.getClassName());
