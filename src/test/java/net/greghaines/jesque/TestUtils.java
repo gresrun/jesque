@@ -34,6 +34,25 @@ import redis.clients.jedis.Jedis;
 public final class TestUtils
 {
 	private static final Logger log = LoggerFactory.getLogger(TestUtils.class);
+	
+	/**
+	 * Reset the Redis database using the supplied Config.
+	 * 
+	 * @param config the location of the Redis server
+	 */
+	public static void resetRedis(final Config config)
+	{
+		final Jedis jedis = createJedis(config);
+		try
+		{
+			log.info("Resetting Redis for next test...");
+			jedis.flushDB();
+		}
+		finally
+		{
+			jedis.quit();
+		}
+	}
 
 	/**
 	 * Create a connection to Redis from the given Config.

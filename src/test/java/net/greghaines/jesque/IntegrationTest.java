@@ -62,18 +62,8 @@ public class IntegrationTest
 	
 	@Before
 	public void resetRedis()
-	throws Exception
 	{
-		final Jedis jedis = createJedis(config);
-		try
-		{
-			log.info("Resetting Redis for next test...");
-			jedis.flushDB();
-		}
-		finally
-		{
-			jedis.quit();
-		}
+		TestUtils.resetRedis(config);
 	}
 	
 	@Test

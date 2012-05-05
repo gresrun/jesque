@@ -1,6 +1,5 @@
 package net.greghaines.jesque;
 
-import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.utils.JesqueUtils.entry;
 import static net.greghaines.jesque.utils.JesqueUtils.map;
 
@@ -16,8 +15,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import redis.clients.jedis.Jedis;
-
 public class InfiniteTest
 {
 	private static final Logger log = LoggerFactory.getLogger(InfiniteTest.class);
@@ -27,15 +24,7 @@ public class InfiniteTest
 	public void resetRedis()
 	throws Exception
 	{
-		final Jedis jedis = createJedis(config);
-		try
-		{
-			jedis.flushDB();
-		}
-		finally
-		{
-			jedis.quit();
-		}
+		TestUtils.resetRedis(config);
 	}
 	
 	@Test
