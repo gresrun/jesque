@@ -499,6 +499,13 @@ public class WorkerImpl implements Worker
 					}
 				}
 			}
+			catch (InterruptedException ie)
+			{
+				if (!isShutdown())
+				{
+					recoverFromException(curQueue, ie);
+				}
+			}
 			catch (Exception e)
 			{
 				recoverFromException(curQueue, e);
