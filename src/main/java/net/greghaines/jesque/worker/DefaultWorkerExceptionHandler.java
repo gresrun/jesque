@@ -4,7 +4,7 @@ import static net.greghaines.jesque.worker.WorkerRecoveryStrategy.PROCEED;
 import static net.greghaines.jesque.worker.WorkerRecoveryStrategy.RECONNECT;
 import static net.greghaines.jesque.worker.WorkerRecoveryStrategy.TERMINATE;
 
-import org.codehaus.jackson.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import redis.clients.jedis.exceptions.JedisConnectionException;
 

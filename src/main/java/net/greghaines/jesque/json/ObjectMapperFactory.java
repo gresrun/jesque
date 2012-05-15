@@ -17,16 +17,15 @@ package net.greghaines.jesque.json;
 
 import static net.greghaines.jesque.utils.VersionUtils.DEVELOPMENT;
 import static net.greghaines.jesque.utils.VersionUtils.ERROR;
-
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.utils.VersionUtils;
 
-import org.codehaus.jackson.Version;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.map.module.SimpleModule;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 /**
  * A helper that creates a fully-configured singleton ObjectMapper.
@@ -46,7 +45,7 @@ public final class ObjectMapperFactory
 			.addDeserializer(JobFailure.class, new JobFailureJsonDeserializer())
 			.addSerializer(WorkerStatus.class, new WorkerStatusJsonSerializer())
 			.addDeserializer(WorkerStatus.class, new WorkerStatusJsonDeserializer()));
-		mapper.configure(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
+		mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 	}
 
 	private static Version createJacksonVersion()
@@ -54,7 +53,7 @@ public final class ObjectMapperFactory
 		final Object[] versionParts = VersionUtils.getVersionParts();
 		return (DEVELOPMENT.equals(versionParts[3]) || ERROR.equals(versionParts[3])) 
 				? Version.unknownVersion() 
-				: new Version((Integer) versionParts[0], (Integer) versionParts[1], (Integer) versionParts[2], (String) versionParts[3]);
+				: new Version((Integer) versionParts[0], (Integer) versionParts[1], (Integer) versionParts[2], (String) versionParts[3], "net.greghaines", "jesque");
 	}
 	
 	/**
