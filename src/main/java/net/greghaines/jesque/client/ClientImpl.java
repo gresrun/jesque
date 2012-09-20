@@ -33,6 +33,7 @@ public class ClientImpl extends AbstractClient
 {
 	public static final boolean DEFAULT_CHECK_CONNECTION_BEFORE_USE = false;
 	
+	private final Config config;
 	private final Jedis jedis;
 	private final boolean checkConnectionBeforeUse;
 	private final ScheduledExecutorService keepAliveService;
@@ -58,12 +59,9 @@ public class ClientImpl extends AbstractClient
 	public ClientImpl(final Config config, final boolean checkConnectionBeforeUse)
 	{
 		super(config);
+		this.config = config;
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-		if (config.getPassword() != null)
-		{
-			this.jedis.auth(config.getPassword());
-		}
-		this.jedis.select(config.getDatabase());
+		authenticateAndSelectDB();
 		this.checkConnectionBeforeUse = checkConnectionBeforeUse;
 		this.keepAliveService = null;
 	}
@@ -80,19 +78,16 @@ public class ClientImpl extends AbstractClient
 	public ClientImpl(final Config config, final long initialDelay, final long period, final TimeUnit timeUnit)
 	{
 		super(config);
+		this.config = config;
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-		if (config.getPassword() != null)
-		{
-			this.jedis.auth(config.getPassword());
-		}
-		this.jedis.select(config.getDatabase());
+		authenticateAndSelectDB();
 		this.checkConnectionBeforeUse = false;
 		this.keepAliveService = Executors.newSingleThreadScheduledExecutor();
 		this.keepAliveService.scheduleAtFixedRate(new Runnable()
 		{
 			public void run()
 			{
-				JedisUtils.ensureJedisConnection(ClientImpl.this.jedis);
+				ensureJedisConnection();
 			}
 		}, initialDelay, period, timeUnit);
 	}
@@ -100,20 +95,14 @@ public class ClientImpl extends AbstractClient
 	@Override
 	protected void doEnqueue(final String queue, final String jobJson)
 	{
-		if (this.checkConnectionBeforeUse)
-		{
-			JedisUtils.ensureJedisConnection(this.jedis);
-		}
+		ensureJedisConnection();
 		doEnqueue(this.jedis, getNamespace(), queue, jobJson);
 	}
 
 	@Override
 	protected void doPriorityEnqueue(final String queue, final String jobJson)
 	{
-		if (this.checkConnectionBeforeUse)
-		{
-			JedisUtils.ensureJedisConnection(this.jedis);
-		}
+		ensureJedisConnection();
 		doPriorityEnqueue(this.jedis, getNamespace(), queue, jobJson);
 	}
 	
@@ -121,10 +110,7 @@ public class ClientImpl extends AbstractClient
     protected boolean doAcquireLock(final String lockName, final String lockHolder, final Integer timeout)
     throws Exception
     {
-		if (this.checkConnectionBeforeUse)
-		{
-			JedisUtils.ensureJedisConnection(this.jedis);
-		}
+		ensureJedisConnection();
 		return doAcquireLock(this.jedis, getNamespace(), lockName, lockHolder, timeout);
     }
 
@@ -135,5 +121,22 @@ public class ClientImpl extends AbstractClient
 			this.keepAliveService.shutdownNow();
 		}
 		this.jedis.quit();
+	}
+	
+	private void authenticateAndSelectDB()
+	{
+		if (this.config.getPassword() != null)
+	 	{
+		 	this.jedis.auth(this.config.getPassword());
+	 	}
+	 	this.jedis.select(this.config.getDatabase());
+	}
+	
+	private void ensureJedisConnection()
+	{
+		if (this.checkConnectionBeforeUse && !JedisUtils.ensureJedisConnection(this.jedis))
+		{
+			authenticateAndSelectDB();
+		}
 	}
 }
