@@ -51,13 +51,13 @@ public class InfiniteTest
 			TestUtils.enqueueJobs("bar", jobs, config);
 		}
 		final Worker worker = new WorkerImpl(config, Arrays.asList("foo0", "bar","baz"), 
-			map(entry("TestAction", TestAction.class), entry("FailAction", FailAction.class)));
+			map(entry("TestAction", TestAction.class), entry("FailAction", FailAction.class)), null);
 		final Thread workerThread = new Thread(worker);
 		workerThread.start();
 		
 		TestUtils.enqueueJobs("inf", Arrays.asList(new Job("InfiniteAction")), config);
 		final Worker worker2 = new WorkerImpl(config, Arrays.asList("inf"), 
-			map(entry("InfiniteAction", InfiniteAction.class)));
+			map(entry("InfiniteAction", InfiniteAction.class)), null);
 		final Thread workerThread2 = new Thread(worker2);
 		workerThread2.start();
 		
@@ -70,7 +70,7 @@ public class InfiniteTest
 	throws InterruptedException
 	{
 		final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), 
-			map(entry("TestAction", TestAction.class), entry("FailAction", FailAction.class)));
+			map(entry("TestAction", TestAction.class), entry("FailAction", FailAction.class)), null);
 		final Thread workerThread = new Thread(worker);
 		workerThread.start();
 		
