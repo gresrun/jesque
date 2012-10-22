@@ -53,6 +53,6 @@ public class WorkerImplFactory implements Callable<WorkerImpl>
 	 */
 	public WorkerImpl call()
 	{
-		return new WorkerImpl(this.config, this.queues, this.jobTypes);
+		return new WorkerImpl(this.config, this.queues, this.jobTypes, null);
 	}
 }

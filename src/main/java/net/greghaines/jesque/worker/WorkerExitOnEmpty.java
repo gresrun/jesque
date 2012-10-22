@@ -38,7 +38,7 @@ public class WorkerExitOnEmpty extends WorkerImpl
 	public WorkerExitOnEmpty(final Config config, final Collection<String> queues,
 			final Map<String,? extends Class<?>> jobTypes, final int maxLoopsOnEmptyQueues)
 	{
-		super(config, queues, jobTypes);
+		super(config, queues, jobTypes, null);
 		this.maxLoopsOnEmptyQueues = maxLoopsOnEmptyQueues;
 	}
 

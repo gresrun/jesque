@@ -60,9 +60,7 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
-import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.utils.ReflectionUtils;
-import net.greghaines.jesque.utils.VersionUtils;
+import net.greghaines.jesque.utils.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,6 +162,7 @@ public class WorkerImpl implements Worker
 		new AtomicReference<Thread>(null);
 	private final AtomicReference<WorkerExceptionHandler> exceptionHandlerRef = 
 		new AtomicReference<WorkerExceptionHandler>(new DefaultWorkerExceptionHandler());
+    private final ActionCustomizer customizer;
 
 	/**
 	 * Creates a new WorkerImpl, which creates it's own connection to 
@@ -175,11 +174,12 @@ public class WorkerImpl implements Worker
 	 * prefix for incoming jobs
 	 * @param queues the list of queues to poll
 	 * @param jobTypes the map of job names and types to execute
-	 * @throws IllegalArgumentException if the config is null, 
+	 * @param customizer Optional action instance customizer
+	 * @throws IllegalArgumentException if the config is null,
 	 * if the queues is null, or if the jobTypes is null or empty
 	 */
 	public WorkerImpl(final Config config, final Collection<String> queues, 
-			final Map<String,? extends Class<?>> jobTypes)
+			final Map<String,? extends Class<?>> jobTypes, ActionCustomizer customizer)
 	{
 		if (config == null)
 		{
@@ -199,7 +199,8 @@ public class WorkerImpl implements Worker
 				: queues);
 		this.jobTypes.putAll(jobTypes);
 		this.name = createName();
-	}
+        this.customizer = customizer;
+    }
 
 	/**
 	 * @return this worker's identifier
@@ -604,7 +605,7 @@ public class WorkerImpl implements Worker
 				throw new ClassCastException("jobs must be a Runnable or a Callable: " + 
 					clazz.getName() + " - " + job);
 			}
-			execute(job, curQueue, ReflectionUtils.createObject(clazz, job.getArgs()));
+			execute(job, curQueue, instantiateJob(clazz, job.getArgs()));
 		}
 		catch (Exception e)
 		{
@@ -805,4 +806,13 @@ public class WorkerImpl implements Worker
 	{
 		return this.namespace + COLON + WORKER + COLON + this.name;
 	}
+
+    private Object instantiateJob(Class<?> clazz, Object[] args) throws Exception
+    {
+        Object job = ReflectionUtils.createObject(clazz, args);
+        if (customizer != null) {
+            customizer.customize(job);
+        }
+        return job;
+    }
 }

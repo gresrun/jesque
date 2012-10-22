@@ -70,7 +70,8 @@ public class ClientBeforeWorkerTest
 		}
 		
 		// Create and start worker
-		final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue), map(entry("TestAction", TestAction.class)));
+		final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue), map(entry("TestAction", TestAction.class)),
+                null);
 		final Thread workerThread = new Thread(worker);
 		workerThread.start();
 		try
