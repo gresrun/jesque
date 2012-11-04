@@ -48,7 +48,7 @@ public interface Client
 	void end();
 
 	/**
-	 * A non blocking lock utilizing redis to create a lock that can be utilized by distributed servers.
+	 * A non blocking lock utilizing Redis to create a lock that can be utilized by distributed servers.
 	 *      Call this method again to renew your lock before it expires if you wish to guarantee holding the lock.
 	 * 
 	 * @param lockName all calls to this method will contend for a unique lock with the name of lockName
