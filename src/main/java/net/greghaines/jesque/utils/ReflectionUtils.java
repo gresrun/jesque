@@ -336,7 +336,7 @@ public final class ReflectionUtils
 	 * Replacement for <code>Class.forName()</code> that also returns Class instances
 	 * for primitives (like "int") and array class names (like "String[]").
 	 * <p>Always uses the default class loader: that is, preferably the thread context
-	 * class loader, or the ClassLoader that loaded the ClassUtils class as fallback.
+	 * class loader, or the ClassLoader that loaded the ReflectionUtils class as fallback.
 	 * 
 	 * @param name the name of the Class
 	 * @return Class instance for the supplied name

@@ -1,6 +1,6 @@
 package net.greghaines.jesque.worker;
 
-public enum WorkerRecoveryStrategy
+public enum RecoveryStrategy
 {
 	TERMINATE,
 	RECONNECT,

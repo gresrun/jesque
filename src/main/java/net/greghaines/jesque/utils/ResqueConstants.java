@@ -46,4 +46,5 @@ public interface ResqueConstants
 	String STAT = "stat";
 	String WORKER = "worker";
 	String WORKERS = "workers";
+	String CHANNEL = "channel";
 }

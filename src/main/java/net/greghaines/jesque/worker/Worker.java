@@ -18,7 +18,6 @@ package net.greghaines.jesque.worker;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 
 /**
  * A Worker polls for Jobs from a specified list of queues, executing 
@@ -38,7 +37,7 @@ import java.util.Map;
  * 
  * @author Greg Haines
  */
-public interface Worker extends Runnable, WorkerEventEmitter
+public interface Worker extends JobExecutor, Runnable, WorkerEventEmitter
 {
 	/**
 	 * Special value to tell a Worker to poll all currently available queues.
@@ -51,20 +50,6 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @return the name of this Worker
 	 */
 	String getName();
-
-	/**
-	 * Shutdown this Worker.
-	 * 
-	 * @param now if true, an effort will be made to stop any job in progress
-	 */
-	void end(boolean now);
-
-	/**
-	 * Returns whether this worker is either shutdown or in the process of shutting down.
-	 * 
-	 * @return whether this worker is either shutdown or in the process of shutting down.
-	 */
-	boolean isShutdown();
 
 	/**
 	 * Returns whether this worker is paused.
@@ -119,65 +104,4 @@ public interface Worker extends Runnable, WorkerEventEmitter
 	 * @param queues the queues to poll
 	 */
 	void setQueues(Collection<String> queues);
-
-	/**
-	 * The allowed job names and types that this Worker will execute.
-	 * 
-	 * @return an unmodifiable view of the allowed job names and types
-	 */
-	Map<String,Class<?>> getJobTypes();
-
-	/**
-	 * Allow the given job type to be executed.
-	 * 
-	 * @param jobName the job name as seen
-	 * @param jobType the job type to allow
-	 */
-	void addJobType(String jobName, Class<?> jobType);
-
-	/**
-	 * Disallow the job type from being executed.
-	 * 
-	 * @param jobType the job type to disallow
-	 */
-	void removeJobType(Class<?> jobType);
-	
-	/**
-	 * Disallow the job name from being executed.
-	 * 
-	 * @param jobName the job name to disallow
-	 */
-	void removeJobName(String jobName);
-
-	/**
-	 * Clear any current allowed job types and use the given set.
-	 * 
-	 * @param jobTypes the job types to allow
-	 */
-	void setJobTypes(Map<String,? extends Class<?>> jobTypes);
-	
-	/**
-	 * The current exception handler.
-	 * 
-	 * @return the current exception handler.
-	 */
-	WorkerExceptionHandler getExceptionHandler();
-	
-	/**
-	 * Set this Worker's exception handler to the given handler.
-	 * 
-	 * @param exceptionHandler the exception handler to use
-	 */
-	void setExceptionHandler(WorkerExceptionHandler exceptionHandler);
-
-	/**
-	 *  Wait for this worker to complete. A timeout of 0 means to wait forever.
-	 * <p/>
-	 * This method will only return after a thread has called {@link #end(boolean)}.
-	 * 
-	 * @param millis the time to wait in milliseconds
-	 * @throws InterruptedException if any thread has interrupted the current thread. 
-	 * The interrupted status of the current thread is cleared when this exception is thrown.
-	 */
-	void join(long millis) throws InterruptedException;
 }
