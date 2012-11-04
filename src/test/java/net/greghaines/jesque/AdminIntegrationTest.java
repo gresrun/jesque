@@ -3,7 +3,6 @@ package net.greghaines.jesque;
 import static net.greghaines.jesque.utils.JesqueUtils.entry;
 import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.JesqueUtils.set;
-
 import net.greghaines.jesque.admin.Admin;
 import net.greghaines.jesque.admin.AdminClient;
 import net.greghaines.jesque.admin.AdminClientImpl;
@@ -15,12 +14,9 @@ import net.greghaines.jesque.worker.WorkerImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AdminIntegrationTest
 {
-	private static final Logger log = LoggerFactory.getLogger(IntegrationTest.class);
 	private static final Config config = new ConfigBuilder().build();
 	private static final String testQueue = "foo";
 	private static final String testChannel = "bar";

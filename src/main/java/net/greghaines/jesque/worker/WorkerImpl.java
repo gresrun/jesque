@@ -131,7 +131,7 @@ public class WorkerImpl implements Worker
 
 	protected final Jedis jedis;
 	protected final String namespace;
-	protected final BlockingDeque<String> queueNames;
+	protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<String>();
 	private final ConcurrentMap<String,Class<?>> jobTypes = new ConcurrentHashMap<String,Class<?>>();
 	private final String name;
 	protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
@@ -174,11 +174,9 @@ public class WorkerImpl implements Worker
 			this.jedis.auth(config.getPassword());
 		}
 		this.jedis.select(config.getDatabase());
-		this.queueNames = new LinkedBlockingDeque<String>((queues == ALL_QUEUES) // Using object equality on purpose
-				? this.jedis.smembers(key(QUEUES)) // Like '*' in other implementations
-				: queues);
-		this.jobTypes.putAll(jobTypes);
 		this.name = createName();
+		setQueues(queues);
+		setJobTypes(jobTypes);
 	}
 
 	/**
@@ -502,11 +500,11 @@ public class WorkerImpl implements Worker
 	protected void recoverFromException(final String curQueue, final Exception e)
 	{
 		final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, e, curQueue);
-		final int reconAttempts = getReconnectAttempts();
 		switch (recoveryStrategy)
 		{
 		case RECONNECT:
 			log.info("Reconnecting to Redis in response to exception", e);
+			final int reconAttempts = getReconnectAttempts();
 			if (!JedisUtils.reconnect(this.jedis, reconAttempts, reconnectSleepTime))
 			{
 				log.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
@@ -525,7 +523,7 @@ public class WorkerImpl implements Worker
 			this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, e);
 			break;
 		default:
-			log.error("Unknown WorkerRecoveryStrategy: " + recoveryStrategy + 
+			log.error("Unknown RecoveryStrategy: " + recoveryStrategy + 
 				" while attempting to recover from the following exception; worker proceeding...", e);
 			break;
 		}

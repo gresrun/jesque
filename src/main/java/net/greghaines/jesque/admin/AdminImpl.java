@@ -1,5 +1,6 @@
 package net.greghaines.jesque.admin;
 
+import static net.greghaines.jesque.utils.ResqueConstants.CHANNEL;
 import static net.greghaines.jesque.worker.JobExecutor.State.NEW;
 import static net.greghaines.jesque.worker.JobExecutor.State.RUNNING;
 import static net.greghaines.jesque.worker.JobExecutor.State.SHUTDOWN;
@@ -64,6 +65,13 @@ public class AdminImpl implements Admin
 		this.jedis.select(config.getDatabase());
 	}
 	
+	public AdminImpl(final Config config, final Set<String> channels, final Map<String,? extends Class<?>> jobTypes)
+	{
+		this(config);
+		setChannels(channels);
+		setJobTypes(jobTypes);
+	}
+	
 	public void run()
 	{
 		if (this.state.compareAndSet(NEW, RUNNING))
@@ -74,7 +82,7 @@ public class AdminImpl implements Admin
 				this.threadRef.set(Thread.currentThread());
 				while (!this.isShutdown())
 				{
-					this.jedis.subscribe(this.jedisPubSub, this.channels.toArray(new String[this.channels.size()]));
+					this.jedis.subscribe(this.jedisPubSub, createFullChannels());
 				}
 			}
 			finally
@@ -104,9 +112,13 @@ public class AdminImpl implements Admin
 
 	public void setChannels(final Set<String> channels)
 	{
+		checkChannels(channels);
 		this.channels.clear();
 		this.channels.addAll(channels);
-		this.jedisPubSub.unsubscribe();
+		if (this.jedisPubSub.isSubscribed())
+		{
+			this.jedisPubSub.unsubscribe();
+		}
 	}
 
 	public Worker getWorker()
@@ -285,17 +297,17 @@ public class AdminImpl implements Admin
 	/**
 	 * Handle an exception that was thrown from inside {@link PubSubListener#onMessage()}
 	 * 
-	 * @param curQueue the name of the queue that was being processed when the exception was thrown
+	 * @param channel the name of the channel that was being processed when the exception was thrown
 	 * @param e the exception that was thrown
 	 */
-	protected void recoverFromException(final String curQueue, final Exception e)
+	protected void recoverFromException(final String channel, final Exception e)
 	{
-		final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, e, curQueue);
-		final int reconAttempts = getReconnectAttempts();
+		final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, e, channel);
 		switch (recoveryStrategy)
 		{
 		case RECONNECT:
 			log.info("Reconnecting to Redis in response to exception", e);
+			final int reconAttempts = getReconnectAttempts();
 			if (!JedisUtils.reconnect(this.jedis, reconAttempts, reconnectSleepTime))
 			{
 				log.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
@@ -313,9 +325,29 @@ public class AdminImpl implements Admin
 		case PROCEED:
 			break;
 		default:
-			log.error("Unknown WorkerRecoveryStrategy: " + recoveryStrategy + 
-				" while attempting to recover from the following exception; worker proceeding...", e);
+			log.error("Unknown RecoveryStrategy: " + recoveryStrategy + 
+				" while attempting to recover from the following exception; Admin proceeding...", e);
 			break;
+		}
+	}
+
+	/**
+	 * Verify that the given channels are all valid.
+	 * 
+	 * @param channels the given channels
+	 */
+	protected static void checkChannels(final Iterable<String> channels)
+	{
+		if (channels == null)
+		{
+			throw new IllegalArgumentException("channels must not be null");
+		}
+		for (final String channel : channels)
+		{
+			if (channel == null || "".equals(channel))
+			{
+				throw new IllegalArgumentException("channels' members must not be null: " + channels);
+			}
 		}
 	}
 
@@ -346,5 +378,16 @@ public class AdminImpl implements Admin
 				throw new IllegalArgumentException("jobType's values must implement either Runnable or Callable: " + jobTypes);
 			}
 		}
+	}
+
+	private String[] createFullChannels()
+	{
+		final String[] fullChannels = this.channels.toArray(new String[this.channels.size()]);
+		int i = 0;
+		for (final String channel : fullChannels)
+		{
+			fullChannels[i++] = JesqueUtils.createKey(this.namespace, CHANNEL, channel);
+		}
+		return fullChannels;
 	}
 }

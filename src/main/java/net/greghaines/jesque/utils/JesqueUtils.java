@@ -22,11 +22,13 @@ import java.text.ParseException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
@@ -351,6 +353,17 @@ public final class JesqueUtils
 	public static <K,V> Entry<K,V> entry(final K key, final V value)
 	{
 		return new SimpleImmutableEntry<K,V>(key, value);
+	}
+
+	/**
+	 * Creates a Set out of the given keys
+	 * 
+	 * @param keys the keys
+	 * @return a Set containing the given keys
+	 */
+	public static <K> Set<K> set(final K... keys)
+	{
+		return new LinkedHashSet<K>(Arrays.asList(keys));
 	}
 
 	/**
