@@ -75,6 +75,7 @@ public class TestJsonSerialization
 		workerStatus.setPayload(job);
 		workerStatus.setQueue("foo");
 		workerStatus.setRunAt(new Date());
+		workerStatus.setPaused(true);
 		assertSerializeRoundTrip(workerStatus);
 	}
 	

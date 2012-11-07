@@ -46,7 +46,6 @@ import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import net.greghaines.jesque.utils.ResqueDateFormatThreadLocal;
-
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
@@ -95,8 +94,7 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO
 				final Set<String> workerNames = jedis.smembers(key(WORKERS));
 				for (final String workerName : workerNames)
 				{
-					final String statusPayload = jedis.get(key(WORKER, workerName));
-					if (statusPayload != null)
+					if (isWorkerInState(workerName, WorkerInfo.State.WORKING, jedis))
 					{
 						activeCount++;
 					}
@@ -105,18 +103,44 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO
 			}
 		});
 	}
+	
+	public long getPausedWorkerCount()
+	{
+		return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,Long>()
+		{
+			public Long doWork(final Jedis jedis)
+			throws Exception
+			{
+				long pausedCount = 0L;
+				final Set<String> workerNames = jedis.smembers(key(WORKERS));
+				for (final String workerName : workerNames)
+				{
+					if (isWorkerInState(workerName, WorkerInfo.State.PAUSED, jedis))
+					{
+						pausedCount++;
+					}
+				}
+				return pausedCount;
+			}
+		});
+	}
 
 	public List<WorkerInfo> getActiveWorkers()
 	{
-		return getWorkerInfos(true);
+		return getWorkerInfos(WorkerInfo.State.WORKING);
+	}
+
+	public List<WorkerInfo> getPausedWorkers()
+	{
+		return getWorkerInfos(WorkerInfo.State.PAUSED);
 	}
 	
 	public List<WorkerInfo> getAllWorkers()
 	{
-		return getWorkerInfos(false);
+		return getWorkerInfos(null);
 	}
 	
-	private List<WorkerInfo> getWorkerInfos(final boolean activeOnly)
+	private List<WorkerInfo> getWorkerInfos(final WorkerInfo.State requestedState)
 	{
 		return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,List<WorkerInfo>>()
 		{
@@ -127,15 +151,9 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO
 				final List<WorkerInfo> workerInfos = new ArrayList<WorkerInfo>(workerNames.size());
 				for (final String workerName : workerNames)
 				{
-					WorkerInfo workerInfo = null;
-					final String statusPayload = jedis.get(key(WORKER, workerName));
-					if (statusPayload != null || !activeOnly)
+					if (isWorkerInState(workerName, requestedState, jedis))
 					{
-						workerInfo = createWorker(workerName, jedis);
-					}
-					if (workerInfo != null)
-					{
-						workerInfos.add(workerInfo);
+						workerInfos.add(createWorker(workerName, jedis));
 					}
 				}
 				Collections.sort(workerInfos);
@@ -206,7 +224,10 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO
 		if (statusPayload != null)
 		{
 			workerInfo.setStatus(ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class));
-			workerInfo.setState(WorkerInfo.State.WORKING);
+			final WorkerInfo.State state = (workerInfo.getStatus().isPaused())
+				? WorkerInfo.State.PAUSED
+				: WorkerInfo.State.WORKING;
+			workerInfo.setState(state);
 		}
 		else
 		{
@@ -298,5 +319,40 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO
 			throw new ParseException("Unparseable date: \"" + dateStr + "\"" , 0);
 		}
 		return date;
+	}
+	
+	private boolean isWorkerInState(final String workerName, final WorkerInfo.State requestedState, 
+			final Jedis jedis)
+	throws IOException
+	{
+		boolean proceed = true;
+		final String statusPayload = jedis.get(key(WORKER, workerName));
+		if (requestedState != null)
+		{
+			switch (requestedState)
+			{
+			case IDLE: {
+				proceed = (statusPayload == null);
+				break;
+			}
+			case PAUSED: {
+				if (statusPayload != null)
+				{
+					final WorkerStatus status = ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class);
+					proceed = status.isPaused();
+				}
+				break;
+			}
+			case WORKING: {
+				if (statusPayload != null)
+				{
+					final WorkerStatus status = ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class);
+					proceed = !status.isPaused();
+				}
+				break;
+			}
+			}
+		}
+		return proceed;
 	}
 }

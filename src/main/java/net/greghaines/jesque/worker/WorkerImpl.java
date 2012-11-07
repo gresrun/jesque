@@ -531,17 +531,25 @@ public class WorkerImpl implements Worker
 
 	/**
 	 * Checks to see if worker is paused. If so, wait until unpaused.
+	 * 
+	 * @throws IOException if there was an error creating the pause message
 	 */
 	protected void checkPaused()
+	throws IOException
 	{
 		if (this.paused.get())
 		{
 			synchronized (this.paused)
 			{
+				if (this.paused.get())
+				{
+					this.jedis.set(key(WORKER, this.name), pauseMsg());
+				}
 				while (this.paused.get())
 				{
 					try { this.paused.wait(); } catch (InterruptedException ie){}
 				}
+				this.jedis.del(key(WORKER, this.name));
 			}
 		}
 	}
@@ -683,6 +691,21 @@ public class WorkerImpl implements Worker
 		s.setRunAt(new Date());
 		s.setQueue(queue);
 		s.setPayload(job);
+		return ObjectMapperFactory.get().writeValueAsString(s);
+	}
+
+	/**
+	 * Create and serialize a WorkerStatus for a pause event.
+	 * 
+	 * @return the JSON representation of a new WorkerStatus
+	 * @throws IOException if there was an error serializing the WorkerStatus
+	 */
+	protected String pauseMsg()
+	throws IOException
+	{
+		final WorkerStatus s = new WorkerStatus();
+		s.setRunAt(new Date());
+		s.setPaused(isPaused());
 		return ObjectMapperFactory.get().writeValueAsString(s);
 	}
 

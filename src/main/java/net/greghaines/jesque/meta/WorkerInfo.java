@@ -28,6 +28,7 @@ public class WorkerInfo implements Comparable<WorkerInfo>, Serializable
 	public enum State
 	{
 		IDLE,
+		PAUSED,
 		WORKING;
 	}
 

@@ -31,7 +31,7 @@ public class InfiniteTest
 	public void dummy(){} // Makes JUnit happy that there's at least one test if the others are commented out
 	
 	@SuppressWarnings("unchecked")
-//	@Test
+	@Test
 	public void dontStopNow()
 	throws InterruptedException
 	{
@@ -60,6 +60,7 @@ public class InfiniteTest
 			map(entry("InfiniteAction", InfiniteAction.class)));
 		final Thread workerThread2 = new Thread(worker2);
 		workerThread2.start();
+		worker2.togglePause(true);
 		
 		workerThread.join();
 	}
