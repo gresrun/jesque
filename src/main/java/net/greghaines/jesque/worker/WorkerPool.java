@@ -206,6 +206,20 @@ public class WorkerPool implements Worker
 			worker.togglePause(paused);
 		}
 	}
+	
+	public boolean isProcessingJob()
+	{
+		boolean processingJob = false;
+		for (final Worker worker : this.workers)
+		{
+			processingJob |= worker.isProcessingJob();
+			if (processingJob)
+			{
+				break;
+			}
+		}
+		return processingJob;
+	}
 
 	public Collection<String> getQueues()
 	{

@@ -47,4 +47,9 @@ public interface ResqueConstants
 	String WORKER = "worker";
 	String WORKERS = "workers";
 	String CHANNEL = "channel";
+	
+	/**
+	 * Default channel for admin jobs
+	 */
+	String ADMIN_CHANNEL = "admin";
 }

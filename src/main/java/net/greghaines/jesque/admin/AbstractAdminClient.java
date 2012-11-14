@@ -15,13 +15,12 @@
  */
 package net.greghaines.jesque.admin;
 
+import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
 import static net.greghaines.jesque.utils.ResqueConstants.CHANNEL;
-
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JesqueUtils;
-
 import redis.clients.jedis.Jedis;
 
 /**
@@ -53,12 +52,37 @@ public abstract class AbstractAdminClient implements AdminClient
 		return this.namespace;
 	}
 
-	public void publish(final String queue, final Job job)
+	public void shutdownWorkers(final boolean now)
 	{
-		validateArguments(queue, job);
+		publish(new Job("ShutdownCommand", now));
+	}
+
+	public void shutdownWorkers(final String channel, final boolean now)
+	{
+		publish(channel, new Job("ShutdownCommand", now));
+	}
+
+	public void togglePausedWorkers(final boolean paused)
+	{
+		publish(new Job("PauseCommand", paused));
+	}
+
+	public void togglePausedWorkers(final String channel, final boolean paused)
+	{
+		publish(channel, new Job("PauseCommand", paused));
+	}
+	
+	public void publish(final Job job)
+	{
+		publish(ADMIN_CHANNEL, job);
+	}
+
+	public void publish(final String channel, final Job job)
+	{
+		validateArguments(channel, job);
 		try
 		{
-			doPublish(queue, ObjectMapperFactory.get().writeValueAsString(job));
+			doPublish(channel, ObjectMapperFactory.get().writeValueAsString(job));
 		}
 		catch (RuntimeException re)
 		{

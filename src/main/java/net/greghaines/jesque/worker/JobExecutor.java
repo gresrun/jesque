@@ -80,9 +80,16 @@ public interface JobExecutor
 	/**
 	 * Returns whether this JobExecutor is either shutdown or in the process of shutting down.
 	 * 
-	 * @return whether this JobExecutor is either shutdown or in the process of shutting down.
+	 * @return true if this JobExecutor is either shutdown or in the process of shutting down
 	 */
 	boolean isShutdown();
+	
+	/**
+	 * Returns whether this JobExecutor is currently processing a job.
+	 * 
+	 * @return true if this JobExecutor is currently processing a job
+	 */
+	boolean isProcessingJob();
 
 	/**
 	 *  Wait for this JobExecutor to complete. A timeout of 0 means to wait forever.
@@ -90,8 +97,7 @@ public interface JobExecutor
 	 * This method will only return after a thread has called {@link #end(boolean)}.
 	 * 
 	 * @param millis the time to wait in milliseconds
-	 * @throws InterruptedException if any thread has interrupted the current thread. 
-	 * The interrupted status of the current thread is cleared when this exception is thrown.
+	 * @throws InterruptedException if any thread has interrupted the current thread
 	 */
 	void join(long millis) throws InterruptedException;
 }

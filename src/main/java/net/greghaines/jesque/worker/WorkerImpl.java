@@ -137,6 +137,7 @@ public class WorkerImpl implements Worker
 	protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
 	protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
 	private final AtomicBoolean paused = new AtomicBoolean(false);
+	private final AtomicBoolean processingJob = new AtomicBoolean(false);
 	private final long workerId = workerCounter.getAndIncrement();
 	private final String threadNameBase =
 		"Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
@@ -263,6 +264,11 @@ public class WorkerImpl implements Worker
 	public boolean isPaused()
 	{
 		return this.paused.get();
+	}
+	
+	public boolean isProcessingJob()
+	{
+		return this.processingJob.get();
 	}
 
 	public void togglePause(final boolean paused)
@@ -562,18 +568,27 @@ public class WorkerImpl implements Worker
 	 */
 	protected void process(final Job job, final String curQueue)
 	{
-		this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null);
-		if (threadNameChangingEnabled)
-		{
-			renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
-		}
 		try
 		{
-			execute(job, curQueue, JesqueUtils.materializeJob(job, this.jobTypes));
+			this.processingJob.set(true);
+			if (threadNameChangingEnabled)
+			{
+				renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
+			}
+			this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null);
+			this.jedis.set(key(WORKER, this.name), statusMsg(curQueue, job));
+			final Object instance = JesqueUtils.materializeJob(job, this.jobTypes);
+			final Object result = execute(job, curQueue, instance);
+			success(job, instance, result, curQueue);
 		}
 		catch (Exception e)
 		{
 			failure(e, job, curQueue);
+		}
+		finally
+		{
+			this.jedis.del(key(WORKER, this.name));
+			this.processingJob.set(false);
 		}
 	}
 
@@ -584,39 +599,32 @@ public class WorkerImpl implements Worker
 	 * @param curQueue the queue the job came from 
 	 * @param instance the materialized job
 	 * @throws Exception if the instance is a {@link Callable} and throws an exception
+	 * @return result of the execution
 	 */
-	protected void execute(final Job job, final String curQueue, final Object instance)
+	protected Object execute(final Job job, final String curQueue, final Object instance)
 	throws Exception
 	{
-		this.jedis.set(key(WORKER, this.name), statusMsg(curQueue, job));
-		try
+		if (instance instanceof WorkerAware)
 		{
-			final Object result;
-			if (instance instanceof WorkerAware)
-			{
-				((WorkerAware) instance).setWorker(this);
-			}
-			this.listenerDelegate.fireEvent(JOB_EXECUTE, this, curQueue, job, instance, null, null);
-			if (instance instanceof Callable)
-			{
-				result = ((Callable<?>) instance).call(); // The job is executing!
-			}
-			else if (instance instanceof Runnable)
-			{
-				((Runnable) instance).run(); // The job is executing!
-				result = null;
-			}
-			else
-			{ // Should never happen since we're testing the class earlier
-				throw new ClassCastException("instance must be a Runnable or a Callable: " + 
-					instance.getClass().getName() + " - " + instance);
-			}
-			success(job, instance, result, curQueue);
+			((WorkerAware) instance).setWorker(this);
 		}
-		finally
+		this.listenerDelegate.fireEvent(JOB_EXECUTE, this, curQueue, job, instance, null, null);
+		final Object result;
+		if (instance instanceof Callable)
 		{
-			this.jedis.del(key(WORKER, this.name));
+			result = ((Callable<?>) instance).call(); // The job is executing!
 		}
+		else if (instance instanceof Runnable)
+		{
+			((Runnable) instance).run(); // The job is executing!
+			result = null;
+		}
+		else
+		{ // Should never happen since we're testing the class earlier
+			throw new ClassCastException("Instance must be a Runnable or a Callable: " + 
+				instance.getClass().getName() + " - " + instance);
+		}
+		return result;
 	}
 
 	/**

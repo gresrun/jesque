@@ -1,9 +1,13 @@
 package net.greghaines.jesque.admin;
 
-import static net.greghaines.jesque.utils.ResqueConstants.CHANNEL;
 import static net.greghaines.jesque.worker.JobExecutor.State.NEW;
 import static net.greghaines.jesque.worker.JobExecutor.State.RUNNING;
 import static net.greghaines.jesque.worker.JobExecutor.State.SHUTDOWN;
+import static net.greghaines.jesque.utils.JesqueUtils.entry;
+import static net.greghaines.jesque.utils.JesqueUtils.map;
+import static net.greghaines.jesque.utils.JesqueUtils.set;
+import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
+import static net.greghaines.jesque.utils.ResqueConstants.CHANNEL;
 
 import java.util.Collections;
 import java.util.Map;
@@ -12,10 +16,13 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
+import net.greghaines.jesque.admin.commands.PauseCommand;
+import net.greghaines.jesque.admin.commands.ShutdownCommand;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.ConcurrentHashSet;
 import net.greghaines.jesque.utils.ConcurrentSet;
@@ -46,10 +53,12 @@ public class AdminImpl implements Admin
 	protected final PubSubListener jedisPubSub = new PubSubListener();
 	protected final AtomicReference<Worker> workerRef = new AtomicReference<Worker>(null);
 	protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
+	private final AtomicBoolean processingJob = new AtomicBoolean(false);
 	private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
 	private final AtomicReference<ExceptionHandler> exceptionHandlerRef = 
 			new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
 	
+	@SuppressWarnings("unchecked")
 	public AdminImpl(final Config config)
 	{
 		if (config == null)
@@ -63,11 +72,24 @@ public class AdminImpl implements Admin
 			this.jedis.auth(config.getPassword());
 		}
 		this.jedis.select(config.getDatabase());
+		setChannels(set(ADMIN_CHANNEL));
+		setJobTypes(map(entry("PauseCommand", PauseCommand.class), 
+						entry("ShutdownCommand", ShutdownCommand.class)));
 	}
 	
 	public AdminImpl(final Config config, final Set<String> channels, final Map<String,? extends Class<?>> jobTypes)
 	{
-		this(config);
+		if (config == null)
+		{
+			throw new IllegalArgumentException("config must not be null");
+		}
+		this.namespace = config.getNamespace();
+		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+		if (config.getPassword() != null)
+		{
+			this.jedis.auth(config.getPassword());
+		}
+		this.jedis.select(config.getDatabase());
 		setChannels(channels);
 		setJobTypes(jobTypes);
 	}
@@ -148,6 +170,11 @@ public class AdminImpl implements Admin
 	public boolean isShutdown()
 	{
 		return SHUTDOWN.equals(this.state.get());
+	}
+	
+	public boolean isProcessingJob()
+	{
+		return this.processingJob.get();
 	}
 	
 	public void join(final long millis)
@@ -232,12 +259,17 @@ public class AdminImpl implements Admin
 			{
 				try
 				{
+					AdminImpl.this.processingJob.set(true);
 					final Job job = ObjectMapperFactory.get().readValue(message, Job.class);
 					execute(job, channel, JesqueUtils.materializeJob(job, AdminImpl.this.jobTypes));
 				}
 				catch (Exception e)
 				{
 					recoverFromException(channel, e);
+				}
+				finally
+				{
+					AdminImpl.this.processingJob.set(false);
 				}
 			}
 		}

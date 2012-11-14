@@ -7,7 +7,6 @@ import net.greghaines.jesque.admin.Admin;
 import net.greghaines.jesque.admin.AdminClient;
 import net.greghaines.jesque.admin.AdminClientImpl;
 import net.greghaines.jesque.admin.AdminImpl;
-import net.greghaines.jesque.admin.commands.PauseCommand;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 
@@ -19,7 +18,6 @@ public class AdminIntegrationTest
 {
 	private static final Config config = new ConfigBuilder().build();
 	private static final String testQueue = "foo";
-	private static final String testChannel = "bar";
 	
 	@Before
 	public void resetRedis()
@@ -31,10 +29,8 @@ public class AdminIntegrationTest
 	@Test
 	public void testPauseCommand()
 	{
-		final Job job = new Job("PauseCommand", Boolean.TRUE);
-		
 		final Worker worker = new WorkerImpl(config, set(testQueue), map(entry("TestAction", TestAction.class)));
-		final Admin admin = new AdminImpl(config, set(testChannel), map(entry("PauseCommand", PauseCommand.class)));
+		final Admin admin = new AdminImpl(config);
 		admin.setWorker(worker);
 		
 		final Thread workerThread = new Thread(worker);
@@ -49,14 +45,19 @@ public class AdminIntegrationTest
 			final AdminClient adminClient = new AdminClientImpl(config);
 			try
 			{
-				adminClient.publish(testChannel, job);
+				adminClient.togglePausedWorkers(true);
+				try { Thread.sleep(1000L); } catch (InterruptedException ie){}
+				Assert.assertTrue(worker.isPaused());
+
+				Assert.assertFalse(worker.isShutdown());
+				adminClient.shutdownWorkers(true);
+				try { Thread.sleep(1000L); } catch (InterruptedException ie){}
+				Assert.assertTrue(worker.isShutdown());
 			}
 			finally
 			{
 				adminClient.end();
 			}
-			try { Thread.sleep(1000L); } catch (InterruptedException ie){}
-			Assert.assertTrue(worker.isPaused());
 		}
 		finally
 		{
