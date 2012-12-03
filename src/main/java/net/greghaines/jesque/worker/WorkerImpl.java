@@ -102,8 +102,8 @@ public class WorkerImpl implements Worker
 	private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
 	private static final AtomicLong workerCounter = new AtomicLong(0);
 	protected static final long emptyQueueSleepTime = 500; // 500 ms
-	private static final long reconnectSleepTime = 5000; // 5s
-	private static final int reconnectAttempts = 120; // Total time: 10min
+	protected static final long reconnectSleepTime = 5000; // 5s
+	protected static final int reconnectAttempts = 120; // Total time: 10min
 	private static volatile boolean threadNameChangingEnabled = false; // set the thread name to the message for debugging
 
 	/**
@@ -162,7 +162,7 @@ public class WorkerImpl implements Worker
 		"Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
 	private final AtomicReference<Thread> workerThreadRef =
 		new AtomicReference<Thread>(null);
-	private final AtomicReference<WorkerExceptionHandler> exceptionHandlerRef = 
+	protected final AtomicReference<WorkerExceptionHandler> exceptionHandlerRef =
 		new AtomicReference<WorkerExceptionHandler>(new DefaultWorkerExceptionHandler());
 
 	/**
@@ -535,8 +535,16 @@ public class WorkerImpl implements Worker
 					this.jedis.disconnect();
 					try { Thread.sleep(reconnectSleepTime); } catch (Exception e2){}
 					this.jedis.connect();
+					String pingResult = this.jedis.ping();
+					if( !pingResult.equals("PONG") ) {
+						log.info("Unknown redis ping result: " + pingResult);
+						this.jedis.disconnect();
+					}
 				}
 				catch (JedisConnectionException jce){} // Ignore bad connection attempts
+				catch (Exception e3) {
+					log.error("Unknown Exception while trying to reconnect to jedis", e3);
+				}
 			} while (++i <= reconAttempts && !this.jedis.isConnected());
 			if (!this.jedis.isConnected())
 			{
