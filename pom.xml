@@ -20,10 +20,10 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jedis.version>2.1.0</jedis.version>
-		<jackson.version>2.1.0</jackson.version>
+		<jackson.version>2.1.2</jackson.version>
 		<slf4j.version>1.7.2</slf4j.version>
-		<logback.version>1.0.7</logback.version>
-		<junit.version>4.10</junit.version>
+		<logback.version>1.0.9</logback.version>
+		<junit.version>4.11</junit.version>
 	</properties>
 	<licenses>
 		<license>
