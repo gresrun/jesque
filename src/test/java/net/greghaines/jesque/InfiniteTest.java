@@ -31,7 +31,7 @@ public class InfiniteTest
 	public void dummy(){} // Makes JUnit happy that there's at least one test if the others are commented out
 	
 	@SuppressWarnings("unchecked")
-	@Test
+//	@Test
 	public void dontStopNow()
 	throws InterruptedException
 	{
