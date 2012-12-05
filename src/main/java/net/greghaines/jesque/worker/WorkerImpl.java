@@ -60,6 +60,7 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.ReflectionUtils;
 import net.greghaines.jesque.utils.VersionUtils;
@@ -162,7 +163,7 @@ public class WorkerImpl implements Worker
 		"Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
 	private final AtomicReference<Thread> workerThreadRef =
 		new AtomicReference<Thread>(null);
-	protected final AtomicReference<WorkerExceptionHandler> exceptionHandlerRef =
+	private final AtomicReference<WorkerExceptionHandler> exceptionHandlerRef =
 		new AtomicReference<WorkerExceptionHandler>(new DefaultWorkerExceptionHandler());
 
 	/**
@@ -535,18 +536,14 @@ public class WorkerImpl implements Worker
 					this.jedis.disconnect();
 					try { Thread.sleep(reconnectSleepTime); } catch (Exception e2){}
 					this.jedis.connect();
-					String pingResult = this.jedis.ping();
-					if( !pingResult.equals("PONG") ) {
-						log.info("Unknown redis ping result: " + pingResult);
-						this.jedis.disconnect();
-					}
 				}
 				catch (JedisConnectionException jce){} // Ignore bad connection attempts
-				catch (Exception e3) {
-					log.error("Unknown Exception while trying to reconnect to jedis", e3);
+				catch (Exception e3)
+				{
+					log.error("Unknown exception while trying to reconnect to Redis", e3);
 				}
-			} while (++i <= reconAttempts && !this.jedis.isConnected());
-			if (!this.jedis.isConnected())
+			} while (++i <= reconAttempts && !JedisUtils.testJedisConnection(this.jedis));
+			if (!JedisUtils.testJedisConnection(this.jedis))
 			{
 				log.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
 				end(false);
