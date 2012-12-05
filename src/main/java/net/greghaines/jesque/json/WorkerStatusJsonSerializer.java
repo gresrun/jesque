@@ -42,6 +42,7 @@ public class WorkerStatusJsonSerializer extends JsonSerializer<WorkerStatus>
 		jgen.writeStringField("queue", workerStatus.getQueue());
 		jgen.writeFieldName("payload");
 		ObjectMapperFactory.get().writeValue(jgen, workerStatus.getPayload());
+		jgen.writeBooleanField("paused", workerStatus.isPaused());
 		jgen.writeEndObject();
 	}
 }

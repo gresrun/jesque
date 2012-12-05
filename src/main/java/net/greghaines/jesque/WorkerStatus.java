@@ -30,6 +30,7 @@ public class WorkerStatus implements Serializable
 	private Date runAt;
 	private String queue;
 	private Job payload;
+	private boolean paused = false;
 	
 	/**
 	 * No-arg constructor
@@ -104,11 +105,29 @@ public class WorkerStatus implements Serializable
 		this.payload = payload;
 	}
 
+	/**
+	 * @return true if the worker is paused
+	 */
+	public boolean isPaused()
+	{
+		return this.paused;
+	}
+
+	/**
+	 * Sets whether the worker is paused.
+	 * @param paused whether the worker is paused
+	 */
+	public void setPaused(final boolean paused)
+	{
+		this.paused = paused;
+	}
+
 	@Override
 	public int hashCode()
 	{
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + (this.paused ? 1231 : 1237);
 		result = prime * result + ((this.payload == null) ? 0 : this.payload.hashCode());
 		result = prime * result + ((this.queue == null) ? 0 : this.queue.hashCode());
 		result = prime * result + ((this.runAt == null) ? 0 : this.runAt.hashCode());
@@ -131,6 +150,21 @@ public class WorkerStatus implements Serializable
 			return false;
 		}
 		final WorkerStatus other = (WorkerStatus) obj;
+		if (this.paused != other.paused)
+		{
+			return false;
+		}
+		if (this.payload == null)
+		{
+			if (other.payload != null)
+			{
+				return false;
+			}
+		}
+		else if (!this.payload.equals(other.payload))
+		{
+			return false;
+		}
 		if (this.queue == null)
 		{
 			if (other.queue != null)
@@ -150,18 +184,6 @@ public class WorkerStatus implements Serializable
 			}
 		}
 		else if (!this.runAt.equals(other.runAt))
-		{
-			return false;
-		}
-		if (this.payload == null)
-		{
-			if (other.payload != null)
-			{
-				return false;
-			
-			}
-		}
-		else if (!this.payload.equals(other.payload))
 		{
 			return false;
 		}

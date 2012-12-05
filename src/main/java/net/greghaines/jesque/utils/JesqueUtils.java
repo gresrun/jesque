@@ -19,15 +19,21 @@ import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
+
+import net.greghaines.jesque.Job;
+import net.greghaines.jesque.worker.UnpermittedJobException;
 
 /**
  * Miscellaneous utilities.
@@ -347,6 +353,63 @@ public final class JesqueUtils
 	public static <K,V> Entry<K,V> entry(final K key, final V value)
 	{
 		return new SimpleImmutableEntry<K,V>(key, value);
+	}
+
+	/**
+	 * Creates a Set out of the given keys
+	 * 
+	 * @param keys the keys
+	 * @return a Set containing the given keys
+	 */
+	public static <K> Set<K> set(final K... keys)
+	{
+		return new LinkedHashSet<K>(Arrays.asList(keys));
+	}
+
+	/**
+	 * Materializes a job by assuming the {@link Job#getClassName()} is a fully-qualified Java type.
+	 * 
+	 * @param job the job to materialize
+	 * @return the materialized job
+	 * @throws ClassNotFoundException if the class could not be found
+	 * @throws Exception if there was an exception creating the object
+	 */
+	public static Object materializeJob(final Job job)
+	throws ClassNotFoundException, Exception
+	{
+		final Class<?> clazz = ReflectionUtils.forName(job.getClassName());
+		if (!Runnable.class.isAssignableFrom(clazz) && !Callable.class.isAssignableFrom(clazz))
+		{ // A bit redundant since we check when the job type is added but better safe than sorry...
+			throw new ClassCastException("jobs must be a Runnable or a Callable: " + 
+				clazz.getName() + " - " + job);
+		}
+		return ReflectionUtils.createObject(clazz, job.getArgs());
+	}
+
+	/**
+	 * Materializes a job by looking up {@link Job#getClassName()} in the provided map of job types.
+	 * 
+	 * @param job the job to materialize
+	 * @param jobTypes a map of String names to Java types
+	 * @return the materialized job
+	 * @throws UnpermittedJobException if there was not a non-null mapping in jobTypes for the class name
+	 * @throws Exception if there was an exception creating the object
+	 */
+	public static Object materializeJob(final Job job, final Map<String,Class<?>> jobTypes)
+	throws UnpermittedJobException, Exception
+	{
+		final String className = job.getClassName();
+		final Class<?> clazz = jobTypes.get(className);
+		if (clazz == null)
+		{
+			throw new UnpermittedJobException(className);
+		}
+		if (!Runnable.class.isAssignableFrom(clazz) && !Callable.class.isAssignableFrom(clazz))
+		{ // A bit redundant since we check when the job type is added but better safe than sorry...
+			throw new ClassCastException("jobs must be a Runnable or a Callable: " + 
+				clazz.getName() + " - " + job);
+		}
+		return ReflectionUtils.createObject(clazz, job.getArgs());
 	}
 
 	private JesqueUtils(){} // Utility class

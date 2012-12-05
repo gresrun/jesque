@@ -206,6 +206,20 @@ public class WorkerPool implements Worker
 			worker.togglePause(paused);
 		}
 	}
+	
+	public boolean isProcessingJob()
+	{
+		boolean processingJob = false;
+		for (final Worker worker : this.workers)
+		{
+			processingJob |= worker.isProcessingJob();
+			if (processingJob)
+			{
+				break;
+			}
+		}
+		return processingJob;
+	}
 
 	public Collection<String> getQueues()
 	{
@@ -281,12 +295,12 @@ public class WorkerPool implements Worker
 		}
 	}
 
-	public WorkerExceptionHandler getExceptionHandler()
+	public ExceptionHandler getExceptionHandler()
 	{
 		return this.workers.get(0).getExceptionHandler();
 	}
 
-	public void setExceptionHandler(final WorkerExceptionHandler exceptionHandler)
+	public void setExceptionHandler(final ExceptionHandler exceptionHandler)
 	{
 		for (final Worker worker : this.workers)
 		{

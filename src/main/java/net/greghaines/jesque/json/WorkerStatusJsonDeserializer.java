@@ -59,6 +59,11 @@ public class WorkerStatusJsonDeserializer extends JsonDeserializer<WorkerStatus>
 				jp.nextToken();
 				workerStatus.setPayload(jp.readValueAs(Job.class));
 			}
+			else if ("paused".equals(jp.getText()))
+			{
+				jp.nextToken();
+				workerStatus.setPaused(jp.readValueAs(Boolean.class));
+			}
 			else if (jp.getCurrentToken() != JsonToken.END_OBJECT)
 			{
 				throw new JsonMappingException("Unexpected field for WorkerStatus: " + jp.getText(), jp.getCurrentLocation());

@@ -1,6 +1,7 @@
 package net.greghaines.jesque.worker;
 
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
+import static net.greghaines.jesque.worker.JobExecutor.State.RUNNING;
 import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
 
 import java.util.Collection;
@@ -53,7 +54,7 @@ public class WorkerExitOnEmpty extends WorkerImpl
 		int missCount = 0;
 		String curQueue = null;
 		int allQueuesEmptyCount = 0;
-		while (WorkerState.RUNNING.equals(this.state.get()))
+		while (RUNNING.equals(this.state.get()))
 		{
 			try
 			{
@@ -66,7 +67,7 @@ public class WorkerExitOnEmpty extends WorkerImpl
 				{
 					this.queueNames.add(curQueue); // Rotate the queues
 					checkPaused();
-					if (WorkerState.RUNNING.equals(this.state.get())) // Might have been waiting in poll()/checkPaused() for a while
+					if (RUNNING.equals(this.state.get())) // Might have been waiting in poll()/checkPaused() for a while
 					{
 						this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
 						final String payload = this.jedis.lpop(key(QUEUE, curQueue));
@@ -77,7 +78,7 @@ public class WorkerExitOnEmpty extends WorkerImpl
 							missCount = 0;
 							allQueuesEmptyCount = 0;
 						}
-						else if ((++missCount >= this.queueNames.size()) && WorkerState.RUNNING.equals(this.state.get()))
+						else if ((++missCount >= this.queueNames.size()) && RUNNING.equals(this.state.get()))
 						{ // Keeps worker from busy-spinning on empty queues
 							missCount = 0;
 							Thread.sleep(emptyQueueSleepTime);

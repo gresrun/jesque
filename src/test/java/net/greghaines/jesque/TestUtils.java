@@ -19,7 +19,7 @@ import java.util.List;
 
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientImpl;
-import net.greghaines.jesque.worker.Worker;
+import net.greghaines.jesque.worker.JobExecutor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +91,7 @@ public final class TestUtils
 		}
 	}
 	
-	public static void stopWorker(final Worker worker, final Thread workerThread)
+	public static void stopWorker(final JobExecutor worker, final Thread workerThread)
 	{
 		try { Thread.sleep(1000); } catch (Exception e){} // Give worker time to process
 		worker.end(false);
