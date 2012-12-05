@@ -100,7 +100,7 @@ public class AdminImpl implements Admin
 		{
 			try
 			{
-				log.info("AdminImpl starting up");
+				log.debug("AdminImpl starting up");
 				this.threadRef.set(Thread.currentThread());
 				while (!this.isShutdown())
 				{
@@ -109,7 +109,7 @@ public class AdminImpl implements Admin
 			}
 			finally
 			{
-				log.info("AdminImpl shutting down");
+				log.debug("AdminImpl shutting down");
 				this.jedis.quit();
 				this.threadRef.set(null);
 			}
