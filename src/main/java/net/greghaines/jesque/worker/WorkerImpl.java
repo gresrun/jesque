@@ -129,6 +129,7 @@ public class WorkerImpl implements Worker
 		}
 	}
 
+	protected final Config config;
 	protected final Jedis jedis;
 	protected final String namespace;
 	protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<String>();
@@ -168,13 +169,10 @@ public class WorkerImpl implements Worker
 		}
 		checkQueues(queues);
 		checkJobTypes(jobTypes);
+		this.config = config;
 		this.namespace = config.getNamespace();
 		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-		if (config.getPassword() != null)
-		{
-			this.jedis.auth(config.getPassword());
-		}
-		this.jedis.select(config.getDatabase());
+		authenticateAndSelectDB();
 		this.name = createName();
 		setQueues(queues);
 		setJobTypes(jobTypes);
@@ -518,6 +516,7 @@ public class WorkerImpl implements Worker
 			}
 			else
 			{
+				authenticateAndSelectDB();
 				log.info("Reconnected to Redis");
 			}
 			break;
@@ -533,6 +532,15 @@ public class WorkerImpl implements Worker
 				" while attempting to recover from the following exception; worker proceeding...", e);
 			break;
 		}
+	}
+
+	private void authenticateAndSelectDB()
+	{
+		if (this.config.getPassword() != null)
+		{
+			this.jedis.auth(this.config.getPassword());
+		}
+		this.jedis.select(this.config.getDatabase());
 	}
 
 	/**
