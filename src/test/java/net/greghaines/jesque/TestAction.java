@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Complicated construtor to test JSON serialization.
+ * Complicated constructor to test JSON serialization.
  * 
  * @author Greg Haines
  */
