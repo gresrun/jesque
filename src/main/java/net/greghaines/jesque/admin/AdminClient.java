@@ -10,7 +10,7 @@ import net.greghaines.jesque.Job;
 public interface AdminClient
 {
 	/**
-	 * Send a shutdown command on the {@link ResqueConstants.ADMIN_CHANNEL} channel.
+	 * Send a shutdown command on the {@link net.greghaines.jesque.utils.ResqueConstants#ADMIN_CHANNEL} channel.
 	 * 
 	 * @param now if true, an effort will be made to stop any job in progress
 	 */
@@ -25,7 +25,7 @@ public interface AdminClient
 	void shutdownWorkers(String channel, boolean now);
 	
 	/**
-	 * Send a pause command on the {@link ResqueConstants.ADMIN_CHANNEL} channel.
+	 * Send a pause command on the {@link net.greghaines.jesque.utils.ResqueConstants#ADMIN_CHANNEL} channel.
 	 * 
 	 * @param paused if true, the workers will not process any new jobs; 
 	 * if false, the workers will process new jobs
@@ -42,7 +42,7 @@ public interface AdminClient
 	void togglePausedWorkers(String channel, boolean paused);
 	
 	/**
-	 * Publishes a job on the {@link ResqueConstants.ADMIN_CHANNEL} channel.
+	 * Publishes a job on the {@link net.greghaines.jesque.utils.ResqueConstants#ADMIN_CHANNEL} channel.
 	 * 
 	 * @param job job the job to be published
 	 * @throws IllegalArgumentException if the job is null

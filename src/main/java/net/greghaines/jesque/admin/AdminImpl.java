@@ -327,7 +327,7 @@ public class AdminImpl implements Admin
 	}
 
 	/**
-	 * Handle an exception that was thrown from inside {@link PubSubListener#onMessage()}
+	 * Handle an exception that was thrown from inside {@link PubSubListener#onMessage(String,String)}
 	 * 
 	 * @param channel the name of the channel that was being processed when the exception was thrown
 	 * @param e the exception that was thrown
