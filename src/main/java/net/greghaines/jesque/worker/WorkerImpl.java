@@ -71,6 +71,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.exceptions.JedisException;
 
 /**
  * Basic implementation of the Worker interface.
@@ -644,29 +645,44 @@ public class WorkerImpl implements Worker
 	 */
 	protected void success(final Job job, final Object runner, final Object result, final String curQueue)
 	{
-		this.jedis.incr(key(STAT, PROCESSED));
-		this.jedis.incr(key(STAT, PROCESSED, this.name));
+		// The job may have taken a long time; make an effort to ensure the connection is OK
+		JedisUtils.ensureJedisConnection(this.jedis);
+		try
+		{
+			this.jedis.incr(key(STAT, PROCESSED));
+			this.jedis.incr(key(STAT, PROCESSED, this.name));
+		}
+		catch (JedisException je)
+		{
+			log.warn("Error updating success stats for job=" + job, je);
+		}
 		this.listenerDelegate.fireEvent(JOB_SUCCESS, this, curQueue, job, runner, result, null);
 	}
 
 	/**
 	 * Update the status in Redis on failure
 	 * 
-	 * @param ex the Exception that occured
+	 * @param ex the Exception that occurred
 	 * @param job the Job that failed
 	 * @param curQueue the queue the Job came from
 	 */
 	protected void failure(final Exception ex, final Job job, final String curQueue)
 	{
-		this.jedis.incr(key(STAT, FAILED));
-		this.jedis.incr(key(STAT, FAILED, this.name));
+		// The job may have taken a long time; make an effort to ensure the connection is OK
+		JedisUtils.ensureJedisConnection(this.jedis);
 		try
 		{
+			this.jedis.incr(key(STAT, FAILED));
+			this.jedis.incr(key(STAT, FAILED, this.name));
 			this.jedis.rpush(key(FAILED), failMsg(ex, curQueue, job));
 		}
-		catch (Exception e)
+		catch (JedisException je)
 		{
-			log.warn("Error during serialization of failure payload for exception=" + ex + " job=" + job, e);
+			log.warn("Error updating failure stats for exception=" + ex + " job=" + job, je);
+		}
+		catch (IOException ioe)
+		{
+			log.warn("Error serializing failure payload for exception=" + ex + " job=" + job, ioe);
 		}
 		this.listenerDelegate.fireEvent(JOB_FAILURE, this, curQueue, job, null, null, ex);
 	}
