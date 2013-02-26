@@ -369,18 +369,7 @@ public class WorkerImpl implements Worker
 
 	public void addJobType(final String jobName, final Class<?> jobType)
 	{
-		if (jobName == null)
-		{
-			throw new IllegalArgumentException("jobName must not be null");
-		}
-		if (jobType == null)
-		{
-			throw new IllegalArgumentException("jobType must not be null");
-		}
-		if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType)))
-		{
-			throw new IllegalArgumentException("jobType must implement either Runnable or Callable: " + jobType);
-		}
+		checkJobType(jobName, jobType);
 		this.jobTypes.put(jobName, jobType);
 	}
 
@@ -800,19 +789,35 @@ public class WorkerImpl implements Worker
 		}
 		for (final Entry<String,? extends Class<?>> entry : jobTypes.entrySet())
 		{
-			if (entry.getKey() == null)
+			try
 			{
-				throw new IllegalArgumentException("jobType's keys must not be null: " + jobTypes);
+				checkJobType( entry.getKey(), entry.getValue() );
 			}
-			final Class<?> jobType = entry.getValue();
-			if (jobType == null)
+			catch(IllegalArgumentException iae)
 			{
-				throw new IllegalArgumentException("jobType's values must not be null: " + jobTypes);
+				throw new IllegalArgumentException("jobTypes contained invalid value", iae);
 			}
-			if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType)))
-			{
-				throw new IllegalArgumentException("jobType's values must implement either Runnable or Callable: " + jobTypes);
-			}
+		}
+	}
+
+	/**
+	 * determine if a job name and job type is valid
+	 * @param jobName the name of the job
+	 * @param jobType the class of the job
+	 */
+	protected void checkJobType(final String jobName, final Class<?> jobType)
+	{
+		if (jobName == null)
+		{
+			throw new IllegalArgumentException("jobName must not be null");
+		}
+		if (jobType == null)
+		{
+			throw new IllegalArgumentException("jobType must not be null");
+		}
+		if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType)))
+		{
+			throw new IllegalArgumentException("jobType must implement either Runnable or Callable: " + jobType);
 		}
 	}
 
