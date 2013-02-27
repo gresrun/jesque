@@ -679,7 +679,7 @@ public class WorkerImpl implements Worker
 	/**
 	 * Create and serialize a JobFailure.
 	 * 
-	 * @param ex the Exception that occured
+	 * @param ex the Exception that occurred
 	 * @param queue the queue the job came from
 	 * @param job the Job that failed
 	 * @return the JSON representation of a new JobFailure
@@ -780,6 +780,7 @@ public class WorkerImpl implements Worker
 	 * Verify the given job types are all valid.
 	 * 
 	 * @param jobTypes the given job types
+	 * @throws IllegalArgumentException if the job types are invalid
 	 */
 	protected void checkJobTypes(final Map<String,? extends Class<?>> jobTypes)
 	{
@@ -791,9 +792,9 @@ public class WorkerImpl implements Worker
 		{
 			try
 			{
-				checkJobType( entry.getKey(), entry.getValue() );
+				checkJobType(entry.getKey(), entry.getValue());
 			}
-			catch(IllegalArgumentException iae)
+			catch (IllegalArgumentException iae)
 			{
 				throw new IllegalArgumentException("jobTypes contained invalid value", iae);
 			}
@@ -801,9 +802,11 @@ public class WorkerImpl implements Worker
 	}
 
 	/**
-	 * determine if a job name and job type is valid
+	 * Determine if a job name and job type are valid.
+	 * 
 	 * @param jobName the name of the job
 	 * @param jobType the class of the job
+	 * @throws IllegalArgumentException if the name and type are invalid
 	 */
 	protected void checkJobType(final String jobName, final Class<?> jobType)
 	{
