@@ -33,7 +33,19 @@ public interface ResqueConstants
 	/**
 	 * For interoperability with Resque (ruby)
 	 */
-	String DATE_FORMAT_RUBY = "yyyy-MM-dd HH:mm:ss Z";
+	String DATE_FORMAT_RUBY_V1 = "yyyy-MM-dd HH:mm:ss Z";
+	/**
+	 * For interoperability with Resque (ruby)
+	 */
+	String DATE_FORMAT_RUBY_V2 = "yyyy-MM-dd HH:mm:ss";
+	/**
+	 * For interoperability with Resque (ruby)
+	 */
+	String DATE_FORMAT_RUBY_V3 = "yyyy/MM/dd HH:mm:ss Z";
+	/**
+	 * For interoperability with Resque (ruby)
+	 */
+	String DATE_FORMAT_RUBY_V4 = "yyyy/MM/dd HH:mm:ss";
 	
 	String JAVA_DYNAMIC_QUEUES = "JAVA_DYNAMIC_QUEUES";
 	

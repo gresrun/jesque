@@ -17,9 +17,13 @@ package net.greghaines.jesque.json;
 
 import static net.greghaines.jesque.utils.VersionUtils.DEVELOPMENT;
 import static net.greghaines.jesque.utils.VersionUtils.ERROR;
+
+import java.text.DateFormat;
+
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
+import net.greghaines.jesque.utils.CompositeDateFormat;
 import net.greghaines.jesque.utils.VersionUtils;
 
 import com.fasterxml.jackson.core.Version;
@@ -46,8 +50,11 @@ public final class ObjectMapperFactory
 			.addSerializer(WorkerStatus.class, new WorkerStatusJsonSerializer())
 			.addDeserializer(WorkerStatus.class, new WorkerStatusJsonDeserializer()));
 		mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+		final DateFormat jsonDateFormat = new CompositeDateFormat();
+		mapper.getDeserializationConfig().with(jsonDateFormat);
+		mapper.getSerializationConfig().with(jsonDateFormat);
 	}
-
+	
 	private static Version createJacksonVersion()
 	{
 		final Object[] versionParts = VersionUtils.getVersionParts();
