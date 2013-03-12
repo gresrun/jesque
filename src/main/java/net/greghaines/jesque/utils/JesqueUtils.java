@@ -17,6 +17,7 @@ package net.greghaines.jesque.utils;
 
 import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -409,6 +410,7 @@ public final class JesqueUtils
 			throw new ClassCastException("jobs must be a Runnable or a Callable: " + 
 				clazz.getName() + " - " + job);
 		}
+
 		return ReflectionUtils.createObject(clazz, job.getArgs());
 	}
 

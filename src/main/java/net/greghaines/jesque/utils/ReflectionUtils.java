@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import net.greghaines.jesque.Job;
+
 /**
  * Reflection utilities.
  * 
@@ -117,7 +119,16 @@ public final class ReflectionUtils
 	throws NoSuchConstructorException, AmbiguousConstructorException, 
 			InstantiationException, IllegalAccessException, InvocationTargetException
 	{
-		return findConstructor(clazz, args).newInstance(args);
+		T newInstance = null;
+		
+		Constructor<T> constructor = findConstructor(clazz, args);
+		if(constructor.isVarArgs()){
+			newInstance = constructor.newInstance((Object)args);
+		} else {
+			newInstance = constructor.newInstance(args);
+		}
+
+		return newInstance; 
 	}
 
 	/**
@@ -135,12 +146,17 @@ public final class ReflectionUtils
 	throws NoSuchConstructorException, AmbiguousConstructorException
 	{
 		Constructor<T> constructorToUse = null;
+		Constructor<T> constructorVarArgs = null;
 		final Constructor<?>[] candidates = clazz.getConstructors();
 		Arrays.sort(candidates, ConstructorComparator.INSTANCE);
 		int minTypeDiffWeight = Integer.MAX_VALUE;
 		Set<Constructor<?>> ambiguousConstructors = null;
 		for (final Constructor candidate : candidates)
 		{
+			if(candidate.isVarArgs()){
+				constructorVarArgs = candidate;
+				continue;
+			}
 			final Class[] paramTypes = candidate.getParameterTypes();
 			if (constructorToUse != null && args.length > paramTypes.length)
 			{
@@ -169,6 +185,11 @@ public final class ReflectionUtils
 				ambiguousConstructors.add(candidate);
 			}
 		}
+		
+		if (constructorToUse == null && constructorVarArgs != null) {
+			constructorToUse = constructorVarArgs;
+		}
+	
 		if (ambiguousConstructors != null && !ambiguousConstructors.isEmpty())
 		{
 			throw new AmbiguousConstructorException(clazz, args, ambiguousConstructors);
