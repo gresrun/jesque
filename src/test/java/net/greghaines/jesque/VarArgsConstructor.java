@@ -36,7 +36,7 @@ public class VarArgsConstructor {
 	throws Exception
 	{
 		// Enqueue the job before worker is created and started
-		final Job job = new Job("GenericWorker", new Object[]{1, 2.3, true, "test", Arrays.asList("inner", 4.5),"new value"});
+		final Job job = new Job("GenericWorker", new Object[]{1, 2.3, "new value", Arrays.asList("inner", 4.5)});
 		
 		TestUtils.enqueueJobs(testQueue, Arrays.asList(job), config);
 		Jedis jedis = createJedis(config);
@@ -82,7 +82,7 @@ public class VarArgsConstructor {
 	throws Exception
 	{
 		// Enqueue the job before worker is created and started
-		final Job job = new Job("GenericWorker", new Object[]{1, 2.3, "test"});
+		final Job job = new Job("GenericWorker", new Object[]{1, 2.3, "value"});
 		
 		TestUtils.enqueueJobs(testQueue, Arrays.asList(job), config);
 		Jedis jedis = createJedis(config);
