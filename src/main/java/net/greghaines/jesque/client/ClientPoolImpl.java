@@ -24,7 +24,7 @@ import redis.clients.util.Pool;
 /**
  * A Client implementation that gets its connection to Redis from a connection pool.
  * 
- * @author Greg Haines
+ * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
  */
 public class ClientPoolImpl extends AbstractClient
 {
@@ -91,4 +91,19 @@ public class ClientPoolImpl extends AbstractClient
 	 * Does nothing.
 	 */
 	public void end(){} // Do nothing
+	
+    @Override
+    protected void doDelayedEnqueue(final String queue, 
+            final String msg, 
+            final long future) throws Exception 
+    {
+        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() 
+        {
+            public Void doWork(final Jedis jedis) 
+            {
+                doDelayedEnqueue(jedis, getNamespace(), queue, msg, future);
+                return null;
+            }
+        });
+    }
 }
