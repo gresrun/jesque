@@ -48,6 +48,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,7 +78,7 @@ import redis.clients.jedis.exceptions.JedisException;
  * Basic implementation of the Worker interface.
  * Obeys the contract of a Resque worker in Redis.
  * 
- * @author Greg Haines
+ * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
  */
 public class WorkerImpl implements Worker
 {
@@ -456,7 +457,7 @@ public class WorkerImpl implements Worker
 					if (RUNNING.equals(this.state.get())) // Might have been waiting in poll()/checkPaused() for a while
 					{
 						this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
-						final String payload = this.jedis.lpop(key(QUEUE, curQueue));
+						final String payload = pop(curQueue); // this.jedis.lpop(key(QUEUE, curQueue));
 						if (payload != null)
 						{
 							final Job job = ObjectMapperFactory.get().readValue(payload, Job.class);
@@ -484,6 +485,37 @@ public class WorkerImpl implements Worker
 			}
 		}
 	}
+	
+    private String pop(String curQueue) 
+    {
+        String key = key(QUEUE, curQueue);
+        boolean isDelayedQueue = JesqueUtils.isDelayedQueue(jedis, key);
+        
+        // If not a delayed Queue, then use LPOP
+        if (!isDelayedQueue) 
+        {
+            return this.jedis.lpop(key);
+        }
+
+        // If a delayed Queue, peek and remove from ZSET
+        if (isDelayedQueue) 
+        {
+            long now = System.currentTimeMillis();
+            // peek ==> is there any item scheduled to run between -INF and now?
+            final Set<String> payloadSet = this.jedis.zrangeByScore(key, -1, now, 0, 1);
+            if (null != payloadSet && !payloadSet.isEmpty()) 
+            {
+                String payload = payloadSet.iterator().next();
+                // try to acquire this job
+                if (this.jedis.zrem(key, payload) == 1) 
+                {
+                    return payload; // Return
+                }
+            }
+        }
+
+        return null;
+    }
 
 	/**
 	 * Handle an exception that was thrown from inside {@link #poll()}
