@@ -8,16 +8,13 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-
 public class CompositeDateFormat extends DateFormat {
 
 	private static final long serialVersionUID = -4079876635509458541L;
 	private static final List<DateFormatFactory> DATE_FORMAT_FACTORIES = 
 		Arrays.<DateFormatFactory>asList(
-			new DateFormatFactory()
-			{
-				public DateFormat create()
-				{
+			new DateFormatFactory() {
+				public DateFormat create() {
 					return ResqueDateFormatThreadLocal.getInstance();
 				}
 			},
@@ -30,8 +27,7 @@ public class CompositeDateFormat extends DateFormat {
 
 	@Override
 	public StringBuffer format(final Date date, final StringBuffer toAppendTo,
-			final FieldPosition fieldPosition)
-	{
+			final FieldPosition fieldPosition) {
 		return ResqueDateFormatThreadLocal.getInstance().format(date, toAppendTo, fieldPosition);
 	}
 
@@ -49,8 +45,7 @@ public class CompositeDateFormat extends DateFormat {
 				break;
 			}
 		}
-		if (success)
-		{
+		if (success) {
 			pos.setIndex(posCopy.getIndex());
 			pos.setErrorIndex(posCopy.getErrorIndex());
 		}
@@ -61,17 +56,14 @@ public class CompositeDateFormat extends DateFormat {
 		DateFormat create();
 	}
 	
-	private static class PatternDateFormatFactory implements DateFormatFactory
-	{
+	private static class PatternDateFormatFactory implements DateFormatFactory {
 		private final String pattern;
 		
-		public PatternDateFormatFactory(final String pattern)
-		{
+		public PatternDateFormatFactory(final String pattern) {
 			this.pattern = pattern;
 		}
 
-		public DateFormat create()
-		{
+		public DateFormat create() {
 			final SimpleDateFormat dateFormat = new SimpleDateFormat(this.pattern);
 			dateFormat.setLenient(false);
 			return dateFormat;

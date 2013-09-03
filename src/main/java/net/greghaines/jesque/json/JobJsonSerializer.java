@@ -17,7 +17,6 @@ package net.greghaines.jesque.json;
 
 import java.io.IOException;
 
-
 import net.greghaines.jesque.Job;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -26,21 +25,20 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
- * A custom Jackson serializer for Jobs.
- * Needed because Job uses Java-style property names and Resque does not.
+ * A custom Jackson serializer for Jobs. Needed because Job uses Java-style
+ * property names and Resque does not.
  * 
  * @author Greg Haines
  */
-public class JobJsonSerializer extends JsonSerializer<Job>
-{
-	@Override
-	public void serialize(final Job job, final JsonGenerator jgen, final SerializerProvider provider)
-	throws IOException, JsonProcessingException
-	{
-		jgen.writeStartObject();
-		jgen.writeStringField("class", job.getClassName());
-		jgen.writeFieldName("args");
-		ObjectMapperFactory.get().writeValue(jgen, job.getArgs());
-		jgen.writeEndObject();
-	}
+public class JobJsonSerializer extends JsonSerializer<Job> {
+
+    @Override
+    public void serialize(final Job job, final JsonGenerator jgen, final SerializerProvider provider)
+            throws IOException, JsonProcessingException {
+        jgen.writeStartObject();
+        jgen.writeStringField("class", job.getClassName());
+        jgen.writeFieldName("args");
+        ObjectMapperFactory.get().writeValue(jgen, job.getArgs());
+        jgen.writeEndObject();
+    }
 }

@@ -20,13 +20,13 @@ import java.util.Map;
 
 import net.greghaines.jesque.meta.KeyInfo;
 
-public interface KeysDAO
-{	
-	KeyInfo getKeyInfo(String key);
-	
-	KeyInfo getKeyInfo(String key, int offset, int count);
-	
-	List<KeyInfo> getKeyInfos();
-	
-	Map<String,String> getRedisInfo();
+public interface KeysDAO {
+    
+    KeyInfo getKeyInfo(String key);
+
+    KeyInfo getKeyInfo(String key, int offset, int count);
+
+    List<KeyInfo> getKeyInfos();
+
+    Map<String, String> getRedisInfo();
 }

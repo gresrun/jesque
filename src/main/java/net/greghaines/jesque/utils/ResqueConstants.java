@@ -20,48 +20,48 @@ package net.greghaines.jesque.utils;
  * 
  * @author Greg Haines
  */
-public interface ResqueConstants
-{
-	/**
-	 * ISO-8601 compliant format
-	 */
-	String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
-	/**
-	 * For interoperability with php-resque
-	 */
-	String DATE_FORMAT_PHP = "EEE MMM dd HH:mm:ss z yyyy";
-	/**
-	 * For interoperability with Resque (ruby)
-	 */
-	String DATE_FORMAT_RUBY_V1 = "yyyy-MM-dd HH:mm:ss Z";
-	/**
-	 * For interoperability with Resque (ruby)
-	 */
-	String DATE_FORMAT_RUBY_V2 = "yyyy-MM-dd HH:mm:ss";
-	/**
-	 * For interoperability with Resque (ruby)
-	 */
-	String DATE_FORMAT_RUBY_V3 = "yyyy/MM/dd HH:mm:ss Z";
-	/**
-	 * For interoperability with Resque (ruby)
-	 */
-	String DATE_FORMAT_RUBY_V4 = "yyyy/MM/dd HH:mm:ss";
-	
-	String JAVA_DYNAMIC_QUEUES = "JAVA_DYNAMIC_QUEUES";
-	
-	String COLON = ":";
-	String FAILED = "failed";
-	String PROCESSED = "processed";
-	String QUEUE = "queue";
-	String QUEUES = "queues";
-	String STARTED = "started";
-	String STAT = "stat";
-	String WORKER = "worker";
-	String WORKERS = "workers";
-	String CHANNEL = "channel";
-	
-	/**
-	 * Default channel for admin jobs
-	 */
-	String ADMIN_CHANNEL = "admin";
+public interface ResqueConstants {
+    
+    /**
+     * ISO-8601 compliant format
+     */
+    String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+    /**
+     * For interoperability with php-resque
+     */
+    String DATE_FORMAT_PHP = "EEE MMM dd HH:mm:ss z yyyy";
+    /**
+     * For interoperability with Resque (ruby)
+     */
+    String DATE_FORMAT_RUBY_V1 = "yyyy-MM-dd HH:mm:ss Z";
+    /**
+     * For interoperability with Resque (ruby)
+     */
+    String DATE_FORMAT_RUBY_V2 = "yyyy-MM-dd HH:mm:ss";
+    /**
+     * For interoperability with Resque (ruby)
+     */
+    String DATE_FORMAT_RUBY_V3 = "yyyy/MM/dd HH:mm:ss Z";
+    /**
+     * For interoperability with Resque (ruby)
+     */
+    String DATE_FORMAT_RUBY_V4 = "yyyy/MM/dd HH:mm:ss";
+
+    String JAVA_DYNAMIC_QUEUES = "JAVA_DYNAMIC_QUEUES";
+
+    String COLON = ":";
+    String FAILED = "failed";
+    String PROCESSED = "processed";
+    String QUEUE = "queue";
+    String QUEUES = "queues";
+    String STARTED = "started";
+    String STAT = "stat";
+    String WORKER = "worker";
+    String WORKERS = "workers";
+    String CHANNEL = "channel";
+
+    /**
+     * Default channel for admin jobs
+     */
+    String ADMIN_CHANNEL = "admin";
 }

@@ -19,17 +19,17 @@ import java.util.List;
 
 import net.greghaines.jesque.meta.QueueInfo;
 
-public interface QueueInfoDAO
-{
-	List<String> getQueueNames();
-	
-	long getPendingCount();
-	
-	long getProcessedCount();
-	
-	List<QueueInfo> getQueueInfos();
-	
-	QueueInfo getQueueInfo(String name, long jobOffset, long jobCount);
-	
-	void removeQueue(String name);
+public interface QueueInfoDAO {
+    
+    List<String> getQueueNames();
+
+    long getPendingCount();
+
+    long getProcessedCount();
+
+    List<QueueInfo> getQueueInfos();
+
+    QueueInfo getQueueInfo(String name, long jobOffset, long jobCount);
+
+    void removeQueue(String name);
 }

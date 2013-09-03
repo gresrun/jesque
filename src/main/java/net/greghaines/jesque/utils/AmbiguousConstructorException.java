@@ -24,65 +24,63 @@ import java.util.Set;
  * 
  * @author Greg Haines
  */
-public class AmbiguousConstructorException extends Exception
-{
-	private static final long serialVersionUID = -5360734802682205116L;
-	
-	private final Class<?> type;
-	private final Object[] args;
-	private final Set<Constructor<?>> options;
-	
-	/**
-	 * Create a new AmbiguousConstructorException with only a message.
-	 * 
-	 * @param msg the detail message to show
-	 */
-	public AmbiguousConstructorException(final String msg)
-	{
-		super(msg);
-		this.type = null;
-		this.args = null;
-		this.options = null;
-	}
-	
-	/**
-	 * Create a new AmbiguousConstructorException with the possible Constructor options.
-	 * 
-	 * @param type the type of Object under construction
-	 * @param args the arguments given to match on
-	 * @param options the possible matching Constructors
-	 */
-	public AmbiguousConstructorException(final Class<?> type, final Object[] args, 
-			final Set<Constructor<?>> options)
-	{
-		super("Found " + options.size() + " possible matches for class=" + 
-			type.getName() + " args=" + Arrays.toString(args) + ": " + options);
-		this.type = type;
-		this.args = args.clone();
-		this.options = options;
-	}
+public class AmbiguousConstructorException extends Exception {
+    
+    private static final long serialVersionUID = -5360734802682205116L;
 
-	/**
-	 * @return the Class object searched
-	 */
-	public Class<?> getType()
-	{
-		return this.type;
-	}
+    private final Class<?> type;
+    private final Object[] args;
+    private final Set<Constructor<?>> options;
 
-	/**
-	 * @return the arguments that the Constructor needed to match
-	 */
-	public Object[] getArgs()
-	{
-		return this.args;
-	}
+    /**
+     * Create a new AmbiguousConstructorException with only a message.
+     * 
+     * @param msg
+     *            the detail message to show
+     */
+    public AmbiguousConstructorException(final String msg) {
+        super(msg);
+        this.type = null;
+        this.args = null;
+        this.options = null;
+    }
 
-	/**
-	 * @return the possible Constructors that matched
-	 */
-	public Set<Constructor<?>> getOptions()
-	{
-		return this.options;
-	}
+    /**
+     * Create a new AmbiguousConstructorException with the possible Constructor
+     * options.
+     * 
+     * @param type
+     *            the type of Object under construction
+     * @param args
+     *            the arguments given to match on
+     * @param options
+     *            the possible matching Constructors
+     */
+    public AmbiguousConstructorException(final Class<?> type, final Object[] args, final Set<Constructor<?>> options) {
+        super("Found " + options.size() + " possible matches for class=" + type.getName() + " args=" + Arrays.toString(args) + ": " + options);
+        this.type = type;
+        this.args = args.clone();
+        this.options = options;
+    }
+
+    /**
+     * @return the Class object searched
+     */
+    public Class<?> getType() {
+        return this.type;
+    }
+
+    /**
+     * @return the arguments that the Constructor needed to match
+     */
+    public Object[] getArgs() {
+        return this.args;
+    }
+
+    /**
+     * @return the possible Constructors that matched
+     */
+    public Set<Constructor<?>> getOptions() {
+        return this.options;
+    }
 }

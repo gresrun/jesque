@@ -23,159 +23,157 @@ import java.io.Serializable;
  * @author Greg Haines
  * @see Config
  */
-public class ConfigBuilder implements Serializable
-{
-	private static final long serialVersionUID = 730947307298353317L;
-	
-	/** localhost */
-	public static final String DEFAULT_HOST = "localhost";
-	/** 6379 */
-	public static final int DEFAULT_PORT = 6379;
-	/** 5 seconds */
-	public static final int DEFAULT_TIMEOUT = 5000;
-	/** null */
-	public static final String DEFAULT_PASSWORD = null;
-	/** All resque clients use "resque" by default */
-	public static final String DEFAULT_NAMESPACE = "resque";
-	/** 0 */
-	public static final int DEFAULT_DATABASE = 0;
+public class ConfigBuilder implements Serializable {
+    
+    private static final long serialVersionUID = 730947307298353317L;
 
-	/**
-	 * @return a Config with all the default values set
-	 */
-	public static Config getDefaultConfig()
-	{
-		return new ConfigBuilder().build();
-	}
+    /** localhost */
+    public static final String DEFAULT_HOST = "localhost";
+    /** 6379 */
+    public static final int DEFAULT_PORT = 6379;
+    /** 5 seconds */
+    public static final int DEFAULT_TIMEOUT = 5000;
+    /** null */
+    public static final String DEFAULT_PASSWORD = null;
+    /** All resque clients use "resque" by default */
+    public static final String DEFAULT_NAMESPACE = "resque";
+    /** 0 */
+    public static final int DEFAULT_DATABASE = 0;
 
-	private String host = DEFAULT_HOST;
-	private int port = DEFAULT_PORT;
-	private int timeout = DEFAULT_TIMEOUT; 
-	private String password = DEFAULT_PASSWORD;
-	private String namespace = DEFAULT_NAMESPACE;
-	private int database = DEFAULT_DATABASE;
+    /**
+     * @return a Config with all the default values set
+     */
+    public static Config getDefaultConfig() {
+        return new ConfigBuilder().build();
+    }
 
-	/**
-	 * No-arg constructor
-	 */
-	public ConfigBuilder(){}
+    private String host = DEFAULT_HOST;
+    private int port = DEFAULT_PORT;
+    private int timeout = DEFAULT_TIMEOUT;
+    private String password = DEFAULT_PASSWORD;
+    private String namespace = DEFAULT_NAMESPACE;
+    private int database = DEFAULT_DATABASE;
 
-	/**
-	 * Create a new ConfigBuilder using an existing Config as the starting point.
-	 * 
-	 * @param startingPoint the Config instance to copy the values from
-	 */
-	public ConfigBuilder(final Config startingPoint)
-	{
-		if (startingPoint == null)
-		{
-			throw new IllegalArgumentException("startingPoint must not be null");
-		}
-		this.host = startingPoint.getHost();
-		this.port = startingPoint.getPort();
-		this.timeout = startingPoint.getTimeout();
-		this.namespace = startingPoint.getNamespace();
-		this.database = startingPoint.getDatabase();
-	}
+    /**
+     * No-arg constructor.
+     */
+    public ConfigBuilder() {
+        // Do nothing
+    }
 
-	/**
-	 * Configs created by this ConfigBuilder will have the given Redis hostname.
-	 * 
-	 * @param host the Redis hostname
-	 * @return this ConfigBuilder
-	 */
-	public ConfigBuilder withHost(final String host)
-	{
-		if (host == null || "".equals(host))
-		{
-			throw new IllegalArgumentException("host must not be null or empty: " + host);
-		}
-		this.host = host;
-		return this;
-	}
+    /**
+     * Create a new ConfigBuilder using an existing Config as the starting
+     * point.
+     * 
+     * @param startingPoint
+     *            the Config instance to copy the values from
+     */
+    public ConfigBuilder(final Config startingPoint) {
+        if (startingPoint == null) {
+            throw new IllegalArgumentException("startingPoint must not be null");
+        }
+        this.host = startingPoint.getHost();
+        this.port = startingPoint.getPort();
+        this.timeout = startingPoint.getTimeout();
+        this.namespace = startingPoint.getNamespace();
+        this.database = startingPoint.getDatabase();
+    }
 
-	/**
-	 * Configs created by this ConfigBuilder will have the given Redis port number.
-	 * 
-	 * @param port the Redis port number
-	 * @return this ConfigBuilder
-	 */
-	public ConfigBuilder withPort(final int port)
-	{
-		if (port < 1 || port > 65535)
-		{
-			throw new IllegalArgumentException("post must be a valid port in the range 1-65535: " + port);
-		}
-		this.port = port;
-		return this;
-	}
+    /**
+     * Configs created by this ConfigBuilder will have the given Redis hostname.
+     * 
+     * @param host
+     *            the Redis hostname
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withHost(final String host) {
+        if (host == null || "".equals(host)) {
+            throw new IllegalArgumentException("host must not be null or empty: " + host);
+        }
+        this.host = host;
+        return this;
+    }
 
-	/**
-	 * Configs created by this ConfigBuilder will have the given Redis connection timeout.
-	 * 
-	 * @param timeout the Redis connection timeout
-	 * @return this ConfigBuilder
-	 */
-	public ConfigBuilder withTimeout(final int timeout)
-	{
-		if (timeout < 0)
-		{
-			throw new IllegalArgumentException("timeout must not be negative: " + timeout);
-		}
-		this.timeout = timeout;
-		return this;
-	}
-	
-	/**
-	 * Configs created by this ConfigBuilder will authenticate with the given Redis password.
-	 * 
-	 * @param password the Redis pasword
-	 * @return this ConfigBuilder
-	 */
-	public ConfigBuilder withPassword(final String password)
-	{
-		this.password = password;
-		return this;
-	}
+    /**
+     * Configs created by this ConfigBuilder will have the given Redis port
+     * number.
+     * 
+     * @param port
+     *            the Redis port number
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withPort(final int port) {
+        if (port < 1 || port > 65535) {
+            throw new IllegalArgumentException("post must be a valid port in the range 1-65535: " + port);
+        }
+        this.port = port;
+        return this;
+    }
 
-	/**
-	 * Configs created by this ConfigBuilder will have the given Redis namespace to prefix keys with.
-	 * 
-	 * @param namespace the Redis namespace to prefix keys with
-	 * @return this ConfigBuilder
-	 */
-	public ConfigBuilder withNamespace(final String namespace)
-	{
-		if (namespace == null || "".equals(namespace))
-		{
-			throw new IllegalArgumentException("namespace must not be null or empty: " + namespace);
-		}
-		this.namespace = namespace;
-		return this;
-	}
+    /**
+     * Configs created by this ConfigBuilder will have the given Redis
+     * connection timeout.
+     * 
+     * @param timeout
+     *            the Redis connection timeout
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withTimeout(final int timeout) {
+        if (timeout < 0) {
+            throw new IllegalArgumentException("timeout must not be negative: " + timeout);
+        }
+        this.timeout = timeout;
+        return this;
+    }
 
-	/**
-	 * Configs created by this ConfigBuilder will use the given Redis database.
-	 * 
-	 * @param database the Redis database to use
-	 * @return this ConfigBuilder
-	 */
-	public ConfigBuilder withDatabase(final int database)
-	{
-		if (database < 0)
-		{
-			throw new IllegalArgumentException("database must not be negative: " + database);
-		}
-		this.database = database;
-		return this;
-	}
+    /**
+     * Configs created by this ConfigBuilder will authenticate with the given
+     * Redis password.
+     * 
+     * @param password
+     *            the Redis pasword
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withPassword(final String password) {
+        this.password = password;
+        return this;
+    }
 
-	/**
-	 * @return a new Config initialized with the current values
-	 */
-	public Config build()
-	{
-		return new Config(this.host, this.port, this.timeout, this.password, 
-			this.namespace, this.database);
-	}
+    /**
+     * Configs created by this ConfigBuilder will have the given Redis namespace
+     * to prefix keys with.
+     * 
+     * @param namespace
+     *            the Redis namespace to prefix keys with
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withNamespace(final String namespace) {
+        if (namespace == null || "".equals(namespace)) {
+            throw new IllegalArgumentException("namespace must not be null or empty: " + namespace);
+        }
+        this.namespace = namespace;
+        return this;
+    }
+
+    /**
+     * Configs created by this ConfigBuilder will use the given Redis database.
+     * 
+     * @param database
+     *            the Redis database to use
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withDatabase(final int database) {
+        if (database < 0) {
+            throw new IllegalArgumentException("database must not be negative: " + database);
+        }
+        this.database = database;
+        return this;
+    }
+
+    /**
+     * @return a new Config initialized with the current values
+     */
+    public Config build() {
+        return new Config(this.host, this.port, this.timeout, this.password, this.namespace, this.database);
+    }
 }

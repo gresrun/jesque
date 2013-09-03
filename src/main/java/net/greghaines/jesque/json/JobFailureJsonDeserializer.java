@@ -32,78 +32,58 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
- * A custom Jackson deserializer for JobFailures.
- * Needed because JobFailure uses Java-style property names and Resque does not.
+ * A custom Jackson deserializer for JobFailures. Needed because JobFailure uses
+ * Java-style property names and Resque does not.
  * 
  * @author Greg Haines
  */
-public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure>
-{
-	private static final TypeReference<List<String>> stringListTypeRef = new TypeReference<List<String>>(){};
-	
-	@Override
-	public JobFailure deserialize(final JsonParser jp, final DeserializationContext ctxt)
-	throws IOException, JsonProcessingException
-	{
-		final JobFailure jobFailure = new JobFailure();
-		while (jp.getCurrentToken() != JsonToken.END_OBJECT)
-		{
-			jp.nextToken();
-			if ("worker".equals(jp.getText()))
-			{
-				jp.nextToken();
-				jobFailure.setWorker(jp.readValueAs(String.class));
-			}
-			else if ("queue".equals(jp.getText()))
-			{
-				jp.nextToken();
-				jobFailure.setQueue(jp.readValueAs(String.class));
-			}
-			else if ("payload".equals(jp.getText()))
-			{
-				jp.nextToken();
-				jobFailure.setPayload(jp.readValueAs(Job.class));
-			}
-			else if ("exception".equals(jp.getText()))
-			{
-				jp.nextToken();
-				jobFailure.setExceptionString(jp.readValueAs(String.class));
-			}
-			else if ("error".equals(jp.getText()))
-			{
-				jp.nextToken();
-				jobFailure.setError(jp.readValueAs(String.class));
-			}
-			else if ("backtrace".equals(jp.getText()))
-			{
-				jp.nextToken();
-				jobFailure.setBacktrace(jp.<List<String>>readValueAs(stringListTypeRef));
-			}
-			else if ("failed_at".equals(jp.getText()))
-			{
-				jp.nextToken();
-				jobFailure.setFailedAt(jp.readValueAs(Date.class));
-			}
-			else if ("retried_at".equals(jp.getText()))
-			{
-				jp.nextToken();
-				jobFailure.setRetriedAt(jp.readValueAs(Date.class));
-			}
-			else if (jp.getCurrentToken() != JsonToken.END_OBJECT)
-			{
-				throw new JsonMappingException("Unexpected field for JobFailure: " + jp.getText(), jp.getCurrentLocation());
-			}
-		}
-		if (jobFailure.getExceptionString() != null)
-		{
-			try
-			{
-				jobFailure.setException(JesqueUtils.recreateThrowable(jobFailure.getExceptionString(), jobFailure.getError(), jobFailure.getBacktrace()));
-			}
-			catch (Exception ignore)
-			{
-			}
-		}
-		return jobFailure;
-	}
+public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure> {
+
+    private static final TypeReference<List<String>> stringListTypeRef = 
+            new TypeReference<List<String>>() {};
+
+    @Override
+    public JobFailure deserialize(final JsonParser jp, final DeserializationContext ctxt) throws IOException,
+            JsonProcessingException {
+        final JobFailure jobFailure = new JobFailure();
+        while (jp.getCurrentToken() != JsonToken.END_OBJECT) {
+            jp.nextToken();
+            if ("worker".equals(jp.getText())) {
+                jp.nextToken();
+                jobFailure.setWorker(jp.readValueAs(String.class));
+            } else if ("queue".equals(jp.getText())) {
+                jp.nextToken();
+                jobFailure.setQueue(jp.readValueAs(String.class));
+            } else if ("payload".equals(jp.getText())) {
+                jp.nextToken();
+                jobFailure.setPayload(jp.readValueAs(Job.class));
+            } else if ("exception".equals(jp.getText())) {
+                jp.nextToken();
+                jobFailure.setExceptionString(jp.readValueAs(String.class));
+            } else if ("error".equals(jp.getText())) {
+                jp.nextToken();
+                jobFailure.setError(jp.readValueAs(String.class));
+            } else if ("backtrace".equals(jp.getText())) {
+                jp.nextToken();
+                jobFailure.setBacktrace(jp.<List<String>> readValueAs(stringListTypeRef));
+            } else if ("failed_at".equals(jp.getText())) {
+                jp.nextToken();
+                jobFailure.setFailedAt(jp.readValueAs(Date.class));
+            } else if ("retried_at".equals(jp.getText())) {
+                jp.nextToken();
+                jobFailure.setRetriedAt(jp.readValueAs(Date.class));
+            } else if (jp.getCurrentToken() != JsonToken.END_OBJECT) {
+                throw new JsonMappingException("Unexpected field for JobFailure: " + jp.getText(),
+                        jp.getCurrentLocation());
+            }
+        }
+        if (jobFailure.getExceptionString() != null) {
+            try {
+                jobFailure.setException(JesqueUtils.recreateThrowable(jobFailure.getExceptionString(),
+                        jobFailure.getError(), jobFailure.getBacktrace()));
+            } catch (Exception ignore) {
+            }
+        }
+        return jobFailure;
+    }
 }

@@ -23,50 +23,63 @@ import net.greghaines.jesque.Job;
  * @author Greg Haines
  * @author Animesh Kumar <smile.animesh@gmail.com>
  */
-public interface Client
-{
-	/**
-	 * Queues a job in a given queue to be run.
-	 * 
-	 * @param queue the queue to add the Job to
-	 * @param job the job to be enqueued
-	 * @throws IllegalArgumentException if the queue is null or empty or if the job is null
-	 */
-	void enqueue(String queue, Job job);
+public interface Client {
+    
+    /**
+     * Queues a job in a given queue to be run.
+     * 
+     * @param queue
+     *            the queue to add the Job to
+     * @param job
+     *            the job to be enqueued
+     * @throws IllegalArgumentException
+     *             if the queue is null or empty or if the job is null
+     */
+    void enqueue(String queue, Job job);
 
-	/**
-	 * Queues a job with high priority in a given queue to be run.
-	 * 
-	 * @param queue the queue to add the Job to
-	 * @param job the job to be enqueued
-	 * @throws IllegalArgumentException if the queue is null or empty or if the job is null
-	 */
-	void priorityEnqueue(String queue, Job job);
+    /**
+     * Queues a job with high priority in a given queue to be run.
+     * 
+     * @param queue
+     *            the queue to add the Job to
+     * @param job
+     *            the job to be enqueued
+     * @throws IllegalArgumentException
+     *             if the queue is null or empty or if the job is null
+     */
+    void priorityEnqueue(String queue, Job job);
 
-	/**
-	 * Quits the connection to the Redis server.
-	 */
-	void end();
+    /**
+     * Quits the connection to the Redis server.
+     */
+    void end();
 
-	/**
-	 * Acquire a non-blocking distributed lock.
-	 * Calling this method again renews the lock.
-	 * 
-	 * @param lockName the name of the lock to acquire
-	 * @param timeout number of seconds until the lock will expire
-	 * @param lockHolder a unique string identifying the caller
-	 * @return true, if the lock was acquired, false otherwise
-	 */
-	boolean acquireLock(String lockName, String lockHolder, int timeout);
-	
+    /**
+     * Acquire a non-blocking distributed lock. Calling this method again renews
+     * the lock.
+     * 
+     * @param lockName
+     *            the name of the lock to acquire
+     * @param timeout
+     *            number of seconds until the lock will expire
+     * @param lockHolder
+     *            a unique string identifying the caller
+     * @return true, if the lock was acquired, false otherwise
+     */
+    boolean acquireLock(String lockName, String lockHolder, int timeout);
+
     /**
      * Queues a job in a given queue to be run in the future.
      * 
-     * @param queue the queue to add the Job to
-     * @param job the job to be enqueued
-     * @param future timestamp when the job will run
-     * @throws IllegalArgumentException if the queue is null or empty, if the job is null 
-     * or if the timestamp is not in the future
+     * @param queue
+     *            the queue to add the Job to
+     * @param job
+     *            the job to be enqueued
+     * @param future
+     *            timestamp when the job will run
+     * @throws IllegalArgumentException
+     *             if the queue is null or empty, if the job is null or if the
+     *             timestamp is not in the future
      */
     void delayedEnqueue(String queue, Job job, long future);
 }

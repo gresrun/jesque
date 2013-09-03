@@ -28,108 +28,97 @@ import redis.clients.jedis.Jedis;
  * 
  * @author Greg Haines
  */
-public abstract class AbstractAdminClient implements AdminClient
-{
-	private final String namespace;
+public abstract class AbstractAdminClient implements AdminClient {
+    
+    private final String namespace;
 
-	/**
-	 * @param config used to get the namespace for key creation
-	 */
-	protected AbstractAdminClient(final Config config)
-	{
-		if (config == null)
-		{
-			throw new IllegalArgumentException("config must not be null");
-		}
-		this.namespace = config.getNamespace();
-	}
+    /**
+     * @param config
+     *            used to get the namespace for key creation
+     */
+    protected AbstractAdminClient(final Config config) {
+        if (config == null) {
+            throw new IllegalArgumentException("config must not be null");
+        }
+        this.namespace = config.getNamespace();
+    }
 
-	/**
-	 * @return the namespace this client will use
-	 */
-	protected String getNamespace()
-	{
-		return this.namespace;
-	}
+    /**
+     * @return the namespace this client will use
+     */
+    protected String getNamespace() {
+        return this.namespace;
+    }
 
-	public void shutdownWorkers(final boolean now)
-	{
-		publish(new Job("ShutdownCommand", now));
-	}
+    public void shutdownWorkers(final boolean now) {
+        publish(new Job("ShutdownCommand", now));
+    }
 
-	public void shutdownWorkers(final String channel, final boolean now)
-	{
-		publish(channel, new Job("ShutdownCommand", now));
-	}
+    public void shutdownWorkers(final String channel, final boolean now) {
+        publish(channel, new Job("ShutdownCommand", now));
+    }
 
-	public void togglePausedWorkers(final boolean paused)
-	{
-		publish(new Job("PauseCommand", paused));
-	}
+    public void togglePausedWorkers(final boolean paused) {
+        publish(new Job("PauseCommand", paused));
+    }
 
-	public void togglePausedWorkers(final String channel, final boolean paused)
-	{
-		publish(channel, new Job("PauseCommand", paused));
-	}
-	
-	public void publish(final Job job)
-	{
-		publish(ADMIN_CHANNEL, job);
-	}
+    public void togglePausedWorkers(final String channel, final boolean paused) {
+        publish(channel, new Job("PauseCommand", paused));
+    }
 
-	public void publish(final String channel, final Job job)
-	{
-		validateArguments(channel, job);
-		try
-		{
-			doPublish(channel, ObjectMapperFactory.get().writeValueAsString(job));
-		}
-		catch (RuntimeException re)
-		{
-			throw re;
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-	}
+    public void publish(final Job job) {
+        publish(ADMIN_CHANNEL, job);
+    }
 
-	/**
-	 * Actually publish the serialized job.
-	 * 
-	 * @param queue the queue to add the Job to
-	 * @param msg the serialized Job
-	 * @throws Exception in case something goes wrong
-	 */
-	protected abstract void doPublish(String queue, String msg) throws Exception;
+    public void publish(final String channel, final Job job) {
+        validateArguments(channel, job);
+        try {
+            doPublish(channel, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	/**
-	 * Helper method that encapsulates the minimum logic for publishing a job to a channel.
-	 * 
-	 * @param jedis the connection to Redis
-	 * @param namespace the Resque namespace
-	 * @param channel the channel name
-	 * @param jobJson the job serialized as JSON
-	 */
-	public static void doPublish(final Jedis jedis, final String namespace, 
-			final String channel, final String jobJson)
-	{
-		jedis.publish(JesqueUtils.createKey(namespace, CHANNEL, channel), jobJson);
-	}
+    /**
+     * Actually publish the serialized job.
+     * 
+     * @param queue
+     *            the queue to add the Job to
+     * @param msg
+     *            the serialized Job
+     * @throws Exception
+     *             in case something goes wrong
+     */
+    protected abstract void doPublish(String queue, String msg) throws Exception;
 
-	private static void validateArguments(final String channel, final Job job)
-	{
-		if (channel == null || "".equals(channel))
-		{
-			throw new IllegalArgumentException("channel must not be null or empty: " + channel);
-		}
-		if (job == null)
-		{
-			throw new IllegalArgumentException("job must not be null");
-		}
-		if (!job.isValid())
-		{
-			throw new IllegalStateException("job is not valid: " + job);
-		}
-	}
+    /**
+     * Helper method that encapsulates the minimum logic for publishing a job to
+     * a channel.
+     * 
+     * @param jedis
+     *            the connection to Redis
+     * @param namespace
+     *            the Resque namespace
+     * @param channel
+     *            the channel name
+     * @param jobJson
+     *            the job serialized as JSON
+     */
+    public static void doPublish(final Jedis jedis, final String namespace, final String channel, final String jobJson) {
+        jedis.publish(JesqueUtils.createKey(namespace, CHANNEL, channel), jobJson);
+    }
+
+    private static void validateArguments(final String channel, final Job job) {
+        if (channel == null || "".equals(channel)) {
+            throw new IllegalArgumentException("channel must not be null or empty: " + channel);
+        }
+        if (job == null) {
+            throw new IllegalArgumentException("job must not be null");
+        }
+        if (!job.isValid()) {
+            throw new IllegalStateException("job is not valid: " + job);
+        }
+    }
 }

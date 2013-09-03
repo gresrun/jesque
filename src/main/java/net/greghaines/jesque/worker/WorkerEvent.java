@@ -20,38 +20,39 @@ package net.greghaines.jesque.worker;
  * 
  * @author Greg Haines
  */
-public enum WorkerEvent
-{
-	/**
-	 * The Worker just finished starting up and is about to start running.
-	 */
-	WORKER_START,
-	/**
-	 * The Worker is polling the queue.
-	 */
-	WORKER_POLL,
-	/**
-	 * The Worker is processing a Job.
-	 */
-	JOB_PROCESS,
-	/**
-	 * The Worker is about to execute a materialized Job.
-	 */
-	JOB_EXECUTE,
-	/**
-	 * The Worker successfully executed a materialized Job.
-	 */
-	JOB_SUCCESS,
-	/**
-	 * The Worker caught an Exception during the execution of a materialized Job.
-	 */
-	JOB_FAILURE,
-	/**
-	 * The Worker caught an Exception during normal operation.
-	 */
-	WORKER_ERROR,
-	/**
-	 * The Worker just finished running and is about to shutdown.
-	 */
-	WORKER_STOP;
+public enum WorkerEvent {
+    
+    /**
+     * The Worker just finished starting up and is about to start running.
+     */
+    WORKER_START,
+    /**
+     * The Worker is polling the queue.
+     */
+    WORKER_POLL,
+    /**
+     * The Worker is processing a Job.
+     */
+    JOB_PROCESS,
+    /**
+     * The Worker is about to execute a materialized Job.
+     */
+    JOB_EXECUTE,
+    /**
+     * The Worker successfully executed a materialized Job.
+     */
+    JOB_SUCCESS,
+    /**
+     * The Worker caught an Exception during the execution of a materialized
+     * Job.
+     */
+    JOB_FAILURE,
+    /**
+     * The Worker caught an Exception during normal operation.
+     */
+    WORKER_ERROR,
+    /**
+     * The Worker just finished running and is about to shutdown.
+     */
+    WORKER_STOP;
 }

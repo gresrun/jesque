@@ -20,23 +20,23 @@ import java.util.Map;
 
 import net.greghaines.jesque.meta.WorkerInfo;
 
-public interface WorkerInfoDAO
-{
-	long getWorkerCount();
-	
-	long getActiveWorkerCount();
-	
-	long getPausedWorkerCount();
-	
-	List<WorkerInfo> getActiveWorkers();
-	
-	List<WorkerInfo> getPausedWorkers();
-	
-	List<WorkerInfo> getAllWorkers();
-	
-	WorkerInfo getWorker(String workerName);
-	
-	Map<String,List<WorkerInfo>> getWorkerHostMap();
+public interface WorkerInfoDAO {
+    
+    long getWorkerCount();
 
-	void removeWorker(String workerName);
+    long getActiveWorkerCount();
+
+    long getPausedWorkerCount();
+
+    List<WorkerInfo> getActiveWorkers();
+
+    List<WorkerInfo> getPausedWorkers();
+
+    List<WorkerInfo> getAllWorkers();
+
+    WorkerInfo getWorker(String workerName);
+
+    Map<String, List<WorkerInfo>> getWorkerHostMap();
+
+    void removeWorker(String workerName);
 }

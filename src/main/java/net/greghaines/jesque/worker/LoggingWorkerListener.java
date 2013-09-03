@@ -19,37 +19,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of WorkerListener that logs every event that it is registered for.
+ * An implementation of WorkerListener that logs every event that it is
+ * registered for.
  * 
  * @author Greg Haines
  */
-public class LoggingWorkerListener implements WorkerListener
-{
-	private static final Logger log = 
-		LoggerFactory.getLogger(LoggingWorkerListener.class);
+public class LoggingWorkerListener implements WorkerListener {
 
-	public static final LoggingWorkerListener INSTANCE = 
-		new LoggingWorkerListener();
+    public static final LoggingWorkerListener INSTANCE = new LoggingWorkerListener();
 
-	private LoggingWorkerListener(){} // Singlton
+    private static final Logger LOG = LoggerFactory.getLogger(LoggingWorkerListener.class);
 
-	/**
-	 * If there is an Exception, it is logged as an error, otherwise it is logged as a debug message.
-	 */
-	public void onEvent(final WorkerEvent event, final Worker worker,
-			final String queue, final net.greghaines.jesque.Job job,
-			final Object runner, final Object result, final Exception ex)
-	{
-		if (ex == null)
-		{
-			log.debug("{} {} {} {} {} {} {}",
-				new Object[]{event, worker, queue, job, runner, result, ex});
-		}
-		else
-		{
-			log.error(event + " " + worker + " " + queue + 
-				" " + job + " " + runner + " " + result, ex);
-		}
-	}
+    private LoggingWorkerListener() {
+        // Singleton
+    }
+
+    /**
+     * If there is an Exception, it is logged as an error, otherwise it is
+     * logged as a debug message.
+     */
+    @Override
+    public void onEvent(final WorkerEvent event, final Worker worker, final String queue,
+            final net.greghaines.jesque.Job job, final Object runner, final Object result, final Exception ex) {
+        if (ex == null) {
+            LOG.debug("{} {} {} {} {} {} {}", new Object[]{ event, worker, queue, job, runner, result, ex });
+        } else {
+            LOG.error(event + " " + worker + " " + queue + " " + job + " " + runner + " " + result, ex);
+        }
+    }
 }
-

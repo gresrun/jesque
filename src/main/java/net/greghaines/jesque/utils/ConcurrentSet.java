@@ -22,7 +22,9 @@ import java.util.Set;
  * It adds no new methods.
  * 
  * @author Greg Haines
- *
- * @param <E> the type of elements maintained by this set
+ * 
+ * @param <E>
+ *            the type of elements maintained by this set
  */
-public interface ConcurrentSet<E> extends Set<E>{}
+public interface ConcurrentSet<E> extends Set<E> {
+}

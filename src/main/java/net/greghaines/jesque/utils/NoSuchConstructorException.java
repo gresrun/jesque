@@ -22,51 +22,50 @@ import java.util.Arrays;
  * 
  * @author Greg Haines
  */
-public class NoSuchConstructorException extends Exception
-{
-	private static final long serialVersionUID = 4960599901666926591L;
-	
-	private final Class<?> type;
-	private final Object[] args;
-	
-	/**
-	 * Create a new NoSuchConstructorException with only a message.
-	 * 
-	 * @param msg the detail message to show
-	 */
-	public NoSuchConstructorException(final String msg)
-	{
-		super(msg);
-		this.type = null;
-		this.args = null;
-	}
+public class NoSuchConstructorException extends Exception {
+    
+    private static final long serialVersionUID = 4960599901666926591L;
 
-	/**
-	 * Create a new NoSuchConstructorException with the type and arguments.
-	 * 
-	 * @param type the type of Object under construction
-	 * @param args the arguments given to match on
-	 */
-	public NoSuchConstructorException(final Class<?> type, final Object... args)
-	{
-		super("class=" + type.getName() + " args=" + Arrays.toString(args));
-		this.type = type;
-		this.args = args;
-	}
+    private final Class<?> type;
+    private final Object[] args;
 
-	/**
-	 * @return the Class object searched
-	 */
-	public Class<?> getType()
-	{
-		return this.type;
-	}
+    /**
+     * Create a new NoSuchConstructorException with only a message.
+     * 
+     * @param msg
+     *            the detail message to show
+     */
+    public NoSuchConstructorException(final String msg) {
+        super(msg);
+        this.type = null;
+        this.args = null;
+    }
 
-	/**
-	 * @return the arguments that the Constructor needed to match
-	 */
-	public Object[] getArgs()
-	{
-		return this.args;
-	}
+    /**
+     * Create a new NoSuchConstructorException with the type and arguments.
+     * 
+     * @param type
+     *            the type of Object under construction
+     * @param args
+     *            the arguments given to match on
+     */
+    public NoSuchConstructorException(final Class<?> type, final Object... args) {
+        super("class=" + type.getName() + " args=" + Arrays.toString(args));
+        this.type = type;
+        this.args = args;
+    }
+
+    /**
+     * @return the Class object searched
+     */
+    public Class<?> getType() {
+        return this.type;
+    }
+
+    /**
+     * @return the arguments that the Constructor needed to match
+     */
+    public Object[] getArgs() {
+        return this.args;
+    }
 }

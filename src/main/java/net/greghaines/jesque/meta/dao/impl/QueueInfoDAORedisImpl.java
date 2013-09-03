@@ -42,156 +42,122 @@ import redis.clients.util.Pool;
  * @author Greg Haines
  * @author Animesh Kumar <smile.animesh@gmail.com>
  */
-public class QueueInfoDAORedisImpl implements QueueInfoDAO
-{
-	private final Config config;
-	private final Pool<Jedis> jedisPool;
-	
-	public QueueInfoDAORedisImpl(final Config config, final Pool<Jedis> jedisPool)
-	{
-		if (config == null)
-		{
-			throw new IllegalArgumentException("config must not be null");
-		}
-		if (jedisPool == null)
-		{
-			throw new IllegalArgumentException("jedisPool must not be null");
-		}
-		this.config = config;
-		this.jedisPool = jedisPool;
-	}
+public class QueueInfoDAORedisImpl implements QueueInfoDAO {
+    
+    private final Config config;
+    private final Pool<Jedis> jedisPool;
 
-	public List<String> getQueueNames()
-	{
-		return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,List<String>>()
-		{
-			public List<String> doWork(final Jedis jedis)
-			throws Exception
-			{
-				final List<String> queueNames = new ArrayList<String>(jedis.smembers(key(QUEUES)));
-				Collections.sort(queueNames);
-				return queueNames;
-			}
-		});
-	}
-	
-	public long getPendingCount()
-	{
-		final List<String> queueNames = getQueueNames();
-		return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,Long>()
-		{
-			public Long doWork(final Jedis jedis)
-			throws Exception
-			{
-				long pendingCount = 0L;
-				for (final String queueName : queueNames)
-				{
-				    pendingCount += size(jedis, queueName);
-				}
-				return pendingCount;
-			}
-		});
-	}
-	
-	public long getProcessedCount()
-	{
-		return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,Long>()
-		{
-			public Long doWork(final Jedis jedis)
-			throws Exception
-			{
-				final String processedStr = jedis.get(key(STAT, PROCESSED));
-				return (processedStr == null) ? 0L : Long.parseLong(processedStr);
-			}
-		});
-	}
+    public QueueInfoDAORedisImpl(final Config config, final Pool<Jedis> jedisPool) {
+        if (config == null) {
+            throw new IllegalArgumentException("config must not be null");
+        }
+        if (jedisPool == null) {
+            throw new IllegalArgumentException("jedisPool must not be null");
+        }
+        this.config = config;
+        this.jedisPool = jedisPool;
+    }
 
-	public List<QueueInfo> getQueueInfos()
-	{
-		final List<String> queueNames = getQueueNames();
-		return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,List<QueueInfo>>()
-		{
-			public List<QueueInfo> doWork(final Jedis jedis)
-			throws Exception
-			{
-				final List<QueueInfo> queueInfos = new ArrayList<QueueInfo>(queueNames.size());
-				for (final String queueName : queueNames)
-				{
-					final QueueInfo queueInfo = new QueueInfo();
-					queueInfo.setName(queueName);
-					queueInfo.setSize(size(jedis, queueName));
-					queueInfos.add(queueInfo);
-				}
-				Collections.sort(queueInfos);
-				return queueInfos;
-			}
-		});
-	}
+    public List<String> getQueueNames() {
+        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<String>>() {
+            public List<String> doWork(final Jedis jedis) throws Exception {
+                final List<String> queueNames = new ArrayList<String>(jedis.smembers(key(QUEUES)));
+                Collections.sort(queueNames);
+                return queueNames;
+            }
+        });
+    }
 
-	public QueueInfo getQueueInfo(final String name, final long jobOffset, final long jobCount)
-	{
-		return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,QueueInfo>()
-		{
-			public QueueInfo doWork(final Jedis jedis)
-			throws Exception
-			{
-				final QueueInfo queueInfo = new QueueInfo();
-				queueInfo.setName(name);
-				queueInfo.setSize(size(jedis, name));
-				final Collection<String> payloads = paylods(jedis, name, jobOffset, jobCount);
-				final List<Job> jobs = new ArrayList<Job>(payloads.size());
-				for (final String payload : payloads)
-				{
-					jobs.add(ObjectMapperFactory.get().readValue(payload, Job.class));
-				}
-				queueInfo.setJobs(jobs);
-				return queueInfo;
-			}
-		});
-	}
-	
-	public void removeQueue(final String name)
-	{
-		PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis,Void>()
-		{
-			public Void doWork(final Jedis jedis)
-			throws Exception
-			{
-				jedis.srem(key(QUEUES), name);
-				jedis.del(key(QUEUE, name));
-				return null;
-			}
-		});
-	}
-	
-	/**
-	 * Builds a namespaced Redis key with the given arguments.
-	 * 
-	 * @param parts the key parts to be joined
-	 * @return an assembled String key
-	 */
-	private String key(final String... parts)
-	{
-		return JesqueUtils.createKey(this.config.getNamespace(), parts);
-	}
-	
-	/**
-	 * Size of a queue.
-	 * 
-	 * @param jedis
-	 * @param queueName
-	 * @return
-	 */
-	private long size(final Jedis jedis, final String queueName) 
-    {
+    public long getPendingCount() {
+        final List<String> queueNames = getQueueNames();
+        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
+            public Long doWork(final Jedis jedis) throws Exception {
+                long pendingCount = 0L;
+                for (final String queueName : queueNames) {
+                    pendingCount += size(jedis, queueName);
+                }
+                return pendingCount;
+            }
+        });
+    }
+
+    public long getProcessedCount() {
+        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
+            public Long doWork(final Jedis jedis) throws Exception {
+                final String processedStr = jedis.get(key(STAT, PROCESSED));
+                return (processedStr == null) ? 0L : Long.parseLong(processedStr);
+            }
+        });
+    }
+
+    public List<QueueInfo> getQueueInfos() {
+        final List<String> queueNames = getQueueNames();
+        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<QueueInfo>>() {
+            public List<QueueInfo> doWork(final Jedis jedis) throws Exception {
+                final List<QueueInfo> queueInfos = new ArrayList<QueueInfo>(queueNames.size());
+                for (final String queueName : queueNames) {
+                    final QueueInfo queueInfo = new QueueInfo();
+                    queueInfo.setName(queueName);
+                    queueInfo.setSize(size(jedis, queueName));
+                    queueInfos.add(queueInfo);
+                }
+                Collections.sort(queueInfos);
+                return queueInfos;
+            }
+        });
+    }
+
+    public QueueInfo getQueueInfo(final String name, final long jobOffset, final long jobCount) {
+        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, QueueInfo>() {
+            public QueueInfo doWork(final Jedis jedis) throws Exception {
+                final QueueInfo queueInfo = new QueueInfo();
+                queueInfo.setName(name);
+                queueInfo.setSize(size(jedis, name));
+                final Collection<String> payloads = paylods(jedis, name, jobOffset, jobCount);
+                final List<Job> jobs = new ArrayList<Job>(payloads.size());
+                for (final String payload : payloads) {
+                    jobs.add(ObjectMapperFactory.get().readValue(payload, Job.class));
+                }
+                queueInfo.setJobs(jobs);
+                return queueInfo;
+            }
+        });
+    }
+
+    public void removeQueue(final String name) {
+        PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
+            public Void doWork(final Jedis jedis) throws Exception {
+                jedis.srem(key(QUEUES), name);
+                jedis.del(key(QUEUE, name));
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Builds a namespaced Redis key with the given arguments.
+     * 
+     * @param parts
+     *            the key parts to be joined
+     * @return an assembled String key
+     */
+    private String key(final String... parts) {
+        return JesqueUtils.createKey(this.config.getNamespace(), parts);
+    }
+
+    /**
+     * Size of a queue.
+     * 
+     * @param jedis
+     * @param queueName
+     * @return
+     */
+    private long size(final Jedis jedis, final String queueName) {
         final String key = key(QUEUE, queueName);
         final long size;
-        if (JedisUtils.isDelayedQueue(jedis, key)) 
-        { // If delayed queue, use ZCARD
+        if (JedisUtils.isDelayedQueue(jedis, key)) { // If delayed queue, use ZCARD
             size = jedis.zcard(key);
-        }
-        else
-        { // Else, use LLEN
+        } else { // Else, use LLEN
             size = jedis.llen(key);
         }
         return size;
@@ -206,17 +172,12 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
      * @param jobCount
      * @return
      */
-    private Collection<String> paylods(final Jedis jedis, final String queueName, 
-            final long jobOffset, final long jobCount) 
-    {
+    private Collection<String> paylods(final Jedis jedis, final String queueName, final long jobOffset, final long jobCount) {
         final String key = key(QUEUE, queueName);
         final Collection<String> payloads;
-        if (JedisUtils.isDelayedQueue(jedis, key)) 
-        { // If delayed queue, use ZRANGE
+        if (JedisUtils.isDelayedQueue(jedis, key)) { // If delayed queue, use ZRANGE
             payloads = jedis.zrange(key, jobOffset, jobOffset + jobCount - 1);
-        }
-        else
-        { // Else, use LRANGE
+        } else { // Else, use LRANGE
             payloads = jedis.lrange(key, jobOffset, jobOffset + jobCount - 1);
         }
         return payloads;

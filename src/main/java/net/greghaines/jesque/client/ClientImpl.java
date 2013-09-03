@@ -30,122 +30,115 @@ import redis.clients.jedis.Jedis;
  * @author Greg Haines
  * @author Animesh Kumar <smile.animesh@gmail.com>
  */
-public class ClientImpl extends AbstractClient
-{
-	public static final boolean DEFAULT_CHECK_CONNECTION_BEFORE_USE = false;
-	
-	private final Config config;
-	private final Jedis jedis;
-	private final boolean checkConnectionBeforeUse;
-	private final ScheduledExecutorService keepAliveService;
+public class ClientImpl extends AbstractClient {
+    
+    public static final boolean DEFAULT_CHECK_CONNECTION_BEFORE_USE = false;
 
-	/**
-	 * Create a new ClientImpl, which creates it's own connection to Redis using values from the config.
-	 * It will not verify the connection before use.
-	 * 
-	 * @param config used to create a connection to Redis
-	 */
-	public ClientImpl(final Config config)
-	{
-		this(config, DEFAULT_CHECK_CONNECTION_BEFORE_USE);
-	}
-	
-	/**
-	 * Create a new ClientImpl, which creates it's own connection to Redis using values from the config.
-	 * 
-	 * @param config used to create a connection to Redis
-	 * @param checkConnectionBeforeUse check to make sure the connection is alive before using it
-	 * @throws IllegalArgumentException if the config is null
-	 */
-	public ClientImpl(final Config config, final boolean checkConnectionBeforeUse)
-	{
-		super(config);
-		this.config = config;
-		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-		authenticateAndSelectDB();
-		this.checkConnectionBeforeUse = checkConnectionBeforeUse;
-		this.keepAliveService = null;
-	}
+    private final Config config;
+    private final Jedis jedis;
+    private final boolean checkConnectionBeforeUse;
+    private final ScheduledExecutorService keepAliveService;
 
-	/**
-	 * Create a new ClientImpl, which creates it's own connection to Redis using values from the config and 
-	 * spawns a thread to ensure the connection stays open.
-	 * 
-	 * @param config used to create a connection to Redis
-	 * @param initialDelay the time to delay first connection check
-	 * @param period the period between successive connection checks
-	 * @param timeUnit the time unit of the initialDelay and period parameters
-	 */
-	public ClientImpl(final Config config, final long initialDelay, final long period, final TimeUnit timeUnit)
-	{
-		super(config);
-		this.config = config;
-		this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-		authenticateAndSelectDB();
-		this.checkConnectionBeforeUse = false;
-		this.keepAliveService = Executors.newSingleThreadScheduledExecutor();
-		this.keepAliveService.scheduleAtFixedRate(new Runnable()
-		{
-			public void run()
-			{
-				ensureJedisConnection();
-			}
-		}, initialDelay, period, timeUnit);
-	}
-	
-	@Override
-	protected void doEnqueue(final String queue, final String jobJson)
-	{
-		ensureJedisConnection();
-		doEnqueue(this.jedis, getNamespace(), queue, jobJson);
-	}
-
-	@Override
-	protected void doPriorityEnqueue(final String queue, final String jobJson)
-	{
-		ensureJedisConnection();
-		doPriorityEnqueue(this.jedis, getNamespace(), queue, jobJson);
-	}
-	
-	@Override
-    protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout)
-    throws Exception
-    {
-		ensureJedisConnection();
-		return doAcquireLock(this.jedis, getNamespace(), lockName, lockHolder, timeout);
+    /**
+     * Create a new ClientImpl, which creates it's own connection to Redis using
+     * values from the config. It will not verify the connection before use.
+     * 
+     * @param config
+     *            used to create a connection to Redis
+     */
+    public ClientImpl(final Config config) {
+        this(config, DEFAULT_CHECK_CONNECTION_BEFORE_USE);
     }
 
-	public void end()
-	{
-		if (this.keepAliveService != null)
-		{
-			this.keepAliveService.shutdownNow();
-		}
-		this.jedis.quit();
-	}
-	
+    /**
+     * Create a new ClientImpl, which creates it's own connection to Redis using
+     * values from the config.
+     * 
+     * @param config
+     *            used to create a connection to Redis
+     * @param checkConnectionBeforeUse
+     *            check to make sure the connection is alive before using it
+     * @throws IllegalArgumentException
+     *             if the config is null
+     */
+    public ClientImpl(final Config config, final boolean checkConnectionBeforeUse) {
+        super(config);
+        this.config = config;
+        this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+        authenticateAndSelectDB();
+        this.checkConnectionBeforeUse = checkConnectionBeforeUse;
+        this.keepAliveService = null;
+    }
+
+    /**
+     * Create a new ClientImpl, which creates it's own connection to Redis using
+     * values from the config and spawns a thread to ensure the connection stays
+     * open.
+     * 
+     * @param config
+     *            used to create a connection to Redis
+     * @param initialDelay
+     *            the time to delay first connection check
+     * @param period
+     *            the period between successive connection checks
+     * @param timeUnit
+     *            the time unit of the initialDelay and period parameters
+     */
+    public ClientImpl(final Config config, final long initialDelay, final long period, final TimeUnit timeUnit) {
+        super(config);
+        this.config = config;
+        this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+        authenticateAndSelectDB();
+        this.checkConnectionBeforeUse = false;
+        this.keepAliveService = Executors.newSingleThreadScheduledExecutor();
+        this.keepAliveService.scheduleAtFixedRate(new Runnable() {
+            public void run() {
+                ensureJedisConnection();
+            }
+        }, initialDelay, period, timeUnit);
+    }
+
     @Override
-    protected void doDelayedEnqueue(final String queue, final String msg, final long future)
-    throws Exception 
-    {
+    protected void doEnqueue(final String queue, final String jobJson) {
+        ensureJedisConnection();
+        doEnqueue(this.jedis, getNamespace(), queue, jobJson);
+    }
+
+    @Override
+    protected void doPriorityEnqueue(final String queue, final String jobJson) {
+        ensureJedisConnection();
+        doPriorityEnqueue(this.jedis, getNamespace(), queue, jobJson);
+    }
+
+    @Override
+    protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout) throws Exception {
+        ensureJedisConnection();
+        return doAcquireLock(this.jedis, getNamespace(), lockName, lockHolder, timeout);
+    }
+
+    public void end() {
+        if (this.keepAliveService != null) {
+            this.keepAliveService.shutdownNow();
+        }
+        this.jedis.quit();
+    }
+
+    @Override
+    protected void doDelayedEnqueue(final String queue, final String msg, final long future) throws Exception {
         ensureJedisConnection();
         doDelayedEnqueue(this.jedis, getNamespace(), queue, msg, future);
-    }	
-	
-	private void authenticateAndSelectDB()
-	{
-		if (this.config.getPassword() != null)
-	 	{
-		 	this.jedis.auth(this.config.getPassword());
-	 	}
-	 	this.jedis.select(this.config.getDatabase());
-	}
-	
-	private void ensureJedisConnection()
-	{
-		if (this.checkConnectionBeforeUse && !JedisUtils.ensureJedisConnection(this.jedis))
-		{
-			authenticateAndSelectDB();
-		}
-	}
+    }
+
+    private void authenticateAndSelectDB() {
+        if (this.config.getPassword() != null) {
+            this.jedis.auth(this.config.getPassword());
+        }
+        this.jedis.select(this.config.getDatabase());
+    }
+
+    private void ensureJedisConnection() {
+        if (this.checkConnectionBeforeUse && !JedisUtils.ensureJedisConnection(this.jedis)) {
+            authenticateAndSelectDB();
+        }
+    }
 }

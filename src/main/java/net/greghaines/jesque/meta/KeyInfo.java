@@ -24,109 +24,93 @@ import java.util.regex.Pattern;
  * 
  * @author Greg Haines
  */
-public class KeyInfo implements Comparable<KeyInfo>, Serializable
-{
-	private static final long serialVersionUID = 6243902746964006352L;
-	private static final Pattern colonPattern = Pattern.compile(":");
-	
-	private String name;
-	private String namespace;
-	private KeyType type;
-	private Long size;
-	private List<String> arrayValue;
-	
-	public KeyInfo(){}
-	
-	public KeyInfo(final String fullKey, final KeyType type)
-	{
-		if (fullKey == null)
-		{
-			throw new IllegalArgumentException("fullKey must not be null");
-		}
-		final String[] keyParts = colonPattern.split(fullKey, 2);
-		if (keyParts.length != 2)
-		{
-			throw new IllegalArgumentException("Malformed fullKey: " + fullKey);
-		}
-		this.namespace = keyParts[0];
-		this.name = keyParts[1];
-		this.type = type;
-	}
+public class KeyInfo implements Comparable<KeyInfo>, Serializable {
+    
+    private static final long serialVersionUID = 6243902746964006352L;
+    private static final Pattern colonPattern = Pattern.compile(":");
 
-	public String getName()
-	{
-		return this.name;
-	}
+    private String name;
+    private String namespace;
+    private KeyType type;
+    private Long size;
+    private List<String> arrayValue;
 
-	public void setName(final String name)
-	{
-		this.name = name;
-	}
+    /**
+     * No-arg constructor.
+     */
+    public KeyInfo() {
+        // Do nothing
+    }
 
-	public String getNamespace()
-	{
-		return this.namespace;
-	}
+    public KeyInfo(final String fullKey, final KeyType type) {
+        if (fullKey == null) {
+            throw new IllegalArgumentException("fullKey must not be null");
+        }
+        final String[] keyParts = colonPattern.split(fullKey, 2);
+        if (keyParts.length != 2) {
+            throw new IllegalArgumentException("Malformed fullKey: " + fullKey);
+        }
+        this.namespace = keyParts[0];
+        this.name = keyParts[1];
+        this.type = type;
+    }
 
-	public void setNamespace(final String namespace)
-	{
-		this.namespace = namespace;
-	}
+    public String getName() {
+        return this.name;
+    }
 
-	public KeyType getType()
-	{
-		return this.type;
-	}
+    public void setName(final String name) {
+        this.name = name;
+    }
 
-	public void setType(final KeyType type)
-	{
-		this.type = type;
-	}
+    public String getNamespace() {
+        return this.namespace;
+    }
 
-	public Long getSize()
-	{
-		return this.size;
-	}
+    public void setNamespace(final String namespace) {
+        this.namespace = namespace;
+    }
 
-	public void setSize(final Long size)
-	{
-		this.size = size;
-	}
+    public KeyType getType() {
+        return this.type;
+    }
 
-	public List<String> getArrayValue()
-	{
-		return this.arrayValue;
-	}
+    public void setType(final KeyType type) {
+        this.type = type;
+    }
 
-	public void setArrayValue(final List<String> arrayValue)
-	{
-		this.arrayValue = arrayValue;
-	}
-	
-	@Override
-	public String toString()
-	{
-		return this.name;
-	}
+    public Long getSize() {
+        return this.size;
+    }
 
-	public int compareTo(final KeyInfo other)
-	{
-		int retVal = 1;
-		if (other != null)
-		{
-			if (this.name != null && other.name != null)
-			{
-				retVal = this.name.compareTo(other.name);
-			}
-			else if (this.name == null && other.name == null)
-			{
-				retVal = 0;
-			}
-			else if (this.name == null)
-			{
-				retVal = -1;
-			}
-		}
-		return retVal;
-	}
+    public void setSize(final Long size) {
+        this.size = size;
+    }
+
+    public List<String> getArrayValue() {
+        return this.arrayValue;
+    }
+
+    public void setArrayValue(final List<String> arrayValue) {
+        this.arrayValue = arrayValue;
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
+    }
+
+    public int compareTo(final KeyInfo other) {
+        int retVal = 1;
+        if (other != null) {
+            if (this.name != null && other.name != null) {
+                retVal = this.name.compareTo(other.name);
+            } else if (this.name == null && other.name == null) {
+                retVal = 0;
+            } else if (this.name == null) {
+                retVal = -1;
+            }
+        }
+        return retVal;
+    }
 }

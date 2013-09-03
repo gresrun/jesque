@@ -26,37 +26,36 @@ import java.util.TimeZone;
  * 
  * @author Greg Haines
  */
-public final class ResqueDateFormatThreadLocal extends ThreadLocal<DateFormat>
-{
-	private static volatile ResqueDateFormatThreadLocal instance = null;
-	private static final Object instanceLock = new Object();
-	
-	/**
-	 * NOTE: DateFormats returned from this method are for use by the caller's thread only.
-	 * 
-	 * @return a configured DateFormat
-	 */
-	public static DateFormat getInstance()
-	{
-		if (instance == null)
-		{
-			synchronized (instanceLock)
-			{
-				if (instance == null)
-				{
-					instance = new ResqueDateFormatThreadLocal();
-				}
-			}
-		}
-		return instance.get();
-	}
-	
-	private ResqueDateFormatThreadLocal(){}
-	
-	protected DateFormat initialValue()
-	{
-		final SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
-		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-		return sdf;
-	}
+public final class ResqueDateFormatThreadLocal extends ThreadLocal<DateFormat> {
+    
+    private static volatile ResqueDateFormatThreadLocal instance = null;
+    private static final Object instanceLock = new Object();
+
+    /**
+     * NOTE: DateFormats returned from this method are for use by the caller's
+     * thread only.
+     * 
+     * @return a configured DateFormat
+     */
+    public static DateFormat getInstance() {
+        if (instance == null) {
+            synchronized (instanceLock) {
+                if (instance == null) {
+                    instance = new ResqueDateFormatThreadLocal();
+                }
+            }
+        }
+        return instance.get();
+    }
+
+    private ResqueDateFormatThreadLocal() {
+        // Singleton
+    }
+
+    @Override
+    protected DateFormat initialValue() {
+        final SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        return sdf;
+    }
 }

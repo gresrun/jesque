@@ -20,15 +20,15 @@ import java.util.List;
 
 import net.greghaines.jesque.JobFailure;
 
-public interface FailureDAO
-{
-	long getCount();
-	
-	List<JobFailure> getFailures(long offset, long count);
-	
-	void clear();
-	
-	Date requeue(long index);
-	
-	void remove(long index);
+public interface FailureDAO {
+    
+    long getCount();
+
+    List<JobFailure> getFailures(long offset, long count);
+
+    void clear();
+
+    Date requeue(long index);
+
+    void remove(long index);
 }

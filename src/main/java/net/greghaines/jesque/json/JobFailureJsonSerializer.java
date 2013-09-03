@@ -26,33 +26,31 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
- * A custom Jackson serializer for JobFailures.
- * Needed because JobFailures uses Java-style property names and Resque does not.
+ * A custom Jackson serializer for JobFailures. Needed because JobFailures uses
+ * Java-style property names and Resque does not.
  * 
  * @author Greg Haines
  */
-public class JobFailureJsonSerializer extends JsonSerializer<JobFailure>
-{
-	@Override
-	public void serialize(final JobFailure jobFailure, final JsonGenerator jgen, final SerializerProvider provider)
-	throws IOException, JsonProcessingException
-	{
-		jgen.writeStartObject();
-		jgen.writeStringField("worker", jobFailure.getWorker());
-		jgen.writeStringField("queue", jobFailure.getQueue());
-		jgen.writeFieldName("payload");
-		ObjectMapperFactory.get().writeValue(jgen, jobFailure.getPayload());
-		jgen.writeStringField("exception", (jobFailure.getException() == null) ? null : 
-			jobFailure.getException().getClass().getName());
-		jgen.writeStringField("error", (jobFailure.getException() == null) ? null : 
-			jobFailure.getException().getMessage());
-		jgen.writeFieldName("backtrace");
-		ObjectMapperFactory.get().writeValue(jgen, (jobFailure.getException() == null) ? null : 
-			JesqueUtils.createBacktrace(jobFailure.getException()));
-		jgen.writeFieldName("failed_at");
-		ObjectMapperFactory.get().writeValue(jgen, jobFailure.getFailedAt());
-		jgen.writeFieldName("retried_at");
-		ObjectMapperFactory.get().writeValue(jgen, jobFailure.getRetriedAt());
-		jgen.writeEndObject();
-	}
+public class JobFailureJsonSerializer extends JsonSerializer<JobFailure> {
+
+    @Override
+    public void serialize(final JobFailure jobFailure, final JsonGenerator jgen, final SerializerProvider provider)
+            throws IOException, JsonProcessingException {
+        final boolean exceptionNull = (jobFailure.getException() == null);
+        jgen.writeStartObject();
+        jgen.writeStringField("worker", jobFailure.getWorker());
+        jgen.writeStringField("queue", jobFailure.getQueue());
+        jgen.writeFieldName("payload");
+        ObjectMapperFactory.get().writeValue(jgen, jobFailure.getPayload());
+        jgen.writeStringField("exception", (exceptionNull) ? null : jobFailure.getException().getClass().getName());
+        jgen.writeStringField("error", (exceptionNull) ? null : jobFailure.getException().getMessage());
+        jgen.writeFieldName("backtrace");
+        ObjectMapperFactory.get().writeValue(jgen,
+                (exceptionNull) ? null : JesqueUtils.createBacktrace(jobFailure.getException()));
+        jgen.writeFieldName("failed_at");
+        ObjectMapperFactory.get().writeValue(jgen, jobFailure.getFailedAt());
+        jgen.writeFieldName("retried_at");
+        ObjectMapperFactory.get().writeValue(jgen, jobFailure.getRetriedAt());
+        jgen.writeEndObject();
+    }
 }

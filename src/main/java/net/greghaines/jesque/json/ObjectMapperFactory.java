@@ -36,12 +36,11 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
  * 
  * @author Greg Haines
  */
-public final class ObjectMapperFactory
-{
+public final class ObjectMapperFactory {
+    
 	private static final ObjectMapper mapper = new ObjectMapper();
 
-	static
-	{
+	static {
 		mapper.registerModule(new SimpleModule("net.greghaines.jesque", createJacksonVersion())
 			.addSerializer(Job.class, new JobJsonSerializer())
 			.addDeserializer(Job.class, new JobJsonDeserializer())
@@ -55,19 +54,19 @@ public final class ObjectMapperFactory
 		mapper.getSerializationConfig().with(jsonDateFormat);
 	}
 	
-	private static Version createJacksonVersion()
-	{
+	private static Version createJacksonVersion() {
 		final Object[] versionParts = VersionUtils.getVersionParts();
 		return (DEVELOPMENT.equals(versionParts[3]) || ERROR.equals(versionParts[3])) 
 				? Version.unknownVersion() 
-				: new Version((Integer) versionParts[0], (Integer) versionParts[1], (Integer) versionParts[2], (String) versionParts[3], "net.greghaines", "jesque");
+				: new Version((Integer) versionParts[0], 
+				        (Integer) versionParts[1], (Integer) versionParts[2], 
+				        (String) versionParts[3], "net.greghaines", "jesque");
 	}
 	
 	/**
 	 * @return a fully-configured ObjectMapper
 	 */
-	public static ObjectMapper get()
-	{
+	public static ObjectMapper get() {
 		return mapper;
 	}
 	

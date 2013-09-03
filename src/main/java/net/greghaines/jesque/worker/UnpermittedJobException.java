@@ -20,39 +20,38 @@ package net.greghaines.jesque.worker;
  * 
  * @author Greg Haines
  */
-public class UnpermittedJobException extends Exception
-{
-	private static final long serialVersionUID = -5360734802682205116L;
-	
-	private final Class<?> type;
-	
-	/**
-	 * Create a new UnpermittedJobException with only a message.
-	 * 
-	 * @param msg the detail message to show
-	 */
-	public UnpermittedJobException(final String msg)
-	{
-		super(msg);
-		this.type = null;
-	}
+public class UnpermittedJobException extends Exception {
+    
+    private static final long serialVersionUID = -5360734802682205116L;
 
-	/**
-	 * Create a new UnpermittedJobException with the type.
-	 * 
-	 * @param type the type of job that is not permitted
-	 */
-	public UnpermittedJobException(final Class<?> type)
-	{
-		super(type.getName());
-		this.type = type;
-	}
+    private final Class<?> type;
 
-	/**
-	 * @return the type of Job that is not permitted
-	 */
-	public Class<?> getType()
-	{
-		return this.type;
-	}
+    /**
+     * Create a new UnpermittedJobException with only a message.
+     * 
+     * @param msg
+     *            the detail message to show
+     */
+    public UnpermittedJobException(final String msg) {
+        super(msg);
+        this.type = null;
+    }
+
+    /**
+     * Create a new UnpermittedJobException with the type.
+     * 
+     * @param type
+     *            the type of job that is not permitted
+     */
+    public UnpermittedJobException(final Class<?> type) {
+        super(type.getName());
+        this.type = type;
+    }
+
+    /**
+     * @return the type of Job that is not permitted
+     */
+    public Class<?> getType() {
+        return this.type;
+    }
 }

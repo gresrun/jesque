@@ -25,24 +25,23 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
- * A custom Jackson serializer for WorkerStatuses.
- * Needed because WorkerStatus uses Java-style property names and Resque does not.
+ * A custom Jackson serializer for WorkerStatuses. Needed because WorkerStatus
+ * uses Java-style property names and Resque does not.
  * 
  * @author Greg Haines
  */
-public class WorkerStatusJsonSerializer extends JsonSerializer<WorkerStatus>
-{
-	@Override
-	public void serialize(final WorkerStatus workerStatus, final JsonGenerator jgen, final SerializerProvider provider)
-	throws IOException, JsonProcessingException
-	{
-		jgen.writeStartObject();
-		jgen.writeFieldName("run_at");
-		ObjectMapperFactory.get().writeValue(jgen, workerStatus.getRunAt());
-		jgen.writeStringField("queue", workerStatus.getQueue());
-		jgen.writeFieldName("payload");
-		ObjectMapperFactory.get().writeValue(jgen, workerStatus.getPayload());
-		jgen.writeBooleanField("paused", workerStatus.isPaused());
-		jgen.writeEndObject();
-	}
+public class WorkerStatusJsonSerializer extends JsonSerializer<WorkerStatus> {
+
+    @Override
+    public void serialize(final WorkerStatus workerStatus, final JsonGenerator jgen, final SerializerProvider provider)
+            throws IOException, JsonProcessingException {
+        jgen.writeStartObject();
+        jgen.writeFieldName("run_at");
+        ObjectMapperFactory.get().writeValue(jgen, workerStatus.getRunAt());
+        jgen.writeStringField("queue", workerStatus.getQueue());
+        jgen.writeFieldName("payload");
+        ObjectMapperFactory.get().writeValue(jgen, workerStatus.getPayload());
+        jgen.writeBooleanField("paused", workerStatus.isPaused());
+        jgen.writeEndObject();
+    }
 }

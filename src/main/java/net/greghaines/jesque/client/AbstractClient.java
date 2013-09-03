@@ -30,316 +30,266 @@ import redis.clients.jedis.Jedis;
  * @author Greg Haines
  * @author Animesh Kumar <smile.animesh@gmail.com>
  */
-public abstract class AbstractClient implements Client
-{
-	private final String namespace;
+public abstract class AbstractClient implements Client {
 
-	/**
-	 * @param config used to get the namespace for key creation
-	 */
-	protected AbstractClient(final Config config)
-	{
-		if (config == null)
-		{
-			throw new IllegalArgumentException("config must not be null");
-		}
-		this.namespace = config.getNamespace();
-	}
+    private final String namespace;
 
-	/**
-	 * @return the namespace this client will use
-	 */
-	protected String getNamespace()
-	{
-		return this.namespace;
-	}
+    /**
+     * Constructor.
+     * 
+     * @param config
+     *            used to get the namespace for key creation
+     */
+    protected AbstractClient(final Config config) {
+        if (config == null) {
+            throw new IllegalArgumentException("config must not be null");
+        }
+        this.namespace = config.getNamespace();
+    }
 
-	/**
-	 * Builds a namespaced Redis key with the given arguments.
-	 * 
-	 * @param parts the key parts to be joined
-	 * @return an assembled String key
-	 */
-	protected String key(final String... parts)
-	{
-		return JesqueUtils.createKey(this.namespace, parts);
-	}
+    /**
+     * @return the namespace this client will use
+     */
+    protected String getNamespace() {
+        return this.namespace;
+    }
 
-	public void enqueue(final String queue, final Job job)
-	{
-		validateArguments(queue, job);
-		try
-		{
-			doEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
-		}
-		catch (RuntimeException re)
-		{
-			throw re;
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-	}
+    /**
+     * Builds a namespaced Redis key with the given arguments.
+     * 
+     * @param parts
+     *            the key parts to be joined
+     * @return an assembled String key
+     */
+    protected String key(final String... parts) {
+        return JesqueUtils.createKey(this.namespace, parts);
+    }
 
-	public void priorityEnqueue(final String queue, final Job job)
-	{
-		validateArguments(queue, job);
-		try
-		{
-			doPriorityEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
-		}
-		catch (RuntimeException re)
-		{
-			throw re;
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-	}
+    public void enqueue(final String queue, final Job job) {
+        validateArguments(queue, job);
+        try {
+            doEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	public boolean acquireLock(final String lockName, final String lockHolder, final int timeout)
-	{
-		if ((lockName == null) || "".equals(lockName))
-		{
-			throw new IllegalArgumentException("lockName must not be null or empty: " + lockName);
-		}
-		if ((lockHolder == null) || "".equals(lockHolder))
-		{
-			throw new IllegalArgumentException("lockHolder must not be null or empty: " + lockHolder);
-		}
-		if (timeout < 1)
-		{
-			throw new IllegalArgumentException("timeout must be a positive number");
-		}
-		try
-		{
-			return doAcquireLock(lockName, lockHolder, timeout);
-		}
-		catch (RuntimeException re)
-		{
-			throw re;
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-	}
+    public void priorityEnqueue(final String queue, final Job job) {
+        validateArguments(queue, job);
+        try {
+            doPriorityEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	/**
-	 * Actually enqueue the serialized job.
-	 * 
-	 * @param queue the queue to add the Job to
-	 * @param msg the serialized Job
-	 * @throws Exception in case something goes wrong
-	 */
-	protected abstract void doEnqueue(String queue, String msg) throws Exception;
+    public boolean acquireLock(final String lockName, final String lockHolder, final int timeout) {
+        if ((lockName == null) || "".equals(lockName)) {
+            throw new IllegalArgumentException("lockName must not be null or empty: " + lockName);
+        }
+        if ((lockHolder == null) || "".equals(lockHolder)) {
+            throw new IllegalArgumentException("lockHolder must not be null or empty: " + lockHolder);
+        }
+        if (timeout < 1) {
+            throw new IllegalArgumentException("timeout must be a positive number");
+        }
+        try {
+            return doAcquireLock(lockName, lockHolder, timeout);
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	/**
-	 * Actually enqueue the serialized job with high priority.
-	 * 
-	 * @param queue the queue to add the Job to
-	 * @param msg the serialized Job
-	 * @throws Exception in case something goes wrong
-	 */
-	protected abstract void doPriorityEnqueue(String queue, String msg) throws Exception;
+    /**
+     * Actually enqueue the serialized job.
+     * 
+     * @param queue
+     *            the queue to add the Job to
+     * @param msg
+     *            the serialized Job
+     * @throws Exception
+     *             in case something goes wrong
+     */
+    protected abstract void doEnqueue(String queue, String msg) throws Exception;
 
-	/**
-	 * Actually acquire the lock based upon the client acquisition model.
-	 * 
-	 * @param lockName the name of the lock to acquire
-	 * @param timeout number of seconds until the lock will expire
-	 * @param lockHolder a unique string identifying the caller
-	 * @return true, if the lock was acquired, false otherwise
-	 */
-	protected abstract boolean doAcquireLock(final String lockName,
-			final String lockHolder, final int timeout) throws Exception;
+    /**
+     * Actually enqueue the serialized job with high priority.
+     * 
+     * @param queue
+     *            the queue to add the Job to
+     * @param msg
+     *            the serialized Job
+     * @throws Exception
+     *             in case something goes wrong
+     */
+    protected abstract void doPriorityEnqueue(String queue, String msg) throws Exception;
 
-	/**
-	 * Helper method that encapsulates the minimum logic for adding a job to a queue.
-	 * 
-	 * @param jedis the connection to Redis
-	 * @param namespace the Resque namespace
-	 * @param queue the Resque queue name
-	 * @param jobJson the job serialized as JSON
-	 */
-	public static void doEnqueue(final Jedis jedis, final String namespace, 
-			final String queue, final String jobJson)
-	{
-		jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-		jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
-	}
+    /**
+     * Actually acquire the lock based upon the client acquisition model.
+     * 
+     * @param lockName
+     *            the name of the lock to acquire
+     * @param timeout
+     *            number of seconds until the lock will expire
+     * @param lockHolder
+     *            a unique string identifying the caller
+     * @return true, if the lock was acquired, false otherwise
+     */
+    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout) throws Exception;
 
-	/**
-	 * Helper method that encapsulates the minimum logic for adding a high priority job to a queue.
-	 * 
-	 * @param jedis the connection to Redis
-	 * @param namespace the Resque namespace
-	 * @param queue the Resque queue name
-	 * @param jobJson the job serialized as JSON
-	 */
-	public static void doPriorityEnqueue(final Jedis jedis, final String namespace, 
-			final String queue, final String jobJson)
-	{
-		jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-		jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
-	}
+    /**
+     * Helper method that encapsulates the minimum logic for adding a job to a
+     * queue.
+     * 
+     * @param jedis
+     *            the connection to Redis
+     * @param namespace
+     *            the Resque namespace
+     * @param queue
+     *            the Resque queue name
+     * @param jobJson
+     *            the job serialized as JSON
+     */
+    public static void doEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
+        jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+        jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+    }
 
-	/**
-	 * Helper method that encapsulates the logic to acquire a lock.
-	 * @param jedis
-	 *            the connection to Redis
-	 * @param namespace
-	 *            the Resque namespace
-	 * @param lockName
-	 *            all calls to this method will contend for a unique lock with
-	 *            the name of lockName
-	 * @param timeout
-	 *            seconds until the lock will expire
-	 * @param lockHolder
-	 *            a unique string used to tell if you are the current holder of
-	 *            a lock for both acquisition, and extension
-	 * @return Whether or not the lock was acquired.
-	 */
-	public static boolean doAcquireLock(final Jedis jedis,
-			final String namespace, final String lockName,
-			final String lockHolder, final int timeout)
-	{
-		final String key = JesqueUtils.createKey(namespace, lockName);
+    /**
+     * Helper method that encapsulates the minimum logic for adding a high
+     * priority job to a queue.
+     * 
+     * @param jedis
+     *            the connection to Redis
+     * @param namespace
+     *            the Resque namespace
+     * @param queue
+     *            the Resque queue name
+     * @param jobJson
+     *            the job serialized as JSON
+     */
+    public static void doPriorityEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
+        jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+        jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+    }
 
-		// if lock already exists, extend it
-		String existingLockHolder = jedis.get(key);
-		if ((existingLockHolder != null)
-				&& existingLockHolder.equals(lockHolder))
-		{
-			if (jedis.expire(key, timeout) == 1)
-			{
-				existingLockHolder = jedis.get(key);
-				if ((existingLockHolder != null)
-						&& existingLockHolder.equals(lockHolder))
-				{
-					return true;
-				}
-			}
-		}
+    /**
+     * Helper method that encapsulates the logic to acquire a lock.
+     * 
+     * @param jedis
+     *            the connection to Redis
+     * @param namespace
+     *            the Resque namespace
+     * @param lockName
+     *            all calls to this method will contend for a unique lock with
+     *            the name of lockName
+     * @param timeout
+     *            seconds until the lock will expire
+     * @param lockHolder
+     *            a unique string used to tell if you are the current holder of
+     *            a lock for both acquisition, and extension
+     * @return Whether or not the lock was acquired.
+     */
+    public static boolean doAcquireLock(final Jedis jedis, final String namespace, final String lockName, final String lockHolder, final int timeout) {
+        final String key = JesqueUtils.createKey(namespace, lockName);
+        // If lock already exists, extend it
+        String existingLockHolder = jedis.get(key);
+        if ((existingLockHolder != null) && existingLockHolder.equals(lockHolder)) {
+            if (jedis.expire(key, timeout) == 1) {
+                existingLockHolder = jedis.get(key);
+                if ((existingLockHolder != null) && existingLockHolder.equals(lockHolder)) {
+                    return true;
+                }
+            }
+        }
+        // Check to see if the key exists and is expired for cleanup purposes
+        if (jedis.exists(key) && (jedis.ttl(key) < 0)) {
+            // It is expired, but it may be in the process of being created, so
+            // sleep and check again
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ie) {
+            } // Ignore interruptions
+            if (jedis.ttl(key) < 0) {
+                existingLockHolder = jedis.get(key);
+                // If it is our lock mark the time to live
+                if ((existingLockHolder != null) && existingLockHolder.equals(lockHolder)) {
+                    if (jedis.expire(key, timeout) == 1) {
+                        existingLockHolder = jedis.get(key);
+                        if ((existingLockHolder != null) && existingLockHolder.equals(lockHolder)) {
+                            return true;
+                        }
+                    }
+                } else { // The key is expired, whack it!
+                    jedis.del(key);
+                }
+            } else { // Someone else locked it while we were sleeping
+                return false;
+            }
+        }
+        // Ignore the cleanup steps above, start with no assumptions test
+        // creating the key
+        if (jedis.setnx(key, lockHolder) == 1) {
+            // Created the lock, now set the expiration
+            if (jedis.expire(key, timeout) == 1) { // Set the timeout
+                existingLockHolder = jedis.get(key);
+                if ((existingLockHolder != null) && existingLockHolder.equals(lockHolder)) {
+                    return true;
+                }
+            } else { // Don't know why it failed, but for now just report failed
+                     // acquisition
+                return false;
+            }
+        }
+        // Failed to create the lock
+        return false;
+    }
 
-		// check to see if the key exists and is expired for cleanup purposes
-		if (jedis.exists(key) && (jedis.ttl(key) < 0))
-		{ // it is expired, but it may be in the process of being created, so sleep and check again
-			try
-			{
-				Thread.sleep(2000);
-			}
-			catch (InterruptedException ie){} // ignore interruptions
-			if (jedis.ttl(key) < 0)
-			{
-				existingLockHolder = jedis.get(key);
-
-				// if it is our lock mark the time to live
-				if ((existingLockHolder != null)
-						&& existingLockHolder.equals(lockHolder))
-				{
-					if (jedis.expire(key, timeout) == 1)
-					{
-						existingLockHolder = jedis.get(key);
-						if ((existingLockHolder != null)
-								&& existingLockHolder.equals(lockHolder))
-						{
-							return true;
-						}
-					}
-				}
-				else
-				{ // the key is expired, whack it!
-					jedis.del(key);
-				}
-			}
-			else
-			{ // someone else locked it while we were sleeping
-				return false;
-			}
-		}
-
-		// ignore the cleanup steps above, start with no assumptions
-
-		// test creating the key
-		if (jedis.setnx(key, lockHolder) == 1)
-		{ // yay, created the lock, now set the expiration
-			if (jedis.expire(key, timeout) == 1)
-			{ // set the timeout
-				existingLockHolder = jedis.get(key);
-				if ((existingLockHolder != null)
-						&& existingLockHolder.equals(lockHolder))
-				{
-					return true;
-				}
-			}
-			else
-			{ // don't know why it failed, but for now just report failed acquisition
-				return false;
-			}
-		}
-		// failed to create the lock
-		return false;
-	}
-	
-    public static void doDelayedEnqueue(final Jedis jedis, final String namespace, 
-            final String queue, final String jobJson, final long future) 
-    {
+    public static void doDelayedEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future) {
         final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
         // Add task only if this queue is either delayed or unused
-        if (JedisUtils.isDelayedQueue(jedis, key) || !JedisUtils.isKeyUsed(jedis, key)) 
-        {
+        if (JedisUtils.isDelayedQueue(jedis, key) || !JedisUtils.isKeyUsed(jedis, key)) {
             jedis.zadd(key, future, jobJson);
             jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-        }
-        else
-        {
+        } else {
             throw new IllegalArgumentException(queue + " is not a delayed queue");
         }
     }
 
     protected abstract void doDelayedEnqueue(String queue, String msg, long future) throws Exception;
 
-    public void delayedEnqueue(final String queue, final Job job, final long future) 
-    {
+    public void delayedEnqueue(final String queue, final Job job, final long future) {
         validateArguments(queue, job, future);
-        try
-        {
+        try {
             doDelayedEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future);
-        } 
-        catch (RuntimeException re) 
-        {
+        } catch (RuntimeException re) {
             throw re;
-        } 
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }	
+    }
 
-	private static void validateArguments(final String queue, final Job job)
-	{
-		if (queue == null || "".equals(queue))
-		{
-			throw new IllegalArgumentException("queue must not be null or empty: " + queue);
-		}
-		if (job == null)
-		{
-			throw new IllegalArgumentException("job must not be null");
-		}
-		if (!job.isValid())
-		{
-			throw new IllegalStateException("job is not valid: " + job);
-		}
-	}
-	
-    private static void validateArguments(final String queue, final Job job, final long future) 
-    {
+    private static void validateArguments(final String queue, final Job job) {
+        if (queue == null || "".equals(queue)) {
+            throw new IllegalArgumentException("queue must not be null or empty: " + queue);
+        }
+        if (job == null) {
+            throw new IllegalArgumentException("job must not be null");
+        }
+        if (!job.isValid()) {
+            throw new IllegalStateException("job is not valid: " + job);
+        }
+    }
+
+    private static void validateArguments(final String queue, final Job job, final long future) {
         validateArguments(queue, job);
-        if (System.currentTimeMillis() > future) 
-        {
+        if (System.currentTimeMillis() > future) {
             throw new IllegalArgumentException("future must be after current time");
         }
     }

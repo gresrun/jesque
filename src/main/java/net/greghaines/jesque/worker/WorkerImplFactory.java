@@ -22,37 +22,41 @@ import java.util.concurrent.Callable;
 import net.greghaines.jesque.Config;
 
 /**
- * A simple factory for <code>WorkerImpl</code>s.
- * Designed to be used with <code>WorkerPool</code>.
+ * A simple factory for <code>WorkerImpl</code>s. Designed to be used with
+ * <code>WorkerPool</code>.
  * 
  * @author Greg Haines
  */
-public class WorkerImplFactory implements Callable<WorkerImpl>
-{
-	private final Config config;
-	private final Collection<String> queues;
-	private final Map<String,? extends Class<?>> jobTypes;
+public class WorkerImplFactory implements Callable<WorkerImpl> {
+    
+    private final Config config;
+    private final Collection<String> queues;
+    private final Map<String, ? extends Class<?>> jobTypes;
 
-	/**
-	 * Create a new factory. Returned <code>WorkerImpl</code>s will use the provided arguments.
-	 * 
-	 * @param config used to create a connection to Redis and the package prefix for incoming jobs
-	 * @param queues the list of queues to poll
-	 * @param jobTypes the list of job types to execute
-	 */
-	public WorkerImplFactory(final Config config, final Collection<String> queues, 
-			final Map<String,? extends Class<?>> jobTypes)
-	{
-		this.config = config;
-		this.queues = queues;
-		this.jobTypes = jobTypes;
-	}
+    /**
+     * Create a new factory. Returned <code>WorkerImpl</code>s will use the
+     * provided arguments.
+     * 
+     * @param config
+     *            used to create a connection to Redis and the package prefix
+     *            for incoming jobs
+     * @param queues
+     *            the list of queues to poll
+     * @param jobTypes
+     *            the list of job types to execute
+     */
+    public WorkerImplFactory(final Config config, final Collection<String> queues,
+            final Map<String, ? extends Class<?>> jobTypes) {
+        this.config = config;
+        this.queues = queues;
+        this.jobTypes = jobTypes;
+    }
 
-	/**
-	 * Create a new <code>WorkerImpl</code> using the arguments provided to this factory's constructor.
-	 */
-	public WorkerImpl call()
-	{
-		return new WorkerImpl(this.config, this.queues, this.jobTypes);
-	}
+    /**
+     * Create a new <code>WorkerImpl</code> using the arguments provided to this
+     * factory's constructor.
+     */
+    public WorkerImpl call() {
+        return new WorkerImpl(this.config, this.queues, this.jobTypes);
+    }
 }

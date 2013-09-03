@@ -29,46 +29,36 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
- * A custom Jackson deserializer for WorkerStatuses.
- * Needed because WorkerStatus uses Java-style property names and Resque does not.
+ * A custom Jackson deserializer for WorkerStatuses. Needed because WorkerStatus
+ * uses Java-style property names and Resque does not.
  * 
  * @author Greg Haines
  */
-public class WorkerStatusJsonDeserializer extends JsonDeserializer<WorkerStatus>
-{
-	@Override
-	public WorkerStatus deserialize(final JsonParser jp, final DeserializationContext ctxt)
-	throws IOException, JsonProcessingException
-	{
-		final WorkerStatus workerStatus = new WorkerStatus();
-		while (jp.getCurrentToken() != JsonToken.END_OBJECT)
-		{
-			jp.nextToken();
-			if ("run_at".equals(jp.getText()))
-			{
-				jp.nextToken();
-				workerStatus.setRunAt(jp.readValueAs(Date.class));
-			}
-			else if ("queue".equals(jp.getText()))
-			{
-				jp.nextToken();
-				workerStatus.setQueue(jp.readValueAs(String.class));
-			}
-			else if ("payload".equals(jp.getText()))
-			{
-				jp.nextToken();
-				workerStatus.setPayload(jp.readValueAs(Job.class));
-			}
-			else if ("paused".equals(jp.getText()))
-			{
-				jp.nextToken();
-				workerStatus.setPaused(jp.readValueAs(Boolean.class));
-			}
-			else if (jp.getCurrentToken() != JsonToken.END_OBJECT)
-			{
-				throw new JsonMappingException("Unexpected field for WorkerStatus: " + jp.getText(), jp.getCurrentLocation());
-			}
-		}
-		return workerStatus;
-	}
+public class WorkerStatusJsonDeserializer extends JsonDeserializer<WorkerStatus> {
+
+    @Override
+    public WorkerStatus deserialize(final JsonParser jp, final DeserializationContext ctxt) throws IOException,
+            JsonProcessingException {
+        final WorkerStatus workerStatus = new WorkerStatus();
+        while (jp.getCurrentToken() != JsonToken.END_OBJECT) {
+            jp.nextToken();
+            if ("run_at".equals(jp.getText())) {
+                jp.nextToken();
+                workerStatus.setRunAt(jp.readValueAs(Date.class));
+            } else if ("queue".equals(jp.getText())) {
+                jp.nextToken();
+                workerStatus.setQueue(jp.readValueAs(String.class));
+            } else if ("payload".equals(jp.getText())) {
+                jp.nextToken();
+                workerStatus.setPayload(jp.readValueAs(Job.class));
+            } else if ("paused".equals(jp.getText())) {
+                jp.nextToken();
+                workerStatus.setPaused(jp.readValueAs(Boolean.class));
+            } else if (jp.getCurrentToken() != JsonToken.END_OBJECT) {
+                throw new JsonMappingException("Unexpected field for WorkerStatus: " + jp.getText(),
+                        jp.getCurrentLocation());
+            }
+        }
+        return workerStatus;
+    }
 }

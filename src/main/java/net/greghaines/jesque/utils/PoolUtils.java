@@ -28,117 +28,137 @@ import redis.clients.util.Pool;
  * 
  * @author Greg Haines
  */
-public final class PoolUtils
-{
-	public static <T,V> V doWorkInPool(final Pool<T> pool, final PoolWork<T,V> work)
-	throws Exception
-	{
-		if (pool == null)
-		{
-			throw new IllegalArgumentException("pool must not be null");
-		}
-		if (work == null)
-		{
-			throw new IllegalArgumentException("work must not be null");
-		}
-		final V result;
-		final T poolResource = pool.getResource();
-		try
-		{
-			result = work.doWork(poolResource);
-		}
-		finally
-		{
-			pool.returnResource(poolResource);
-		}
-		return result;
-	}
+public final class PoolUtils {
 
-	public static <T,V> V doWorkInPoolNicely(final Pool<T> pool, final PoolWork<T,V> work)
-	{
-		final V result;
-		try
-		{
-			result = doWorkInPool(pool, work);
-		}
-		catch (RuntimeException re)
-		{
-			throw re;
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-		return result;
-	}
+    /**
+     * Perform the given work with a resource from the given pool.
+     * 
+     * @param pool
+     *            the resource pool
+     * @param work
+     *            the work to perform
+     * @param <T>
+     *            the resource type
+     * @param <V>
+     *            the result type
+     * @return the result of the given work
+     * @throws Exception
+     *             if something went wrong
+     */
+    public static <T, V> V doWorkInPool(final Pool<T> pool, final PoolWork<T, V> work) throws Exception {
+        if (pool == null) {
+            throw new IllegalArgumentException("pool must not be null");
+        }
+        if (work == null) {
+            throw new IllegalArgumentException("work must not be null");
+        }
+        final V result;
+        final T poolResource = pool.getResource();
+        try {
+            result = work.doWork(poolResource);
+        } finally {
+            pool.returnResource(poolResource);
+        }
+        return result;
+    }
 
-	/**
-	 * @return a GenericObjectPool.Config configured with:
-	 * maxActive=-1, maxIdle=10, minIdle=1, testOnBorrow=true, whenExhaustedAction=GROW
-	 */
-	public static GenericObjectPool.Config getDefaultPoolConfig()
-	{
-		final GenericObjectPool.Config cfg = new GenericObjectPool.Config();
-		cfg.maxActive = -1; // Infinite
-		cfg.maxIdle = 10;
-		cfg.minIdle = 1;
-		cfg.testOnBorrow = true;
-		cfg.whenExhaustedAction = GenericObjectPool.WHEN_EXHAUSTED_GROW;
-		return cfg;
-	}
+    /**
+     * Perform the given work with a resource from the given pool. Wraps any
+     * thrown checked exceptions in a RuntimeException.
+     * 
+     * @param pool
+     *            the resource pool
+     * @param work
+     *            the work to perform
+     * @param <T>
+     *            the resource type
+     * @param <V>
+     *            the result type
+     * @return the result of the given work
+     */
+    public static <T, V> V doWorkInPoolNicely(final Pool<T> pool, final PoolWork<T, V> work) {
+        final V result;
+        try {
+            result = doWorkInPool(pool, work);
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
 
-	/**
-	 * A simple helper method that creates a pool of connections to Redis using the supplied Config and the default pool config.
-	 *
-	 * @param jesqueConfig the config used to create the pooled Jedis connection
-	 * @return a configured Pool of Jedis connections
-	 */
-	public static Pool<Jedis> createJedisPool(final Config jesqueConfig)
-	{
-		return createJedisPool(jesqueConfig, getDefaultPoolConfig());
-	}
+    /**
+     * @return a GenericObjectPool.Config configured with: maxActive=-1,
+     *         maxIdle=10, minIdle=1, testOnBorrow=true,
+     *         whenExhaustedAction=GROW
+     */
+    public static GenericObjectPool.Config getDefaultPoolConfig() {
+        final GenericObjectPool.Config cfg = new GenericObjectPool.Config();
+        cfg.maxActive = -1; // Infinite
+        cfg.maxIdle = 10;
+        cfg.minIdle = 1;
+        cfg.testOnBorrow = true;
+        cfg.whenExhaustedAction = GenericObjectPool.WHEN_EXHAUSTED_GROW;
+        return cfg;
+    }
 
-	/**
-	 * A simple helper method that creates a pool of connections to Redis using the supplied configurations.
-	 * 
-	 * @param jesqueConfig the config used to create the pooled Jedis connections
-	 * @param poolConfig the config used to create the pool
-	 * @return a configured Pool of Jedis connections
-	 */
-	public static Pool<Jedis> createJedisPool(final Config jesqueConfig, 
-		final GenericObjectPool.Config poolConfig)
-	{
-		if (jesqueConfig == null)
-		{
-			throw new IllegalArgumentException("jesqueConfig must not be null");
-		}
-		if (poolConfig == null)
-		{
-			throw new IllegalArgumentException("poolConfig must not be null");
-		}
-		return new JedisPool(poolConfig, jesqueConfig.getHost(), jesqueConfig.getPort(), 
-			jesqueConfig.getTimeout(), jesqueConfig.getPassword());
-	}
+    /**
+     * A simple helper method that creates a pool of connections to Redis using
+     * the supplied Config and the default pool config.
+     * 
+     * @param jesqueConfig
+     *            the config used to create the pooled Jedis connection
+     * @return a configured Pool of Jedis connections
+     */
+    public static Pool<Jedis> createJedisPool(final Config jesqueConfig) {
+        return createJedisPool(jesqueConfig, getDefaultPoolConfig());
+    }
 
-	/**
-	 * A unit of work that utilizes a pooled resource.
-	 * 
-	 * @author Greg Haines
-	 *
-	 * @param <T> the kind of pooled resource used
-	 * @param <V> the kind of result returned
-	 */
-	public interface PoolWork<T,V>
-	{
-		/**
-		 * Do work with a pooled resource and return a result.
-		 * 
-		 * @param poolResource the pooled resource
-		 * @return the result of the work done
-		 * @throws Exception in case something goes wrong
-		 */
-		V doWork(T poolResource) throws Exception;
-	}
+    /**
+     * A simple helper method that creates a pool of connections to Redis using
+     * the supplied configurations.
+     * 
+     * @param jesqueConfig
+     *            the config used to create the pooled Jedis connections
+     * @param poolConfig
+     *            the config used to create the pool
+     * @return a configured Pool of Jedis connections
+     */
+    public static Pool<Jedis> createJedisPool(final Config jesqueConfig, final GenericObjectPool.Config poolConfig) {
+        if (jesqueConfig == null) {
+            throw new IllegalArgumentException("jesqueConfig must not be null");
+        }
+        if (poolConfig == null) {
+            throw new IllegalArgumentException("poolConfig must not be null");
+        }
+        return new JedisPool(poolConfig, jesqueConfig.getHost(), jesqueConfig.getPort(), jesqueConfig.getTimeout(), jesqueConfig.getPassword());
+    }
 
-	private PoolUtils(){}
+    /**
+     * A unit of work that utilizes a pooled resource.
+     * 
+     * @author Greg Haines
+     * 
+     * @param <T>
+     *            the kind of pooled resource used
+     * @param <V>
+     *            the kind of result returned
+     */
+    public interface PoolWork<T, V> {
+        /**
+         * Do work with a pooled resource and return a result.
+         * 
+         * @param poolResource
+         *            the pooled resource
+         * @return the result of the work done
+         * @throws Exception
+         *             in case something goes wrong
+         */
+        V doWork(T poolResource) throws Exception;
+    }
+
+    private PoolUtils() {
+        // Utility class
+    }
 }
