@@ -37,6 +37,17 @@ final Client client = new ClientImpl(config);
 client.enqueue("foo", job);
 client.end();
 
+// Add a job to the delayed queue
+final Job job = new Job("TestAction", 
+	new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
+
+final long delay = 10; // in seconds
+final long future = System.currentTimeMillis() + (delay * 1000); // timestamp
+
+final Client client = new ClientImpl(config);
+client.delayedEnqueue("fooDelay", job, future);
+client.end();
+
 // Start a worker to run jobs from the queue
 final Worker worker = new WorkerImpl(config, 
 	Arrays.asList("foo"), map(entry("TestAction", TestAction.class)));

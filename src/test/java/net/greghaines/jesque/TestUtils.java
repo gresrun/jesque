@@ -29,7 +29,7 @@ import redis.clients.jedis.Jedis;
 /**
  * Test helpers.
  * 
- * @author Greg Haines
+ * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
  */
 public final class TestUtils
 {
@@ -104,6 +104,21 @@ public final class TestUtils
 			log.warn("Exception while waiting for workerThread to join", e);
 		}
 	}
+	
+    public static void delayEnqueueJobs(final String queue, final List<Job> jobs, final Config config)
+    {
+        final Client client = new ClientImpl(config);
+        int i = 1;
+        try {
+            for (final Job job : jobs) {
+                long value = System.currentTimeMillis() + (6000 * i);
+                client.delayedEnqueue(queue, job, value);
+                i++;
+            }
+        } finally {
+            client.end();
+        }
+    }
 
 	private TestUtils(){} // Utility class
 }

@@ -20,7 +20,7 @@ import net.greghaines.jesque.Job;
 /**
  * A Client allows Jobs to be enqueued for execution by Workers.
  * 
- * @author Greg Haines
+ * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
  */
 public interface Client
 {
@@ -57,4 +57,15 @@ public interface Client
 	 * @return Whether or not the lock was acquired.
 	 */
 	boolean acquireLock(String lockName, String lockHolder, Integer timeout);
+	
+    /**
+     * Queues a job in a given queue to be run in future.
+     * 
+     * @param queue the queue to add the Job to
+     * @param job the job to be enqueued
+     * @param future future timestamp when the job will run
+     * @throws IllegalArgumentException if the queue is null or empty or if the job is null
+     */
+    void delayedEnqueue(String queue, Job job, long future);
+	
 }

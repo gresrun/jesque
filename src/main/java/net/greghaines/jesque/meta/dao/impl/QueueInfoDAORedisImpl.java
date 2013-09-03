@@ -21,6 +21,7 @@ import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 import static net.greghaines.jesque.utils.ResqueConstants.STAT;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,10 +33,13 @@ import net.greghaines.jesque.meta.dao.QueueInfoDAO;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
-
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
+/**
+ * 
+ * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
+ */
 public class QueueInfoDAORedisImpl implements QueueInfoDAO
 {
 	private final Config config;
@@ -80,7 +84,8 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
 				long pendingCount = 0L;
 				for (final String queueName : queueNames)
 				{
-					pendingCount += jedis.llen(key(QUEUE, queueName));
+					// pendingCount += jedis.llen(key(QUEUE, queueName));
+				    pendingCount += size(jedis, queueName);
 				}
 				return pendingCount;
 			}
@@ -113,7 +118,8 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
 				{
 					final QueueInfo queueInfo = new QueueInfo();
 					queueInfo.setName(queueName);
-					queueInfo.setSize(jedis.llen(key(QUEUE, queueName)));
+//					queueInfo.setSize(jedis.llen(key(QUEUE, queueName)));
+					queueInfo.setSize(size(jedis, queueName));
 					queueInfos.add(queueInfo);
 				}
 				Collections.sort(queueInfos);
@@ -131,8 +137,10 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
 			{
 				final QueueInfo queueInfo = new QueueInfo();
 				queueInfo.setName(name);
-				queueInfo.setSize(jedis.llen(key(QUEUE, name)));
-				final List<String> payloads = jedis.lrange(key(QUEUE, name), jobOffset, jobOffset + jobCount - 1);
+//				queueInfo.setSize(jedis.llen(key(QUEUE, name)));
+//				final List<String> payloads = jedis.lrange(key(QUEUE, name), jobOffset, jobOffset + jobCount - 1);
+				queueInfo.setSize(size(jedis, name));
+				final Collection<String> payloads = paylods(jedis, name, jobOffset, jobCount);
 				final List<Job> jobs = new ArrayList<Job>(payloads.size());
 				for (final String payload : payloads)
 				{
@@ -168,4 +176,52 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
 	{
 		return JesqueUtils.createKey(this.config.getNamespace(), parts);
 	}
+	
+    
+	/**
+	 * Size of a queue
+	 * 
+	 * @param jedis
+	 * @param queueName
+	 * @return
+	 */
+	private long size(final Jedis jedis, final String queueName) 
+    {
+        String key = key(QUEUE, queueName);
+        
+        // If delayed queue, use ZCARD
+        if (JesqueUtils.isDelayedQueue(jedis, key)) 
+        {
+            return jedis.zcard(key);
+        }
+        
+        // Else, use LLEN
+        return jedis.llen(key);
+    }
+
+    /**
+     * Get list of payload from a queue
+     * 
+     * @param jedis
+     * @param queueName
+     * @param jobOffset
+     * @param jobCount
+     * @return
+     */
+    private Collection<String> paylods(final Jedis jedis, 
+            final String queueName, 
+            final long jobOffset,
+            final long jobCount) 
+    {
+        String key = key(QUEUE, queueName);
+        
+        // If delayed quque, use ZRANGE
+        if (JesqueUtils.isDelayedQueue(jedis, key)) 
+        {
+            return jedis.zrange(key, jobOffset, jobOffset + jobCount - 1);
+        }
+        
+        // Else, use LRANGE
+        return jedis.lrange(key, jobOffset, jobOffset + jobCount - 1);
+    }
 }

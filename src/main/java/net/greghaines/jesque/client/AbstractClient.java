@@ -28,7 +28,7 @@ import redis.clients.jedis.Jedis;
 /**
  * Common logic for Client implementations.
  * 
- * @author Greg Haines
+ * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
  */
 public abstract class AbstractClient implements Client
 {
@@ -291,6 +291,45 @@ public abstract class AbstractClient implements Client
 		// failed to create the lock
 		return false;
 	}
+	
+    public static void doDelayedEnqueue(final Jedis jedis, 
+            final String namespace, 
+            final String queue,
+            final String jobJson, 
+            final long future) 
+    {
+
+        String key = JesqueUtils.createKey(namespace, QUEUE, queue);
+
+        // Add task only if this queue is eith delayed, or empty
+        if (JesqueUtils.isDelayedQueue(jedis, key) || "none".equalsIgnoreCase(jedis.type(key))) 
+        {
+            jedis.zadd(key, future, jobJson);
+            jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+            return;
+        }
+
+        throw new IllegalArgumentException("Queue = " + queue + " is not a delayed queue");
+    }
+
+    protected abstract void doDelayedEnqueue(String queue, String msg, long future) throws Exception;
+
+    public void delayedEnqueue(final String queue, final Job job, final long future) 
+    {
+        validateArguments(queue, job, future);
+        try 
+        {
+            doDelayedEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future);
+        } 
+        catch (RuntimeException re) 
+        {
+            throw re;
+        } 
+        catch (Exception e) 
+        {
+            throw new RuntimeException(e);
+        }
+    }	
 
 	private static void validateArguments(final String queue, final Job job)
 	{
@@ -307,4 +346,17 @@ public abstract class AbstractClient implements Client
 			throw new IllegalStateException("job is not valid: " + job);
 		}
 	}
+	
+    private static void validateArguments(final String queue, final Job job, final Long future) 
+    {
+        validateArguments(queue, job);
+        if (future == null) 
+        {
+            throw new IllegalArgumentException("future must not be null");
+        }
+        if (System.currentTimeMillis() > future) 
+        {
+            throw new IllegalArgumentException("future must be after current time");
+        }
+    }
 }
