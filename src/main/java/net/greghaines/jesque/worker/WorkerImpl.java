@@ -78,7 +78,8 @@ import redis.clients.jedis.exceptions.JedisException;
  * Basic implementation of the Worker interface.
  * Obeys the contract of a Resque worker in Redis.
  * 
- * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
+ * @author Greg Haines
+ * @author Animesh Kumar <smile.animesh@gmail.com>
  */
 public class WorkerImpl implements Worker
 {
@@ -457,7 +458,7 @@ public class WorkerImpl implements Worker
 					if (RUNNING.equals(this.state.get())) // Might have been waiting in poll()/checkPaused() for a while
 					{
 						this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
-						final String payload = pop(curQueue); // this.jedis.lpop(key(QUEUE, curQueue));
+						final String payload = pop(curQueue);
 						if (payload != null)
 						{
 							final Job job = ObjectMapperFactory.get().readValue(payload, Job.class);
@@ -486,35 +487,30 @@ public class WorkerImpl implements Worker
 		}
 	}
 	
-    private String pop(String curQueue) 
+    private String pop(final String curQueue) 
     {
-        String key = key(QUEUE, curQueue);
-        boolean isDelayedQueue = JesqueUtils.isDelayedQueue(jedis, key);
-        
-        // If not a delayed Queue, then use LPOP
-        if (!isDelayedQueue) 
-        {
-            return this.jedis.lpop(key);
-        }
-
-        // If a delayed Queue, peek and remove from ZSET
-        if (isDelayedQueue) 
-        {
-            long now = System.currentTimeMillis();
-            // peek ==> is there any item scheduled to run between -INF and now?
+        final String key = key(QUEUE, curQueue);
+        String payload = null;
+        if (JedisUtils.isDelayedQueue(this.jedis, key)) 
+        { // If a delayed queue, peek and remove from ZSET
+            final long now = System.currentTimeMillis();
+            // Peek ==> is there any item scheduled to run between -INF and now?
             final Set<String> payloadSet = this.jedis.zrangeByScore(key, -1, now, 0, 1);
-            if (null != payloadSet && !payloadSet.isEmpty()) 
+            if (payloadSet != null && !payloadSet.isEmpty()) 
             {
-                String payload = payloadSet.iterator().next();
-                // try to acquire this job
-                if (this.jedis.zrem(key, payload) == 1) 
+                final String tmp = payloadSet.iterator().next();
+                // Try to acquire this job
+                if (this.jedis.zrem(key, tmp) == 1) 
                 {
-                    return payload; // Return
+                    payload = tmp;
                 }
             }
         }
-
-        return null;
+        else
+        { // If not a delayed Queue, then use LPOP
+            payload = this.jedis.lpop(key);
+        }
+        return payload;
     }
 
 	/**
@@ -665,8 +661,7 @@ public class WorkerImpl implements Worker
 	 * @param curQueue the queue the Job came from
 	 */
 	protected void success(final Job job, final Object runner, final Object result, final String curQueue)
-	{
-		// The job may have taken a long time; make an effort to ensure the connection is OK
+	{ // The job may have taken a long time; make an effort to ensure the connection is OK
 		JedisUtils.ensureJedisConnection(this.jedis);
 		try
 		{
@@ -688,8 +683,7 @@ public class WorkerImpl implements Worker
 	 * @param curQueue the queue the Job came from
 	 */
 	protected void failure(final Exception ex, final Job job, final String curQueue)
-	{
-		// The job may have taken a long time; make an effort to ensure the connection is OK
+	{ // The job may have taken a long time; make an effort to ensure the connection is OK
 		JedisUtils.ensureJedisConnection(this.jedis);
 		try
 		{

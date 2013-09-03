@@ -20,7 +20,8 @@ import net.greghaines.jesque.Job;
 /**
  * A Client allows Jobs to be enqueued for execution by Workers.
  * 
- * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
+ * @author Greg Haines
+ * @author Animesh Kumar <smile.animesh@gmail.com>
  */
 public interface Client
 {
@@ -48,24 +49,24 @@ public interface Client
 	void end();
 
 	/**
-	 * A non blocking lock utilizing Redis to create a lock that can be utilized by distributed servers.
-	 *      Call this method again to renew your lock before it expires if you wish to guarantee holding the lock.
+	 * Acquire a non-blocking distributed lock.
+	 * Calling this method again renews the lock.
 	 * 
-	 * @param lockName all calls to this method will contend for a unique lock with the name of lockName
-	 * @param timeout seconds until the lock will expire
-	 * @param lockHolder a unique string used to tell if you are the current holder of a lock for both acquisition, and extension
-	 * @return Whether or not the lock was acquired.
+	 * @param lockName the name of the lock to acquire
+	 * @param timeout number of seconds until the lock will expire
+	 * @param lockHolder a unique string identifying the caller
+	 * @return true, if the lock was acquired, false otherwise
 	 */
-	boolean acquireLock(String lockName, String lockHolder, Integer timeout);
+	boolean acquireLock(String lockName, String lockHolder, int timeout);
 	
     /**
-     * Queues a job in a given queue to be run in future.
+     * Queues a job in a given queue to be run in the future.
      * 
      * @param queue the queue to add the Job to
      * @param job the job to be enqueued
-     * @param future future timestamp when the job will run
-     * @throws IllegalArgumentException if the queue is null or empty or if the job is null
+     * @param future timestamp when the job will run
+     * @throws IllegalArgumentException if the queue is null or empty, if the job is null 
+     * or if the timestamp is not in the future
      */
     void delayedEnqueue(String queue, Job job, long future);
-	
 }

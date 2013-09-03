@@ -17,18 +17,18 @@ package net.greghaines.jesque.client;
 
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
-
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
-
 import redis.clients.jedis.Jedis;
 
 /**
  * Common logic for Client implementations.
  * 
- * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
+ * @author Greg Haines
+ * @author Animesh Kumar <smile.animesh@gmail.com>
  */
 public abstract class AbstractClient implements Client
 {
@@ -99,7 +99,7 @@ public abstract class AbstractClient implements Client
 		}
 	}
 
-	public boolean acquireLock(final String lockName, final String lockHolder, final Integer timeout)
+	public boolean acquireLock(final String lockName, final String lockHolder, final int timeout)
 	{
 		if ((lockName == null) || "".equals(lockName))
 		{
@@ -108,10 +108,6 @@ public abstract class AbstractClient implements Client
 		if ((lockHolder == null) || "".equals(lockHolder))
 		{
 			throw new IllegalArgumentException("lockHolder must not be null or empty: " + lockHolder);
-		}
-		if (timeout == null)
-		{
-			throw new IllegalArgumentException("job must not be null");
 		}
 		if (timeout < 1)
 		{
@@ -150,19 +146,15 @@ public abstract class AbstractClient implements Client
 	protected abstract void doPriorityEnqueue(String queue, String msg) throws Exception;
 
 	/**
-	 * Actually acquire the lock based upon the client acquisition model
-	 * @param lockName
-	 *            all calls to this method will contend for a unique lock with
-	 *            the name of lockName
-	 * @param timeout
-	 *            seconds until the lock will expire
-	 * @param lockHolder
-	 *            a unique string used to tell if you are the current holder of
-	 *            a lock for both acquisition, and extension
-	 * @return Whether or not the lock was acquired.
+	 * Actually acquire the lock based upon the client acquisition model.
+	 * 
+	 * @param lockName the name of the lock to acquire
+	 * @param timeout number of seconds until the lock will expire
+	 * @param lockHolder a unique string identifying the caller
+	 * @return true, if the lock was acquired, false otherwise
 	 */
 	protected abstract boolean doAcquireLock(final String lockName,
-			final String lockHolder, final Integer timeout) throws Exception;
+			final String lockHolder, final int timeout) throws Exception;
 
 	/**
 	 * Helper method that encapsulates the minimum logic for adding a job to a queue.
@@ -212,7 +204,7 @@ public abstract class AbstractClient implements Client
 	 */
 	public static boolean doAcquireLock(final Jedis jedis,
 			final String namespace, final String lockName,
-			final String lockHolder, Integer timeout)
+			final String lockHolder, final int timeout)
 	{
 		final String key = JesqueUtils.createKey(namespace, lockName);
 
@@ -292,24 +284,20 @@ public abstract class AbstractClient implements Client
 		return false;
 	}
 	
-    public static void doDelayedEnqueue(final Jedis jedis, 
-            final String namespace, 
-            final String queue,
-            final String jobJson, 
-            final long future) 
+    public static void doDelayedEnqueue(final Jedis jedis, final String namespace, 
+            final String queue, final String jobJson, final long future) 
     {
-
-        String key = JesqueUtils.createKey(namespace, QUEUE, queue);
-
-        // Add task only if this queue is eith delayed, or empty
-        if (JesqueUtils.isDelayedQueue(jedis, key) || "none".equalsIgnoreCase(jedis.type(key))) 
+        final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
+        // Add task only if this queue is either delayed or unused
+        if (JedisUtils.isDelayedQueue(jedis, key) || !JedisUtils.isKeyUsed(jedis, key)) 
         {
             jedis.zadd(key, future, jobJson);
             jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-            return;
         }
-
-        throw new IllegalArgumentException("Queue = " + queue + " is not a delayed queue");
+        else
+        {
+            throw new IllegalArgumentException(queue + " is not a delayed queue");
+        }
     }
 
     protected abstract void doDelayedEnqueue(String queue, String msg, long future) throws Exception;
@@ -317,7 +305,7 @@ public abstract class AbstractClient implements Client
     public void delayedEnqueue(final String queue, final Job job, final long future) 
     {
         validateArguments(queue, job, future);
-        try 
+        try
         {
             doDelayedEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future);
         } 
@@ -325,7 +313,7 @@ public abstract class AbstractClient implements Client
         {
             throw re;
         } 
-        catch (Exception e) 
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
@@ -347,13 +335,9 @@ public abstract class AbstractClient implements Client
 		}
 	}
 	
-    private static void validateArguments(final String queue, final Job job, final Long future) 
+    private static void validateArguments(final String queue, final Job job, final long future) 
     {
         validateArguments(queue, job);
-        if (future == null) 
-        {
-            throw new IllegalArgumentException("future must not be null");
-        }
         if (System.currentTimeMillis() > future) 
         {
             throw new IllegalArgumentException("future must be after current time");

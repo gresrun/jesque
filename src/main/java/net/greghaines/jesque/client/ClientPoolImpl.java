@@ -24,7 +24,8 @@ import redis.clients.util.Pool;
 /**
  * A Client implementation that gets its connection to Redis from a connection pool.
  * 
- * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
+ * @author Greg Haines
+ * @author Animesh Kumar <smile.animesh@gmail.com>
  */
 public class ClientPoolImpl extends AbstractClient
 {
@@ -75,7 +76,7 @@ public class ClientPoolImpl extends AbstractClient
 	}
 
 	@Override
-    protected boolean doAcquireLock(final String lockName, final String lockHolder, final Integer timeout)
+    protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout)
     throws Exception
     {
 		return PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis,Boolean>()
@@ -93,9 +94,8 @@ public class ClientPoolImpl extends AbstractClient
 	public void end(){} // Do nothing
 	
     @Override
-    protected void doDelayedEnqueue(final String queue, 
-            final String msg, 
-            final long future) throws Exception 
+    protected void doDelayedEnqueue(final String queue, final String msg, final long future)
+    throws Exception 
     {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() 
         {

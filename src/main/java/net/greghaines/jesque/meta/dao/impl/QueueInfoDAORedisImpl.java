@@ -30,6 +30,7 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.meta.QueueInfo;
 import net.greghaines.jesque.meta.dao.QueueInfoDAO;
+import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
@@ -38,7 +39,8 @@ import redis.clients.util.Pool;
 
 /**
  * 
- * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
+ * @author Greg Haines
+ * @author Animesh Kumar <smile.animesh@gmail.com>
  */
 public class QueueInfoDAORedisImpl implements QueueInfoDAO
 {
@@ -84,7 +86,6 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
 				long pendingCount = 0L;
 				for (final String queueName : queueNames)
 				{
-					// pendingCount += jedis.llen(key(QUEUE, queueName));
 				    pendingCount += size(jedis, queueName);
 				}
 				return pendingCount;
@@ -118,7 +119,6 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
 				{
 					final QueueInfo queueInfo = new QueueInfo();
 					queueInfo.setName(queueName);
-//					queueInfo.setSize(jedis.llen(key(QUEUE, queueName)));
 					queueInfo.setSize(size(jedis, queueName));
 					queueInfos.add(queueInfo);
 				}
@@ -137,8 +137,6 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
 			{
 				final QueueInfo queueInfo = new QueueInfo();
 				queueInfo.setName(name);
-//				queueInfo.setSize(jedis.llen(key(QUEUE, name)));
-//				final List<String> payloads = jedis.lrange(key(QUEUE, name), jobOffset, jobOffset + jobCount - 1);
 				queueInfo.setSize(size(jedis, name));
 				final Collection<String> payloads = paylods(jedis, name, jobOffset, jobCount);
 				final List<Job> jobs = new ArrayList<Job>(payloads.size());
@@ -177,9 +175,8 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
 		return JesqueUtils.createKey(this.config.getNamespace(), parts);
 	}
 	
-    
 	/**
-	 * Size of a queue
+	 * Size of a queue.
 	 * 
 	 * @param jedis
 	 * @param queueName
@@ -187,20 +184,21 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
 	 */
 	private long size(final Jedis jedis, final String queueName) 
     {
-        String key = key(QUEUE, queueName);
-        
-        // If delayed queue, use ZCARD
-        if (JesqueUtils.isDelayedQueue(jedis, key)) 
-        {
-            return jedis.zcard(key);
+        final String key = key(QUEUE, queueName);
+        final long size;
+        if (JedisUtils.isDelayedQueue(jedis, key)) 
+        { // If delayed queue, use ZCARD
+            size = jedis.zcard(key);
         }
-        
-        // Else, use LLEN
-        return jedis.llen(key);
+        else
+        { // Else, use LLEN
+            size = jedis.llen(key);
+        }
+        return size;
     }
 
     /**
-     * Get list of payload from a queue
+     * Get list of payload from a queue.
      * 
      * @param jedis
      * @param queueName
@@ -208,20 +206,19 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO
      * @param jobCount
      * @return
      */
-    private Collection<String> paylods(final Jedis jedis, 
-            final String queueName, 
-            final long jobOffset,
-            final long jobCount) 
+    private Collection<String> paylods(final Jedis jedis, final String queueName, 
+            final long jobOffset, final long jobCount) 
     {
-        String key = key(QUEUE, queueName);
-        
-        // If delayed quque, use ZRANGE
-        if (JesqueUtils.isDelayedQueue(jedis, key)) 
-        {
-            return jedis.zrange(key, jobOffset, jobOffset + jobCount - 1);
+        final String key = key(QUEUE, queueName);
+        final Collection<String> payloads;
+        if (JedisUtils.isDelayedQueue(jedis, key)) 
+        { // If delayed queue, use ZRANGE
+            payloads = jedis.zrange(key, jobOffset, jobOffset + jobCount - 1);
         }
-        
-        // Else, use LRANGE
-        return jedis.lrange(key, jobOffset, jobOffset + jobCount - 1);
+        else
+        { // Else, use LRANGE
+            payloads = jedis.lrange(key, jobOffset, jobOffset + jobCount - 1);
+        }
+        return payloads;
     }
 }

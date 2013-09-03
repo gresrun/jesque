@@ -108,14 +108,17 @@ public final class TestUtils
     public static void delayEnqueueJobs(final String queue, final List<Job> jobs, final Config config)
     {
         final Client client = new ClientImpl(config);
-        int i = 1;
-        try {
-            for (final Job job : jobs) {
-                long value = System.currentTimeMillis() + (6000 * i);
+        try
+        {
+            int i = 1;
+            for (final Job job : jobs)
+            {
+                final long value = System.currentTimeMillis() + (6000 * i++);
                 client.delayedEnqueue(queue, job, value);
-                i++;
             }
-        } finally {
+        }
+        finally
+        {
             client.end();
         }
     }

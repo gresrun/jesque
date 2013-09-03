@@ -32,19 +32,18 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
-import redis.clients.jedis.Jedis;
-
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.worker.UnpermittedJobException;
 
 /**
  * Miscellaneous utilities.
  * 
- * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
+ * @author Greg Haines
+ * @author Animesh Kumar <smile.animesh@gmail.com>
  */
 public final class JesqueUtils
 {
-	private static final String bTracePrefix = "\tat ";
+    private static final String bTracePrefix = "\tat ";
 	private static final String btCausedByPrefix = "Caused by: ";
 	private static final String btUnknownSource = "Unknown Source";
 	private static final String btNativeMethod = "Native Method";
@@ -413,19 +412,6 @@ public final class JesqueUtils
 		}
 		return ReflectionUtils.createObject(clazz, job.getArgs());
 	}
-	
-    /**
-     * Determines if the queue identified by the given key is a delayed queue
-     * 
-     * @param jedis
-     * @param key
-     * @return
-     */
-    public static boolean isDelayedQueue(final Jedis jedis, final String key) 
-    {
-        final String type = jedis.type(key);
-        return "zset".equalsIgnoreCase(type);
-    }
     
 	private JesqueUtils(){} // Utility class
 }

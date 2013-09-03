@@ -8,9 +8,11 @@ import redis.clients.jedis.exceptions.JedisConnectionException;
 
 public final class JedisUtils
 {
-	private static final Logger log = LoggerFactory.getLogger(JedisUtils.class);
-	
-	public static final String PONG = "PONG";
+    public static final String PONG = "PONG";
+    
+	private static final Logger LOG = LoggerFactory.getLogger(JedisUtils.class);
+    private static final String ZSET = "zset";
+    private static final String NONE = "none";
 	
 	/**
 	 * Ensure that the given connection is established.
@@ -72,11 +74,35 @@ public final class JedisUtils
 			catch (JedisConnectionException jce){} // Ignore bad connection attempts
 			catch (Exception e3)
 			{
-				log.error("Unknown Exception while trying to reconnect to Redis", e3);
+				LOG.error("Unknown Exception while trying to reconnect to Redis", e3);
 			}
 		} while (++i <= reconAttempts && !testJedisConnection(jedis));
 		return testJedisConnection(jedis);
 	}
+    
+    /**
+     * Determines if the queue identified by the given key is a delayed queue.
+     * 
+     * @param jedis connection to Redis 
+     * @param key the key that identifies a queue
+     * @return true if the key identifies a delayed queue, false otherwise
+     */
+    public static boolean isDelayedQueue(final Jedis jedis, final String key) 
+    {
+        return ZSET.equalsIgnoreCase(jedis.type(key));
+    }
+    
+    /**
+     * Determines if the queue identified by the given key is used.
+     * 
+     * @param jedis connection to Redis 
+     * @param key the key that identifies a queue
+     * @return true if the key is used, false otherwise
+     */
+    public static boolean isKeyUsed(final Jedis jedis, final String key) 
+    {
+        return !NONE.equalsIgnoreCase(jedis.type(key));
+    }
 	
 	private JedisUtils(){}
 }

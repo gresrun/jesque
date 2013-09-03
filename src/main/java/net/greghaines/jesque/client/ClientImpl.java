@@ -27,7 +27,8 @@ import redis.clients.jedis.Jedis;
 /**
  * Basic implementation of the Client interface.
  * 
- * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
+ * @author Greg Haines
+ * @author Animesh Kumar <smile.animesh@gmail.com>
  */
 public class ClientImpl extends AbstractClient
 {
@@ -107,7 +108,7 @@ public class ClientImpl extends AbstractClient
 	}
 	
 	@Override
-    protected boolean doAcquireLock(final String lockName, final String lockHolder, final Integer timeout)
+    protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout)
     throws Exception
     {
 		ensureJedisConnection();
@@ -124,9 +125,8 @@ public class ClientImpl extends AbstractClient
 	}
 	
     @Override
-    protected void doDelayedEnqueue(final String queue, 
-            final String msg, 
-            final long future) throws Exception 
+    protected void doDelayedEnqueue(final String queue, final String msg, final long future)
+    throws Exception 
     {
         ensureJedisConnection();
         doDelayedEnqueue(this.jedis, getNamespace(), queue, msg, future);
