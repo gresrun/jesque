@@ -238,6 +238,8 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
                 if (statusPayload != null) {
                     final WorkerStatus status = ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class);
                     proceed = !status.isPaused();
+                } else {
+                    proceed = false;
                 }
                 break;
             default:
