@@ -11,6 +11,7 @@ import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,11 +28,9 @@ public class InfiniteTest
 		TestUtils.resetRedis(config);
 	}
 	
-	@Test
-	public void dummy(){} // Makes JUnit happy that there's at least one test if the others are commented out
-	
 	@SuppressWarnings("unchecked")
-//	@Test
+	@Test
+	@Ignore
 	public void dontStopNow()
 	throws InterruptedException
 	{
@@ -66,7 +65,8 @@ public class InfiniteTest
 	}
 	
 	@SuppressWarnings("unchecked")
-//	@Test
+	@Test
+	@Ignore
 	public void issue6()
 	throws InterruptedException
 	{
