@@ -304,6 +304,7 @@ public final class JesqueUtils {
      *            Map.Entry objects to be added to the map
      * @return a LinkedHashMap with the supplied entries
      */
+    @SafeVarargs
     public static <K, V> Map<K, V> map(final Entry<? extends K, ? extends V>... entries) {
         final Map<K, V> map = new LinkedHashMap<K, V>(entries.length);
         for (final Entry<? extends K, ? extends V> entry : entries) {
@@ -333,6 +334,7 @@ public final class JesqueUtils {
      *            the keys
      * @return a Set containing the given keys
      */
+    @SafeVarargs
     public static <K> Set<K> set(final K... keys) {
         return new LinkedHashSet<K>(Arrays.asList(keys));
     }
