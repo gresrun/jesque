@@ -54,6 +54,7 @@ public class WorkerStatus implements Serializable {
         this.runAt = origStatus.runAt;
         this.queue = origStatus.queue;
         this.payload = origStatus.payload;
+        this.paused = origStatus.paused;
     }
 
     /**
