@@ -173,9 +173,9 @@ public class WorkerImpl implements Worker {
         this.namespace = config.getNamespace();
         this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
         authenticateAndSelectDB();
-        this.name = createName();
         setQueues(queues);
         setJobTypes(jobTypes);
+        this.name = createName();
     }
 
     /**
