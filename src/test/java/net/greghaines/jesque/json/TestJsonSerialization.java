@@ -34,7 +34,6 @@ import org.junit.Test;
  */
 public class TestJsonSerialization
 {
-	@SuppressWarnings("unchecked")
 	@Test
 	public void serializeJob()
 	throws Exception
@@ -44,7 +43,6 @@ public class TestJsonSerialization
 		assertSerializeRoundTrip(job);
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Test
 	public void serializeJobFailure()
 	throws Exception
@@ -64,7 +62,6 @@ public class TestJsonSerialization
 		assertSerializeRoundTrip(jobFailure);
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Test
 	public void serializeWorkerStatus()
 	throws Exception
