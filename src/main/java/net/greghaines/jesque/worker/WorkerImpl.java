@@ -314,10 +314,9 @@ public class WorkerImpl implements Worker {
     public void setQueues(final Collection<String> queues) {
         checkQueues(queues);
         this.queueNames.clear();
-        this.queueNames.addAll((queues == ALL_QUEUES) // Using object equality
-                                                      // on purpose
-        ? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
-                : queues);
+        this.queueNames.addAll((queues == ALL_QUEUES) // Using object equality on purpose
+            ? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
+            : queues);
     }
 
     public Map<String, Class<?>> getJobTypes() {
@@ -391,9 +390,8 @@ public class WorkerImpl implements Worker {
                 curQueue = this.queueNames.poll(emptyQueueSleepTime, TimeUnit.MILLISECONDS);
                 if (curQueue != null) {
                     this.queueNames.add(curQueue); // Rotate the queues
-                    checkPaused();
-                    // Might have been waiting in poll()/checkPaused() for a
-                    // while
+                    checkPaused(); 
+                    // Might have been waiting in poll()/checkPaused() for a while
                     if (RUNNING.equals(this.state.get())) {
                         this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
                         final String payload = pop(curQueue);
