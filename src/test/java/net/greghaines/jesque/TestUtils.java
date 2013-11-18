@@ -29,7 +29,8 @@ import redis.clients.jedis.Jedis;
 /**
  * Test helpers.
  * 
- * @author Greg Haines, Animesh Kumar <smile.animesh@gmail.com>
+ * @author Greg Haines
+ * @author Animesh Kumar <smile.animesh@gmail.com>
  */
 public final class TestUtils {
     

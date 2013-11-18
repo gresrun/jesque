@@ -57,7 +57,6 @@ public class AdminImpl implements Admin {
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
     private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
 
-    @SuppressWarnings("unchecked")
     public AdminImpl(final Config config) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");

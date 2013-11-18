@@ -37,7 +37,6 @@ public class DelayedQueueTest {
         TestUtils.resetRedis(config);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testCode() throws Exception {
         // Enqueue the job before worker is created and started

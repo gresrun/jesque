@@ -32,56 +32,48 @@ import org.junit.Test;
  * 
  * @author Greg Haines
  */
-public class TestJsonSerialization
-{
-	@Test
-	public void serializeJob()
-	throws Exception
-	{
-		assertSerializeRoundTrip(new Job("foo"));
-		final Job job = new Job("TestAction", new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
-		assertSerializeRoundTrip(job);
-	}
-	
-	@Test
-	public void serializeJobFailure()
-	throws Exception
-	{
-		final Job job = new Job("TestAction", new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
-		final Exception e = new Exception("Whoopie!");
-		e.fillInStackTrace();
-		final JobFailure jobFailure = new JobFailure();
-		assertSerializeRoundTrip(jobFailure);
-		jobFailure.setPayload(job);
-		jobFailure.setFailedAt(new Date());
-		jobFailure.setException(e);
-		jobFailure.setExceptionString(e.getClass().getName());
-		jobFailure.setError(e.getMessage());
-		jobFailure.setBacktrace(JesqueUtils.createBacktrace(e));
-		jobFailure.setWorker("foo");
-		assertSerializeRoundTrip(jobFailure);
-	}
-	
-	@Test
-	public void serializeWorkerStatus()
-	throws Exception
-	{
-		final Job job = new Job("TestAction", new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
-		final WorkerStatus workerStatus = new WorkerStatus();
-		assertSerializeRoundTrip(workerStatus);
-		workerStatus.setPayload(job);
-		workerStatus.setQueue("foo");
-		workerStatus.setRunAt(new Date());
-		workerStatus.setPaused(true);
-		assertSerializeRoundTrip(workerStatus);
-	}
-	
-	@SuppressWarnings("unchecked")
-	private static <T> void assertSerializeRoundTrip(final T obj)
-	throws IOException
-	{
-		final String json = ObjectMapperFactory.get().writeValueAsString(obj);
-		final T obj2 = (T) ObjectMapperFactory.get().readValue(json, obj.getClass());
-		Assert.assertEquals(obj, obj2);
-	}
+public class TestJsonSerialization {
+    
+    @Test
+    public void serializeJob() throws Exception {
+        assertSerializeRoundTrip(new Job("foo"));
+        final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        assertSerializeRoundTrip(job);
+    }
+
+    @Test
+    public void serializeJobFailure() throws Exception {
+        final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Exception e = new Exception("Whoopie!");
+        e.fillInStackTrace();
+        final JobFailure jobFailure = new JobFailure();
+        assertSerializeRoundTrip(jobFailure);
+        jobFailure.setPayload(job);
+        jobFailure.setFailedAt(new Date());
+        jobFailure.setException(e);
+        jobFailure.setExceptionString(e.getClass().getName());
+        jobFailure.setError(e.getMessage());
+        jobFailure.setBacktrace(JesqueUtils.createBacktrace(e));
+        jobFailure.setWorker("foo");
+        assertSerializeRoundTrip(jobFailure);
+    }
+
+    @Test
+    public void serializeWorkerStatus() throws Exception {
+        final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final WorkerStatus workerStatus = new WorkerStatus();
+        assertSerializeRoundTrip(workerStatus);
+        workerStatus.setPayload(job);
+        workerStatus.setQueue("foo");
+        workerStatus.setRunAt(new Date());
+        workerStatus.setPaused(true);
+        assertSerializeRoundTrip(workerStatus);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> void assertSerializeRoundTrip(final T obj) throws IOException {
+        final String json = ObjectMapperFactory.get().writeValueAsString(obj);
+        final T obj2 = (T) ObjectMapperFactory.get().readValue(json, obj.getClass());
+        Assert.assertEquals(obj, obj2);
+    }
 }
