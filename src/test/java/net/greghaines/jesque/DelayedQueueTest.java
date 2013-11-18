@@ -10,6 +10,8 @@ import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.STAT;
 
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
@@ -24,45 +26,37 @@ import redis.clients.jedis.Jedis;
  * 
  * @author Animesh Kumar <smile.animesh@gmail.com>
  */
-public class DelayedQueueTest 
-{
+public class DelayedQueueTest {
+    
     private static final Config config = new ConfigBuilder().build();
     private static final String testQueue = "foo";
     private static final String delayTestQueue = "fooDelay";
 
     @Before
-    public void resetRedis() 
-    {
+    public void resetRedis() {
         TestUtils.resetRedis(config);
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testCode() throws Exception 
-    {
+    public void testCode() throws Exception {
         // Enqueue the job before worker is created and started
-        Job job = null;
-        for (int i = 0; i < 1000; i++) 
-        {
-            job = new Job("TestAction", new Object[] { i, 2.3, true, "test", Arrays.asList("inner", 4.5) });
-            TestUtils.delayEnqueueJobs(delayTestQueue, Arrays.asList(job), config);
+        final List<Job> jobs = new ArrayList<Job>(10);
+        for (int i = 0; i < 10; i++) {
+            jobs.add(new Job("TestAction", new Object[] { i, 2.3, true, "test", Arrays.asList("inner", 4.5) }));
         }
-
-        job = null;
-        for (int i = 1000; i < 2000; i++) 
-        {
-            job = new Job("TestAction", new Object[] { i, 2.3, true, "test", Arrays.asList("inner", 4.5) });
-            TestUtils.enqueueJobs(testQueue, Arrays.asList(job), config);
+        TestUtils.delayEnqueueJobs(delayTestQueue, jobs, config);
+        jobs.clear();
+        for (int i = 10; i < 20; i++) {
+            jobs.add(new Job("TestAction", new Object[] { i, 2.3, true, "test", Arrays.asList("inner", 4.5) }));
         }
+        TestUtils.enqueueJobs(testQueue, jobs, config);
 
         Jedis jedis = createJedis(config);
-        try 
-        { // Assert that we enqueued the job
-            Assert.assertEquals(Long.valueOf(1000),
+        try { // Assert that we enqueued the job
+            Assert.assertEquals(Long.valueOf(10),
                     jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
-        } 
-        finally 
-        {
+        } finally {
             jedis.quit();
         }
 
@@ -78,27 +72,20 @@ public class DelayedQueueTest
         final Thread workerThread2 = new Thread(worker2);
         workerThread2.start();
 
-        try 
-        { // Wait a bit to ensure the worker had time to process the job
-            Thread.sleep(1000 * 60 * 2);
-        } 
-        finally 
-        { // Stop the worker
+        try { // Wait a bit to ensure the worker had time to process the job
+            Thread.sleep(1000 * 6);
+        } finally { // Stop the worker
             TestUtils.stopWorker(worker, workerThread);
         }
 
         // Assert that the job was run by the worker
         jedis = createJedis(config);
-        try 
-        {
-            Assert.assertEquals(String.valueOf(2000),
-                    jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
+        try {
+            Assert.assertEquals(String.valueOf(20), jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
             Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
             Assert.assertEquals(Long.valueOf(0),
                     jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
-        } 
-        finally 
-        {
+        } finally {
             jedis.quit();
         }
     }
