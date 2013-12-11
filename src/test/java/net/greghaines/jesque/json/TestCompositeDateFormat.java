@@ -70,7 +70,9 @@ public class TestCompositeDateFormat {
 	}
 
 	private static void assertWithinASecond(final Date expected, final Date actual) {
-		Assert.assertTrue(Math.abs(expected.getTime() - actual.getTime()) < 1000);
+	    final double delta = expected.getTime() - actual.getTime();
+		Assert.assertTrue("expected=" + expected + " actual=" + actual + " delta=" + delta, 
+		        Math.abs(delta) < 1000);
 	}
 
 	private static void assertNotWithinASecond(final Date expected, final Date actual) {
