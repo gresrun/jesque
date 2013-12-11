@@ -41,6 +41,7 @@ public class CompositeDateFormat extends DateFormat {
 			posCopy.setErrorIndex(pos.getErrorIndex());
 			date = dfFactory.create().parse(dateStr, posCopy);
 			if (posCopy.getIndex() != 0) {
+			    System.out.println("Chose " + dfFactory);
 				success = true;
 				break;
 			}
@@ -68,5 +69,13 @@ public class CompositeDateFormat extends DateFormat {
 			dateFormat.setLenient(false);
 			return dateFormat;
 		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+        @Override
+        public String toString() {
+            return "PatternDateFormatFactory [pattern=" + this.pattern + "]";
+        }
 	}
 }

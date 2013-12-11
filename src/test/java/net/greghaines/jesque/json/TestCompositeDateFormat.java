@@ -29,6 +29,11 @@ public class TestCompositeDateFormat {
 		cal.set(Calendar.SECOND, 05);
 		cal.set(Calendar.MILLISECOND, 234);
 		date = cal.getTime();
+//		try {
+//            date = ResqueDateFormatThreadLocal.getInstance().parse("2013-03-07'T'HH:mm:ss.SSSZ");
+//        } catch (ParseException pe) {
+//            throw new RuntimeException(pe);
+//        }
 	}
 
 	@Test
@@ -71,8 +76,9 @@ public class TestCompositeDateFormat {
 
 	private static void assertWithinASecond(final Date expected, final Date actual) {
 	    final double delta = expected.getTime() - actual.getTime();
-		Assert.assertTrue("expected=" + expected + " actual=" + actual + " delta=" + delta, 
-		        Math.abs(delta) < 1000);
+	    final String msg = "expected=" + expected + " actual=" + actual + " delta=" + delta;
+	    System.out.println("msg=" + msg);
+		Assert.assertTrue(msg, Math.abs(delta) < 1000);
 	}
 
 	private static void assertNotWithinASecond(final Date expected, final Date actual) {
