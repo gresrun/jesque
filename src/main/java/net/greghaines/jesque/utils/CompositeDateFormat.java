@@ -40,8 +40,7 @@ public class CompositeDateFormat extends DateFormat {
 			posCopy.setIndex(pos.getIndex());
 			posCopy.setErrorIndex(pos.getErrorIndex());
 			date = dfFactory.create().parse(dateStr, posCopy);
-			if (posCopy.getIndex() != 0) {
-			    System.out.println("Chose " + dfFactory);
+			if (date != null) {
 				success = true;
 				break;
 			}
