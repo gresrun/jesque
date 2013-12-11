@@ -20,6 +20,7 @@ public class TestCompositeDateFormat {
 	@BeforeClass
 	public static void beforeClass() {
 		final Calendar cal = Calendar.getInstance(Locale.US);
+		cal.setTimeZone(TimeZone.getTimeZone("GMT-5:00"));
 		cal.set(Calendar.YEAR, 2013);
 		cal.set(Calendar.MONTH, Calendar.MARCH);
 		cal.set(Calendar.DATE, 7);
@@ -27,7 +28,6 @@ public class TestCompositeDateFormat {
 		cal.set(Calendar.MINUTE, 26);
 		cal.set(Calendar.SECOND, 05);
 		cal.set(Calendar.MILLISECOND, 234);
-		cal.setTimeZone(TimeZone.getTimeZone("GMT-5:00"));
 		date = cal.getTime();
 	}
 
