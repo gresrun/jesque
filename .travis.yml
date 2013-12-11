@@ -3,3 +3,5 @@ jdk:
   - openjdk7
   - oraclejdk7
   - openjdk6
+services:
+  - redis-server
