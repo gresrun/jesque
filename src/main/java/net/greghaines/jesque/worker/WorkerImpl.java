@@ -82,11 +82,13 @@ import redis.clients.jedis.exceptions.JedisException;
  * @author Animesh Kumar <smile.animesh@gmail.com>
  */
 public class WorkerImpl implements Worker {
-    private static final Logger log = LoggerFactory.getLogger(WorkerImpl.class);
-    private static final AtomicLong workerCounter = new AtomicLong(0);
-    protected static final long emptyQueueSleepTime = 500; // 500 ms
-    protected static final long reconnectSleepTime = 5000; // 5 sec
-    protected static final int reconnectAttempts = 120; // Total time: 10 min
+    
+    private static final Logger LOG = LoggerFactory.getLogger(WorkerImpl.class);
+    private static final AtomicLong WORKER_COUNTER = new AtomicLong(0);
+    protected static final long EMPTY_QUEUE_SLEEP_TIME = 500; // 500 ms
+    protected static final long RECONNECT_SLEEP_TIME = 5000; // 5 sec
+    protected static final int RECONNECT_ATTEMPTS = 120; // Total time: 10 min
+    
     // Set the thread name to the message for debugging
     private static volatile boolean threadNameChangingEnabled = false;
 
@@ -140,7 +142,7 @@ public class WorkerImpl implements Worker {
     protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
     private final AtomicBoolean paused = new AtomicBoolean(false);
     private final AtomicBoolean processingJob = new AtomicBoolean(false);
-    private final long workerId = workerCounter.getAndIncrement();
+    private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
     private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(
@@ -373,7 +375,7 @@ public class WorkerImpl implements Worker {
      *         Redis before giving up
      */
     protected int getReconnectAttempts() {
-        return reconnectAttempts;
+        return RECONNECT_ATTEMPTS;
     }
 
     /**
@@ -387,7 +389,7 @@ public class WorkerImpl implements Worker {
                 if (threadNameChangingEnabled) {
                     renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
                 }
-                curQueue = this.queueNames.poll(emptyQueueSleepTime, TimeUnit.MILLISECONDS);
+                curQueue = this.queueNames.poll(EMPTY_QUEUE_SLEEP_TIME, TimeUnit.MILLISECONDS);
                 if (curQueue != null) {
                     this.queueNames.add(curQueue); // Rotate the queues
                     checkPaused(); 
@@ -402,7 +404,7 @@ public class WorkerImpl implements Worker {
                         } else if (++missCount >= this.queueNames.size() && RUNNING.equals(this.state.get())) {
                             // Keeps worker from busy-spinning on empty queues
                             missCount = 0;
-                            Thread.sleep(emptyQueueSleepTime);
+                            Thread.sleep(EMPTY_QUEUE_SLEEP_TIME);
                         }
                     }
                 }
@@ -450,25 +452,25 @@ public class WorkerImpl implements Worker {
         final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, e, curQueue);
         switch (recoveryStrategy) {
         case RECONNECT:
-            log.info("Reconnecting to Redis in response to exception", e);
+            LOG.info("Reconnecting to Redis in response to exception", e);
             final int reconAttempts = getReconnectAttempts();
-            if (!JedisUtils.reconnect(this.jedis, reconAttempts, reconnectSleepTime)) {
-                log.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
+            if (!JedisUtils.reconnect(this.jedis, reconAttempts, RECONNECT_SLEEP_TIME)) {
+                LOG.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
                 end(false);
             } else {
                 authenticateAndSelectDB();
-                log.info("Reconnected to Redis");
+                LOG.info("Reconnected to Redis");
             }
             break;
         case TERMINATE:
-            log.warn("Terminating in response to exception", e);
+            LOG.warn("Terminating in response to exception", e);
             end(false);
             break;
         case PROCEED:
             this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, e);
             break;
         default:
-            log.error("Unknown RecoveryStrategy: " + recoveryStrategy
+            LOG.error("Unknown RecoveryStrategy: " + recoveryStrategy
                     + " while attempting to recover from the following exception; worker proceeding...", e);
             break;
         }
@@ -497,6 +499,7 @@ public class WorkerImpl implements Worker {
                     try {
                         this.paused.wait();
                     } catch (InterruptedException ie) {
+                        LOG.warn("Worker interrupted", ie);
                     }
                 }
                 this.jedis.del(key(WORKER, this.name));
@@ -580,7 +583,7 @@ public class WorkerImpl implements Worker {
             this.jedis.incr(key(STAT, PROCESSED));
             this.jedis.incr(key(STAT, PROCESSED, this.name));
         } catch (JedisException je) {
-            log.warn("Error updating success stats for job=" + job, je);
+            LOG.warn("Error updating success stats for job=" + job, je);
         }
         this.listenerDelegate.fireEvent(JOB_SUCCESS, this, curQueue, job, runner, result, null);
     }
@@ -604,9 +607,9 @@ public class WorkerImpl implements Worker {
             this.jedis.incr(key(STAT, FAILED, this.name));
             this.jedis.rpush(key(FAILED), failMsg(ex, curQueue, job));
         } catch (JedisException je) {
-            log.warn("Error updating failure stats for exception=" + ex + " job=" + job, je);
+            LOG.warn("Error updating failure stats for exception=" + ex + " job=" + job, je);
         } catch (IOException ioe) {
-            log.warn("Error serializing failure payload for exception=" + ex + " job=" + job, ioe);
+            LOG.warn("Error serializing failure payload for exception=" + ex + " job=" + job, ioe);
         }
         this.listenerDelegate.fireEvent(JOB_FAILURE, this, curQueue, job, null, null, ex);
     }
@@ -625,13 +628,13 @@ public class WorkerImpl implements Worker {
      *             if there was an error serializing the JobFailure
      */
     protected String failMsg(final Exception ex, final String queue, final Job job) throws IOException {
-        final JobFailure f = new JobFailure();
-        f.setFailedAt(new Date());
-        f.setWorker(this.name);
-        f.setQueue(queue);
-        f.setPayload(job);
-        f.setException(ex);
-        return ObjectMapperFactory.get().writeValueAsString(f);
+        final JobFailure failure = new JobFailure();
+        failure.setFailedAt(new Date());
+        failure.setWorker(this.name);
+        failure.setQueue(queue);
+        failure.setPayload(job);
+        failure.setException(ex);
+        return ObjectMapperFactory.get().writeValueAsString(failure);
     }
 
     /**
@@ -646,11 +649,11 @@ public class WorkerImpl implements Worker {
      *             if there was an error serializing the WorkerStatus
      */
     protected String statusMsg(final String queue, final Job job) throws IOException {
-        final WorkerStatus s = new WorkerStatus();
-        s.setRunAt(new Date());
-        s.setQueue(queue);
-        s.setPayload(job);
-        return ObjectMapperFactory.get().writeValueAsString(s);
+        final WorkerStatus status = new WorkerStatus();
+        status.setRunAt(new Date());
+        status.setQueue(queue);
+        status.setPayload(job);
+        return ObjectMapperFactory.get().writeValueAsString(status);
     }
 
     /**
@@ -661,10 +664,10 @@ public class WorkerImpl implements Worker {
      *             if there was an error serializing the WorkerStatus
      */
     protected String pauseMsg() throws IOException {
-        final WorkerStatus s = new WorkerStatus();
-        s.setRunAt(new Date());
-        s.setPaused(isPaused());
-        return ObjectMapperFactory.get().writeValueAsString(s);
+        final WorkerStatus status = new WorkerStatus();
+        status.setRunAt(new Date());
+        status.setPaused(isPaused());
+        return ObjectMapperFactory.get().writeValueAsString(status);
     }
 
     /**
@@ -673,18 +676,18 @@ public class WorkerImpl implements Worker {
      * @return a unique name for this worker
      */
     protected String createName() {
-        final StringBuilder sb = new StringBuilder(128);
+        final StringBuilder buf = new StringBuilder(128);
         try {
-            sb.append(InetAddress.getLocalHost().getHostName()).append(COLON)
+            buf.append(InetAddress.getLocalHost().getHostName()).append(COLON)
                     .append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
                     .append('-').append(this.workerId).append(COLON).append(JAVA_DYNAMIC_QUEUES);
             for (final String queueName : this.queueNames) {
-                sb.append(',').append(queueName);
+                buf.append(',').append(queueName);
             }
         } catch (UnknownHostException uhe) {
             throw new RuntimeException(uhe);
         }
-        return sb.toString();
+        return buf.toString();
     }
 
     /**

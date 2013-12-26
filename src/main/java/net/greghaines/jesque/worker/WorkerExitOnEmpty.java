@@ -59,7 +59,7 @@ public class WorkerExitOnEmpty extends WorkerImpl {
                 if (isThreadNameChangingEnabled()) {
                     renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
                 }
-                curQueue = this.queueNames.poll(emptyQueueSleepTime, TimeUnit.MILLISECONDS);
+                curQueue = this.queueNames.poll(EMPTY_QUEUE_SLEEP_TIME, TimeUnit.MILLISECONDS);
                 if (curQueue != null) {
                     this.queueNames.add(curQueue); // Rotate the queues
                     checkPaused();
@@ -76,7 +76,7 @@ public class WorkerExitOnEmpty extends WorkerImpl {
                         } else if ((++missCount >= this.queueNames.size()) && RUNNING.equals(this.state.get())) {
                             // Keeps worker from busy-spinning on empty queues
                             missCount = 0;
-                            Thread.sleep(emptyQueueSleepTime);
+                            Thread.sleep(EMPTY_QUEUE_SLEEP_TIME);
                             allQueuesEmptyCount++;
                         }
                         if (allQueuesEmptyCount >= this.maxLoopsOnEmptyQueues) {
