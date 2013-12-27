@@ -42,12 +42,12 @@ import net.greghaines.jesque.worker.UnpermittedJobException;
  */
 public final class JesqueUtils {
 
-    private static final String bTracePrefix = "\tat ";
-    private static final String btCausedByPrefix = "Caused by: ";
-    private static final String btUnknownSource = "Unknown Source";
-    private static final String btNativeMethod = "Native Method";
-    private static final Pattern btPattern = Pattern.compile("[\\(\\):]");
-    private static final Pattern colonSpacePattern = Pattern.compile(":\\s");
+    private static final String BT_PREFIX = "\tat ";
+    private static final String BT_CAUSED_BY_PREFIX = "Caused by: ";
+    private static final String BT_UNKNOWN_SOURCE = "Unknown Source";
+    private static final String BT_NATIVE_METHOD = "Native Method";
+    private static final Pattern BT_PATTERN = Pattern.compile("[\\(\\):]");
+    private static final Pattern COLON_SPACE_PATTERN = Pattern.compile(":\\s");
 
     /**
      * Join the given strings, separated by the given separator.
@@ -72,13 +72,13 @@ public final class JesqueUtils {
      * @return the joined string
      */
     public static String join(final String sep, final Iterable<String> strs) {
-        final StringBuilder sb = new StringBuilder();
-        String s = "";
+        final StringBuilder buf = new StringBuilder();
+        String prefix = "";
         for (final String str : strs) {
-            sb.append(s).append(str);
-            s = sep;
+            buf.append(prefix).append(str);
+            prefix = sep;
         }
-        return sb.toString();
+        return buf.toString();
     }
 
     /**
@@ -124,7 +124,7 @@ public final class JesqueUtils {
     public static List<String> createBacktrace(final Throwable t) {
         final List<String> bTrace = new LinkedList<String>();
         for (final StackTraceElement ste : t.getStackTrace()) {
-            bTrace.add(bTracePrefix + ste.toString());
+            bTrace.add(BT_PREFIX + ste.toString());
         }
         if (t.getCause() != null) {
             addCauseToBacktrace(t.getCause(), bTrace);
@@ -142,12 +142,12 @@ public final class JesqueUtils {
      */
     private static void addCauseToBacktrace(final Throwable cause, final List<String> bTrace) {
         if (cause.getMessage() == null) {
-            bTrace.add(btCausedByPrefix + cause.getClass().getName());
+            bTrace.add(BT_CAUSED_BY_PREFIX + cause.getClass().getName());
         } else {
-            bTrace.add(btCausedByPrefix + cause.getClass().getName() + ": " + cause.getMessage());
+            bTrace.add(BT_CAUSED_BY_PREFIX + cause.getClass().getName() + ": " + cause.getMessage());
         }
         for (final StackTraceElement ste : cause.getStackTrace()) {
-            bTrace.add(bTracePrefix + ste.toString());
+            bTrace.add(BT_PREFIX + ste.toString());
         }
         if (cause.getCause() != null) {
             addCauseToBacktrace(cause.getCause(), bTrace);
@@ -208,8 +208,8 @@ public final class JesqueUtils {
         while (!bTrace.isEmpty()) {
             stes = recreateStackTrace(bTrace);
             if (!bTrace.isEmpty()) {
-                final String line = bTrace.removeLast().substring(btCausedByPrefix.length());
-                final String[] classNameAndMsg = colonSpacePattern.split(line, 2);
+                final String line = bTrace.removeLast().substring(BT_CAUSED_BY_PREFIX.length());
+                final String[] classNameAndMsg = COLON_SPACE_PATTERN.split(line, 2);
                 final String msg = (classNameAndMsg.length == 2) ? classNameAndMsg[1] : null;
                 cause = instantiateThrowable(classNameAndMsg[0], msg, cause, stes);
             }
@@ -217,81 +217,82 @@ public final class JesqueUtils {
         return instantiateThrowable(type, message, cause, stes);
     }
 
-    private static Throwable instantiateThrowable(final String type, final String message, final Throwable cause, final StackTraceElement[] stes) throws ClassNotFoundException,
+    protected static Throwable instantiateThrowable(final String type, final String message, final Throwable cause, final StackTraceElement[] stes) throws ClassNotFoundException,
             AmbiguousConstructorException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchConstructorException {
-        Throwable t = null;
+        Throwable throwable = null;
         boolean causeInited = false;
         final Class<?> throwableType = ReflectionUtils.forName(type);
         if (message == null) {
             try {
                 try {
-                    t = (Throwable) ReflectionUtils.createObject(throwableType);
+                    throwable = (Throwable) ReflectionUtils.createObject(throwableType);
                 } catch (NoSuchConstructorException nsce2) {
                     if (cause == null) {
                         throw nsce2;
                     }
                     causeInited = true;
-                    t = (Throwable) ReflectionUtils.createObject(throwableType, cause);
+                    throwable = (Throwable) ReflectionUtils.createObject(throwableType, cause);
                 }
             } catch (NoSuchConstructorException nsce) {
                 try {
-                    t = (Throwable) ReflectionUtils.createObject(throwableType, (String) null);
+                    throwable = (Throwable) ReflectionUtils.createObject(throwableType, (String) null);
                 } catch (NoSuchConstructorException nsce3) {
                     if (cause == null) {
                         throw nsce3;
                     }
                     causeInited = true;
-                    t = (Throwable) ReflectionUtils.createObject(throwableType, (String) null, cause);
+                    throwable = (Throwable) ReflectionUtils.createObject(throwableType, (String) null, cause);
                 }
             }
         } else {
             try {
-                t = (Throwable) ReflectionUtils.createObject(throwableType, message);
+                throwable = (Throwable) ReflectionUtils.createObject(throwableType, message);
             } catch (NoSuchConstructorException nsce) {
                 if (cause == null) {
                     throw nsce;
                 }
                 causeInited = true;
-                t = (Throwable) ReflectionUtils.createObject(throwableType, message, cause);
+                throwable = (Throwable) ReflectionUtils.createObject(throwableType, message, cause);
             }
         }
-        t.setStackTrace(stes);
+        throwable.setStackTrace(stes);
         if (!causeInited && cause != null) {
-            t.initCause(cause);
+            throwable.initCause(cause);
         }
-        return t;
+        return throwable;
     }
 
-    private static StackTraceElement[] recreateStackTrace(final List<String> bTrace) throws ParseException {
+    protected static StackTraceElement[] recreateStackTrace(final List<String> bTrace) throws ParseException {
         final List<StackTraceElement> stes = new LinkedList<StackTraceElement>();
-        final ListIterator<String> iter = bTrace.listIterator(bTrace.size());
-        while (iter.hasPrevious()) {
-            final String prev = iter.previous();
-            if (prev.startsWith(bTracePrefix)) { // All stack trace elements
-                                                 // start with bTracePrefix
-                iter.remove();
-                final String[] stParts = btPattern.split(prev.substring(bTracePrefix.length()));
-                if (stParts.length < 2 || stParts.length > 3) {
-                    throw new ParseException("Malformed stack trace element string: " + prev, 0);
+        if (bTrace != null) {
+            final ListIterator<String> iter = bTrace.listIterator(bTrace.size());
+            while (iter.hasPrevious()) {
+                final String prev = iter.previous();
+                if (prev.startsWith(BT_PREFIX)) { // All stack trace elements start with BT_PREFIX
+                    iter.remove();
+                    final String[] stParts = BT_PATTERN.split(prev.substring(BT_PREFIX.length()));
+                    if (stParts.length < 2 || stParts.length > 3) {
+                        throw new ParseException("Malformed stack trace element string: " + prev, 0);
+                    }
+                    final int periodPos = stParts[0].lastIndexOf('.');
+                    final String className = stParts[0].substring(0, periodPos);
+                    final String methodName = stParts[0].substring(periodPos + 1);
+                    final String fileName;
+                    final int lineNumber;
+                    if (BT_UNKNOWN_SOURCE.equals(stParts[1])) {
+                        fileName = null;
+                        lineNumber = -1;
+                    } else if (BT_NATIVE_METHOD.equals(stParts[1])) {
+                        fileName = null;
+                        lineNumber = -2;
+                    } else {
+                        fileName = stParts[1];
+                        lineNumber = (stParts.length == 3) ? Integer.parseInt(stParts[2]) : -1;
+                    }
+                    stes.add(0, new StackTraceElement(className, methodName, fileName, lineNumber));
+                } else { // Stop if it is not a stack trace element
+                    break;
                 }
-                final int periodPos = stParts[0].lastIndexOf('.');
-                final String className = stParts[0].substring(0, periodPos);
-                final String methodName = stParts[0].substring(periodPos + 1);
-                final String fileName;
-                final int lineNumber;
-                if (btUnknownSource.equals(stParts[1])) {
-                    fileName = null;
-                    lineNumber = -1;
-                } else if (btNativeMethod.equals(stParts[1])) {
-                    fileName = null;
-                    lineNumber = -2;
-                } else {
-                    fileName = stParts[1];
-                    lineNumber = (stParts.length == 3) ? Integer.parseInt(stParts[2]) : -1;
-                }
-                stes.add(0, new StackTraceElement(className, methodName, fileName, lineNumber));
-            } else { // Stop if it is not a stack trace element
-                break;
             }
         }
         return stes.toArray(new StackTraceElement[stes.size()]);
