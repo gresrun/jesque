@@ -36,7 +36,7 @@ public class KeyInfo implements Comparable<KeyInfo>, Serializable {
     private List<String> arrayValue;
 
     /**
-     * No-arg constructor.
+     * No-argument constructor.
      */
     public KeyInfo() {
         // Do nothing
@@ -95,20 +95,25 @@ public class KeyInfo implements Comparable<KeyInfo>, Serializable {
         this.arrayValue = arrayValue;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return this.name;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int compareTo(final KeyInfo other) {
         int retVal = 1;
         if (other != null) {
             if (this.name != null && other.name != null) {
                 retVal = this.name.compareTo(other.name);
-            } else if (this.name == null && other.name == null) {
-                retVal = 0;
             } else if (this.name == null) {
-                retVal = -1;
+                retVal = (other.name == null) ? 0 : -1;
             }
         }
         return retVal;

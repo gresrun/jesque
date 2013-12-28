@@ -111,26 +111,29 @@ public class WorkerInfo implements Comparable<WorkerInfo>, Serializable {
         this.status = status;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return this.name;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int compareTo(final WorkerInfo other) {
         int retVal = 1;
         if (other != null) {
             if (this.status != null && other.status != null) {
                 if (this.status.getRunAt() != null && other.status.getRunAt() != null) {
                     retVal = this.status.getRunAt().compareTo(other.status.getRunAt());
-                } else if (this.status.getRunAt() == null && other.status.getRunAt() == null) {
-                    retVal = 0;
                 } else if (this.status.getRunAt() == null) {
-                    retVal = -1;
+                    retVal = (other.status.getRunAt() == null) ? 0 : -1;
                 }
-            } else if (this.status == null && other.status == null) {
-                retVal = 0;
             } else if (this.status == null) {
-                retVal = -1;
+                retVal = (other.status == null) ? 0 : -1;
             }
         }
         return retVal;
