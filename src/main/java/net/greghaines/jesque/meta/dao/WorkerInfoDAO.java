@@ -38,5 +38,11 @@ public interface WorkerInfoDAO {
 
     Map<String, List<WorkerInfo>> getWorkerHostMap();
 
+    /**
+     * Removes the metadata about a worker.
+     * 
+     * @param workerName
+     *            The worker name to remove
+     */
     void removeWorker(String workerName);
 }

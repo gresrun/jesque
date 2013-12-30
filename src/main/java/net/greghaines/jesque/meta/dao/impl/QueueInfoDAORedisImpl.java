@@ -58,8 +58,16 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
         this.jedisPool = jedisPool;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public List<String> getQueueNames() {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<String>>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public List<String> doWork(final Jedis jedis) throws Exception {
                 final List<String> queueNames = new ArrayList<String>(jedis.smembers(key(QUEUES)));
                 Collections.sort(queueNames);
@@ -68,9 +76,17 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long getPendingCount() {
         final List<String> queueNames = getQueueNames();
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public Long doWork(final Jedis jedis) throws Exception {
                 long pendingCount = 0L;
                 for (final String queueName : queueNames) {
@@ -81,8 +97,16 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long getProcessedCount() {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public Long doWork(final Jedis jedis) throws Exception {
                 final String processedStr = jedis.get(key(STAT, PROCESSED));
                 return (processedStr == null) ? 0L : Long.parseLong(processedStr);
@@ -90,9 +114,17 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public List<QueueInfo> getQueueInfos() {
         final List<String> queueNames = getQueueNames();
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<QueueInfo>>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public List<QueueInfo> doWork(final Jedis jedis) throws Exception {
                 final List<QueueInfo> queueInfos = new ArrayList<QueueInfo>(queueNames.size());
                 for (final String queueName : queueNames) {
@@ -107,8 +139,16 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public QueueInfo getQueueInfo(final String name, final long jobOffset, final long jobCount) {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, QueueInfo>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public QueueInfo doWork(final Jedis jedis) throws Exception {
                 final QueueInfo queueInfo = new QueueInfo();
                 queueInfo.setName(name);
@@ -124,8 +164,16 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeQueue(final String name) {
         PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public Void doWork(final Jedis jedis) throws Exception {
                 jedis.srem(key(QUEUES), name);
                 jedis.del(key(QUEUE, name));

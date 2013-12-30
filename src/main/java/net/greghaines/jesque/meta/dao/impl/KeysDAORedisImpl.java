@@ -38,8 +38,8 @@ import redis.clients.util.Pool;
 
 public class KeysDAORedisImpl implements KeysDAO {
     
-    private static final Pattern newLinePattern = Pattern.compile("\r\n");
-    private static final Pattern colonPattern = Pattern.compile(":");
+    private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\r\n");
+    private static final Pattern COLON_PATTERN = Pattern.compile(":");
 
     private final Config config;
     private final Pool<Jedis> jedisPool;
@@ -55,16 +55,32 @@ public class KeysDAORedisImpl implements KeysDAO {
         this.jedisPool = jedisPool;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public KeyInfo getKeyInfo(final String key) {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new KeyDAOPoolWork(key));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public KeyInfo getKeyInfo(final String key, final int offset, final int count) {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new KeyDAOPoolWork(key, offset, count));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public List<KeyInfo> getKeyInfos() {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<KeyInfo>>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public List<KeyInfo> doWork(final Jedis jedis) throws Exception {
                 final Set<String> keys = jedis.keys(KeysDAORedisImpl.this.config.getNamespace() + COLON + "*");
                 final List<KeyInfo> keyInfos = new ArrayList<KeyInfo>(keys.size());
@@ -77,108 +93,141 @@ public class KeysDAORedisImpl implements KeysDAO {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Map<String, String> getRedisInfo() {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Map<String, String>>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public Map<String, String> doWork(final Jedis jedis) throws Exception {
                 final Map<String, String> infoMap = new TreeMap<String, String>();
                 final String infoStr = jedis.info();
-                final String[] keyValueStrs = newLinePattern.split(infoStr);
+                final String[] keyValueStrs = NEW_LINE_PATTERN.split(infoStr);
                 for (final String keyValueStr : keyValueStrs) {
-                    final String[] keyAndValue = colonPattern.split(keyValueStr, 2);
-                    if (keyAndValue.length == 1) {
-                        infoMap.put(keyAndValue[0], null);
-                    } else {
-                        infoMap.put(keyAndValue[0], keyAndValue[1]);
-                    }
+                    final String[] keyAndValue = COLON_PATTERN.split(keyValueStr, 2);
+                    final String value = (keyAndValue.length == 1) ? null : keyAndValue[1];
+                    infoMap.put(keyAndValue[0], value);
                 }
                 return new LinkedHashMap<String, String>(infoMap);
             }
         });
     }
 
-    private static final class KeyDAOPoolWork implements PoolWork<Jedis, KeyInfo> {
+    protected static final class KeyDAOPoolWork implements PoolWork<Jedis, KeyInfo> {
         
         private final String key;
         private final int offset;
         private final int count;
         private final boolean doArrayValue;
 
-        private KeyDAOPoolWork(final String key) {
+        protected KeyDAOPoolWork(final String key) {
             this.key = key;
             this.offset = -1;
             this.count = -1;
             this.doArrayValue = false;
         }
 
-        private KeyDAOPoolWork(final String key, final int offset, final int count) {
+        protected KeyDAOPoolWork(final String key, final int offset, final int count) {
             this.key = key;
             this.offset = offset;
             this.count = count;
             this.doArrayValue = true;
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public KeyInfo doWork(final Jedis jedis) throws Exception {
             final KeyInfo keyInfo;
-            final KeyType keyType = KeyType.getKeyTypeByValue(jedis.type(this.key));
-            switch (keyType) {
+            switch (KeyType.getKeyTypeByValue(jedis.type(this.key))) {
             case HASH:
-                keyInfo = new KeyInfo(this.key, keyType);
-                keyInfo.setSize(jedis.hlen(this.key));
-                if (this.doArrayValue) {
-                    final List<String> allFields = new ArrayList<String>(jedis.hkeys(this.key));
-                    if (this.offset >= allFields.size()) {
-                        keyInfo.setArrayValue(new ArrayList<String>(1));
-                    } else {
-                        final int toIndex = (this.offset + this.count > allFields.size()) ? allFields.size() : (this.offset + this.count);
-                        final List<String> subFields = allFields.subList(this.offset, toIndex);
-                        final List<String> values = jedis.hmget(this.key, subFields.toArray(new String[subFields.size()]));
-                        final List<String> arrayValue = new ArrayList<String>(subFields.size());
-                        for (int i = 0; i < subFields.size(); i++) {
-                            arrayValue.add("{" + subFields.get(i) + "=" + values.get(i) + "}");
-                        }
-                        keyInfo.setArrayValue(arrayValue);
-                    }
-                }
+                keyInfo = handleHash(jedis);
                 break;
             case LIST:
-                keyInfo = new KeyInfo(this.key, keyType);
-                keyInfo.setSize(jedis.llen(this.key));
-                if (this.doArrayValue) {
-                    keyInfo.setArrayValue(jedis.lrange(this.key, this.offset, this.offset + this.count));
-                }
+                keyInfo = handleList(jedis);
                 break;
             case SET:
-                keyInfo = new KeyInfo(this.key, keyType);
-                keyInfo.setSize(jedis.scard(this.key));
-                if (this.doArrayValue) {
-                    final List<String> allMembers = new ArrayList<String>(jedis.smembers(this.key));
-                    if (this.offset >= allMembers.size()) {
-                        keyInfo.setArrayValue(new ArrayList<String>(1));
-                    } else {
-                        final int toIndex = (this.offset + this.count > allMembers.size()) ? allMembers.size() : (this.offset + this.count);
-                        keyInfo.setArrayValue(new ArrayList<String>(allMembers.subList(this.offset, toIndex)));
-                    }
-                }
+                keyInfo = handleSet(jedis);
                 break;
             case STRING:
-                keyInfo = new KeyInfo(this.key, keyType);
-                keyInfo.setSize(jedis.strlen(this.key));
-                if (this.doArrayValue) {
-                    final List<String> arrayValue = new ArrayList<String>(1);
-                    arrayValue.add(jedis.get(this.key));
-                    keyInfo.setArrayValue(arrayValue);
-                }
+                keyInfo = handleString(jedis);
                 break;
             case ZSET:
-                keyInfo = new KeyInfo(this.key, keyType);
-                keyInfo.setSize(jedis.zcard(this.key));
-                if (this.doArrayValue) {
-                    keyInfo.setArrayValue(new ArrayList<String>(jedis.zrange(this.key, this.offset, this.offset + this.count)));
-                }
+                keyInfo = handleZSet(jedis);
                 break;
             default:
                 keyInfo = null;
                 break;
+            }
+            return keyInfo;
+        }
+
+        protected KeyInfo handleZSet(final Jedis jedis) {
+            final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.ZSET);
+            keyInfo.setSize(jedis.zcard(this.key));
+            if (this.doArrayValue) {
+                keyInfo.setArrayValue(new ArrayList<String>(jedis.zrange(this.key, this.offset, this.offset + this.count)));
+            }
+            return keyInfo;
+        }
+
+        protected KeyInfo handleString(final Jedis jedis) {
+            final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.STRING);
+            keyInfo.setSize(jedis.strlen(this.key));
+            if (this.doArrayValue) {
+                final List<String> arrayValue = new ArrayList<String>(1);
+                arrayValue.add(jedis.get(this.key));
+                keyInfo.setArrayValue(arrayValue);
+            }
+            return keyInfo;
+        }
+
+        protected KeyInfo handleSet(final Jedis jedis) {
+            final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.SET);
+            keyInfo.setSize(jedis.scard(this.key));
+            if (this.doArrayValue) {
+                final List<String> allMembers = new ArrayList<String>(jedis.smembers(this.key));
+                if (this.offset >= allMembers.size()) {
+                    keyInfo.setArrayValue(new ArrayList<String>(1));
+                } else {
+                    final int toIndex = (this.offset + this.count > allMembers.size()) ? allMembers.size() : (this.offset + this.count);
+                    keyInfo.setArrayValue(new ArrayList<String>(allMembers.subList(this.offset, toIndex)));
+                }
+            }
+            return keyInfo;
+        }
+
+        protected KeyInfo handleList(final Jedis jedis) {
+            final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.LIST);
+            keyInfo.setSize(jedis.llen(this.key));
+            if (this.doArrayValue) {
+                keyInfo.setArrayValue(jedis.lrange(this.key, this.offset, this.offset + this.count));
+            }
+            return keyInfo;
+        }
+
+        protected KeyInfo handleHash(final Jedis jedis) {
+            final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.HASH);
+            keyInfo.setSize(jedis.hlen(this.key));
+            if (this.doArrayValue) {
+                final List<String> allFields = new ArrayList<String>(jedis.hkeys(this.key));
+                if (this.offset >= allFields.size()) {
+                    keyInfo.setArrayValue(new ArrayList<String>(1));
+                } else {
+                    final int toIndex = (this.offset + this.count > allFields.size()) ? allFields.size() : (this.offset + this.count);
+                    final List<String> subFields = allFields.subList(this.offset, toIndex);
+                    final List<String> values = jedis.hmget(this.key, subFields.toArray(new String[subFields.size()]));
+                    final List<String> arrayValue = new ArrayList<String>(subFields.size());
+                    for (int i = 0; i < subFields.size(); i++) {
+                        arrayValue.add("{" + subFields.get(i) + "=" + values.get(i) + "}");
+                    }
+                    keyInfo.setArrayValue(arrayValue);
+                }
             }
             return keyInfo;
         }

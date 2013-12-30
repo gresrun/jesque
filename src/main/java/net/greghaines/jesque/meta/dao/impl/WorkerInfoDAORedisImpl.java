@@ -64,16 +64,32 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
         this.jedisPool = jedisPool;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long getWorkerCount() {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public Long doWork(final Jedis jedis) throws Exception {
                 return jedis.scard(key(WORKERS));
             }
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long getActiveWorkerCount() {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public Long doWork(final Jedis jedis) throws Exception {
                 long activeCount = 0L;
                 final Set<String> workerNames = jedis.smembers(key(WORKERS));
@@ -87,8 +103,16 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long getPausedWorkerCount() {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public Long doWork(final Jedis jedis) throws Exception {
                 long pausedCount = 0L;
                 final Set<String> workerNames = jedis.smembers(key(WORKERS));
@@ -102,20 +126,36 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public List<WorkerInfo> getActiveWorkers() {
         return getWorkerInfos(WorkerInfo.State.WORKING);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public List<WorkerInfo> getPausedWorkers() {
         return getWorkerInfos(WorkerInfo.State.PAUSED);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public List<WorkerInfo> getAllWorkers() {
         return getWorkerInfos(null);
     }
 
     private List<WorkerInfo> getWorkerInfos(final WorkerInfo.State requestedState) {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<WorkerInfo>>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public List<WorkerInfo> doWork(final Jedis jedis) throws Exception {
                 final Set<String> workerNames = jedis.smembers(key(WORKERS));
                 final List<WorkerInfo> workerInfos = new ArrayList<WorkerInfo>(workerNames.size());
@@ -130,8 +170,16 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public WorkerInfo getWorker(final String workerName) {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, WorkerInfo>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public WorkerInfo doWork(final Jedis jedis) throws Exception {
                 WorkerInfo workerInfo = null;
                 if (jedis.sismember(key(WORKERS), workerName)) {
@@ -142,6 +190,10 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Map<String, List<WorkerInfo>> getWorkerHostMap() {
         final List<WorkerInfo> workerInfos = getAllWorkers();
         final Map<String, List<WorkerInfo>> hostMap = new TreeMap<String, List<WorkerInfo>>();
@@ -205,13 +257,15 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
     }
 
     /**
-     * Remove the metadata about a worker
-     * 
-     * @param workerName
-     *            The worker name to remove
+     * {@inheritDoc}
      */
+    @Override
     public void removeWorker(final String workerName) {
         PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public Void doWork(final Jedis jedis) throws Exception {
                 jedis.srem(key(WORKERS), workerName);
                 jedis.del(key(WORKER, workerName), key(WORKER, workerName, STARTED), key(STAT, FAILED, workerName), key(STAT, PROCESSED, workerName));
