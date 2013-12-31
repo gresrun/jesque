@@ -4,3 +4,5 @@ jdk:
   - oraclejdk7
 services:
   - redis-server
+after_success:
+  - mvn cobertura:cobertura coveralls:cobertura

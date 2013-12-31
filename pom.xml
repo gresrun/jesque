@@ -15,12 +15,12 @@
     <url>https://github.com/gresrun/jesque</url>
     <inceptionYear>2011</inceptionYear>
     <prerequisites>
-        <maven>2.2.1</maven>
+        <maven>3.0.0</maven>
     </prerequisites>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jedis.version>2.2.1</jedis.version>
-        <jackson.version>2.3.0</jackson.version>
+        <jackson.version>2.3.1</jackson.version>
         <slf4j.version>1.7.5</slf4j.version>
         <logback.version>1.0.11</logback.version>
         <junit.version>4.11</junit.version>
@@ -58,6 +58,35 @@
             <timezone>Asia/Kolkata</timezone>
         </developer>
     </developers>
+    <profiles>
+        <profile>
+            <id>travis</id>
+            <activation>
+                <property>
+                    <name>env.TRAVIS</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>cobertura-maven-plugin</artifactId>
+                        <version>2.6</version>
+                        <configuration>
+                            <format>xml</format>
+                            <aggregate>true</aggregate>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.eluder.coveralls</groupId>
+                        <artifactId>coveralls-maven-plugin</artifactId>
+                        <version>2.1.0</version>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
     <build>
         <plugins>
             <plugin>

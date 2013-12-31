@@ -7,7 +7,7 @@ Jesque is a [Maven](http://maven.apache.org/) project and depends on [Jedis](htt
 
 The project contains a client implementation as well as a worker implementation that supports listeners.
 
-[![Build Status](https://travis-ci.org/gresrun/jesque.png?branch=master)](https://travis-ci.org/gresrun/jesque)
+[![Build Status](https://travis-ci.org/gresrun/jesque.png?branch=master)](https://travis-ci.org/gresrun/jesque) [![Coverage Status](https://coveralls.io/repos/gresrun/jesque/badge.png)](https://coveralls.io/r/gresrun/jesque)
 
 ***
 
