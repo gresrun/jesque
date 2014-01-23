@@ -113,7 +113,7 @@ public class Job implements Serializable {
      * @param args
      *            the new arguments
      */
-    public void setArgs(final Object[] args) {
+    public void setArgs(final Object... args) {
         this.args = args;
     }
 
@@ -146,7 +146,7 @@ public class Job implements Serializable {
         if (obj == null) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
+        if (!(obj instanceof Job)) {
             return false;
         }
         final Job other = (Job) obj;
