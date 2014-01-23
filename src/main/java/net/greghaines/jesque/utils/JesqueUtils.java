@@ -393,36 +393,36 @@ public final class JesqueUtils {
      * This is needed because Throwable doesn't override equals() and object
      * equality is not what we want to test.
      * 
-     * @param ex
-     *            original Throwable
-     * @param newEx
-     *            other Throwable
+     * @param ex1
+     *            first Throwable
+     * @param ex2
+     *            second Throwable
      * @return true if the two arguments are equal, as we define it.
      */
-    public static boolean equal(final Throwable ex, final Throwable newEx) {
-        if (ex == newEx) {
+    public static boolean equal(final Throwable ex1, final Throwable ex2) {
+        if (ex1 == ex2) {
             return true;
         }
-        if (ex == null) {
-            if (newEx != null) {
+        if (ex1 == null) {
+            if (ex2 != null) {
+                return false;
+            }
+        } else if (ex2 == null) {
+            if (ex1 != null) {
                 return false;
             }
         } else {
-            if (ex.getClass() != newEx.getClass()) {
+            if (ex1.getClass() != ex2.getClass()) {
                 return false;
             }
-            if (ex.getMessage() == null) {
-                if (newEx.getMessage() != null) {
+            if (ex1.getMessage() == null) {
+                if (ex2.getMessage() != null) {
                     return false;
                 }
-            } else if (!ex.getMessage().equals(newEx.getMessage())) {
+            } else if (!ex1.getMessage().equals(ex2.getMessage())) {
                 return false;
             }
-            if (ex.getCause() == null) {
-                if (newEx.getCause() != null) {
-                    return false;
-                }
-            } else if (!equal(ex.getCause(), newEx.getCause())) {
+            if (!equal(ex1.getCause(), ex2.getCause())) {
                 return false;
             }
         }

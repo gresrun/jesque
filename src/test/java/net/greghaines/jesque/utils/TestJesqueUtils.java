@@ -144,6 +144,28 @@ public class TestJesqueUtils {
         Assert.assertEquals(0, stes.length);
     }
     
+    @Test
+    public void testEqual() {
+        Throwable ex1 = new RuntimeException();
+        Assert.assertTrue(JesqueUtils.equal(ex1, ex1));
+        Assert.assertFalse(JesqueUtils.equal(ex1, null));
+        Assert.assertFalse(JesqueUtils.equal(null, ex1));
+        Throwable ex2 = new Exception();
+        Assert.assertFalse(JesqueUtils.equal(ex1, ex2));
+        ex2 = new RuntimeException();
+        Assert.assertTrue(JesqueUtils.equal(ex1, ex2));
+        ex2 = new RuntimeException("foo");
+        Assert.assertFalse(JesqueUtils.equal(ex1, ex2));
+        ex1 = new RuntimeException("bar");
+        Assert.assertFalse(JesqueUtils.equal(ex1, ex2));
+        ex1 = new RuntimeException("foo");
+        Assert.assertTrue(JesqueUtils.equal(ex1, ex2));
+        ex1 = new RuntimeException("foo", new Exception());
+        Assert.assertFalse(JesqueUtils.equal(ex1, ex2));
+        ex2 = new RuntimeException("foo", new Exception());
+        Assert.assertTrue(JesqueUtils.equal(ex1, ex2));
+    }
+    
     public static class TestRunnableJob implements Runnable {
         @Override
         public void run() {
