@@ -151,13 +151,6 @@ public class WorkerStatus implements Serializable {
         if (this.paused != other.paused) {
             return false;
         }
-        if (this.payload == null) {
-            if (other.payload != null) {
-                return false;
-            }
-        } else if (!this.payload.equals(other.payload)) {
-            return false;
-        }
         if (this.queue == null) {
             if (other.queue != null) {
                 return false;
@@ -170,6 +163,13 @@ public class WorkerStatus implements Serializable {
                 return false;
             }
         } else if (!this.runAt.equals(other.runAt)) {
+            return false;
+        }
+        if (this.payload == null) {
+            if (other.payload != null) {
+                return false;
+            }
+        } else if (!this.payload.equals(other.payload)) {
             return false;
         }
         return true;
