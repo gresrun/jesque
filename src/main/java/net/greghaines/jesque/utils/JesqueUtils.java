@@ -388,6 +388,46 @@ public final class JesqueUtils {
         }
         return ReflectionUtils.createObject(clazz, job.getArgs());
     }
+    
+    /**
+     * This is needed because Throwable doesn't override equals() and object
+     * equality is not what we want to test.
+     * 
+     * @param ex
+     *            original Throwable
+     * @param newEx
+     *            other Throwable
+     * @return true if the two arguments are equal, as we define it.
+     */
+    public static boolean equal(final Throwable ex, final Throwable newEx) {
+        if (ex == newEx) {
+            return true;
+        }
+        if (ex == null) {
+            if (newEx != null) {
+                return false;
+            }
+        } else {
+            if (ex.getClass() != newEx.getClass()) {
+                return false;
+            }
+            if (ex.getMessage() == null) {
+                if (newEx.getMessage() != null) {
+                    return false;
+                }
+            } else if (!ex.getMessage().equals(newEx.getMessage())) {
+                return false;
+            }
+            if (ex.getCause() == null) {
+                if (newEx.getCause() != null) {
+                    return false;
+                }
+            } else if (!equal(ex.getCause(), newEx.getCause())) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     private JesqueUtils() {
         // Utility class

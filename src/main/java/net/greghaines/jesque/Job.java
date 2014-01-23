@@ -32,7 +32,7 @@ public class Job implements Serializable {
     private Object[] args;
 
     /**
-     * No-arg constructor.
+     * No-argument constructor.
      */
     public Job() {
         // Do nothing
@@ -124,11 +124,17 @@ public class Job implements Serializable {
         return (this.args != null && this.className != null && !"".equals(this.className));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return "<Job className=" + this.className + " args=" + Arrays.toString(this.args) + ">";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -138,6 +144,9 @@ public class Job implements Serializable {
         return result;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equals(final Object obj) {
         if (this == obj) {

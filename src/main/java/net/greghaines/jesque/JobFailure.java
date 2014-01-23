@@ -19,6 +19,8 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
+import net.greghaines.jesque.utils.JesqueUtils;
+
 /**
  * A bean to hold information about a job that failed.
  * 
@@ -39,7 +41,7 @@ public class JobFailure implements Serializable {
     private Date retriedAt;
 
     /**
-     * No-arg constructor.
+     * No-argument constructor.
      */
     public JobFailure() {
         // Do nothing
@@ -120,7 +122,7 @@ public class JobFailure implements Serializable {
     }
 
     /**
-     * @return the exception that occured
+     * @return the exception that occurred
      */
     public Throwable getException() {
         return this.exception;
@@ -221,6 +223,9 @@ public class JobFailure implements Serializable {
         this.retriedAt = retriedAt;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -237,6 +242,9 @@ public class JobFailure implements Serializable {
         return result;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equals(final Object obj) {
         if (this == obj) {
@@ -253,7 +261,7 @@ public class JobFailure implements Serializable {
             if (other.exception != null) {
                 return false;
             }
-        } else if (!equal(this.exception, other.exception)) {
+        } else if (!JesqueUtils.equal(this.exception, other.exception)) {
             return false;
         }
         if (this.failedAt == null) {
@@ -311,46 +319,6 @@ public class JobFailure implements Serializable {
             }
         } else if (!this.backtrace.equals(other.backtrace)) {
             return false;
-        }
-        return true;
-    }
-
-    /**
-     * This is needed because Throwable doesn't override equals() and object
-     * equality is not what we want to test.
-     * 
-     * @param ex
-     *            original Throwable
-     * @param newEx
-     *            other Throwable
-     * @return true if the two arguments are equal, as we define it.
-     */
-    private static boolean equal(final Throwable ex, final Throwable newEx) {
-        if (ex == newEx) {
-            return true;
-        }
-        if (ex == null) {
-            if (newEx != null) {
-                return false;
-            }
-        } else {
-            if (ex.getClass() != newEx.getClass()) {
-                return false;
-            }
-            if (ex.getMessage() == null) {
-                if (newEx.getMessage() != null) {
-                    return false;
-                }
-            } else if (!ex.getMessage().equals(newEx.getMessage())) {
-                return false;
-            }
-            if (ex.getCause() == null) {
-                if (newEx.getCause() != null) {
-                    return false;
-                }
-            } else if (!equal(ex.getCause(), newEx.getCause())) {
-                return false;
-            }
         }
         return true;
     }
