@@ -21,6 +21,7 @@ import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientImpl;
 import net.greghaines.jesque.worker.JobExecutor;
 
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,6 +107,12 @@ public final class TestUtils {
         } finally {
             client.end();
         }
+    }
+
+    public static void assertFullyEquals(final Object obj1, final Object obj2) {
+        Assert.assertEquals(obj1, obj2);
+        Assert.assertEquals(obj1.hashCode(), obj2.hashCode());
+        Assert.assertEquals(obj1.toString(), obj2.toString());
     }
 
     private TestUtils() {} // Utility class

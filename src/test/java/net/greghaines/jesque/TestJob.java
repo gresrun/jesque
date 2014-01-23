@@ -66,7 +66,7 @@ public class TestJob {
         Assert.assertNotNull(args);
         Assert.assertArrayEquals(new Object[]{arg1, arg2}, args);
         Assert.assertTrue(job.isValid());
-        assertFullyEqual(protoJob, job);
+        TestUtils.assertFullyEquals(protoJob, job);
     }
 
     @Test
@@ -93,28 +93,22 @@ public class TestJob {
     @Test
     public void testEquals() {
         final Job job1 = new Job();
-        assertFullyEqual(job1, job1);
+        TestUtils.assertFullyEquals(job1, job1);
         Assert.assertFalse(job1.equals(null));
         Assert.assertFalse(job1.equals(new Object()));
         final Job job2 = new Job();
-        assertFullyEqual(job1, job2);
+        TestUtils.assertFullyEquals(job1, job2);
         job2.setClassName("foo");
         Assert.assertFalse(job1.equals(job2));
         job1.setClassName("bar");
         Assert.assertFalse(job1.equals(job2));
         job1.setClassName("foo");
-        assertFullyEqual(job1, job2);
+        TestUtils.assertFullyEquals(job1, job2);
         final Object arg1 = 1;
         final Object arg2 = 2.0;
         job2.setArgs(arg1, arg2);
         Assert.assertFalse(job1.equals(job2));
         job1.setArgs(arg1, arg2);
-        assertFullyEqual(job1, job2);
-    }
-
-    private static void assertFullyEqual(final Job job1, final Job job2) {
-        Assert.assertEquals(job1, job2);
-        Assert.assertEquals(job1.hashCode(), job2.hashCode());
-        Assert.assertEquals(job1.toString(), job2.toString());
+        TestUtils.assertFullyEquals(job1, job2);
     }
 }

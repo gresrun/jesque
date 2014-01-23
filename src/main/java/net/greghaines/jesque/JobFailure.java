@@ -257,11 +257,32 @@ public class JobFailure implements Serializable {
             return false;
         }
         final JobFailure other = (JobFailure) obj;
-        if (this.exception == null) {
-            if (other.exception != null) {
+        if (this.queue == null) {
+            if (other.queue != null) {
                 return false;
             }
-        } else if (!JesqueUtils.equal(this.exception, other.exception)) {
+        } else if (!this.queue.equals(other.queue)) {
+            return false;
+        }
+        if (this.worker == null) {
+            if (other.worker != null) {
+                return false;
+            }
+        } else if (!this.worker.equals(other.worker)) {
+            return false;
+        }
+        if (this.exceptionString == null) {
+            if (other.exceptionString != null) {
+                return false;
+            }
+        } else if (!this.exceptionString.equals(other.exceptionString)) {
+            return false;
+        }
+        if (this.error == null) {
+            if (other.error != null) {
+                return false;
+            }
+        } else if (!this.error.equals(other.error)) {
             return false;
         }
         if (this.failedAt == null) {
@@ -278,39 +299,14 @@ public class JobFailure implements Serializable {
         } else if (!this.retriedAt.equals(other.retriedAt)) {
             return false;
         }
+        if (!JesqueUtils.equal(this.exception, other.exception)) {
+            return false;
+        }
         if (this.payload == null) {
             if (other.payload != null) {
                 return false;
             }
         } else if (!this.payload.equals(other.payload)) {
-            return false;
-        }
-        if (this.worker == null) {
-            if (other.worker != null) {
-                return false;
-            }
-        } else if (!this.worker.equals(other.worker)) {
-            return false;
-        }
-        if (this.queue == null) {
-            if (other.queue != null) {
-                return false;
-            }
-        } else if (!this.queue.equals(other.queue)) {
-            return false;
-        }
-        if (this.exceptionString == null) {
-            if (other.exceptionString != null) {
-                return false;
-            }
-        } else if (!this.exceptionString.equals(other.exceptionString)) {
-            return false;
-        }
-        if (this.error == null) {
-            if (other.error != null) {
-                return false;
-            }
-        } else if (!this.error.equals(other.error)) {
             return false;
         }
         if (this.backtrace == null) {
