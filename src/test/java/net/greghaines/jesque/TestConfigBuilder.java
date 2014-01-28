@@ -38,6 +38,11 @@ public class TestConfigBuilder {
         TestUtils.assertFullyEquals(orig, copy);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testConstructor_Cloning_Null() {
+        new ConfigBuilder(null);
+    }
+
     @Test
     public void testWithHost() {
         final String myHost = "foobar";
