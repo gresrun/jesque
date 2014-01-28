@@ -18,7 +18,7 @@ package net.greghaines.jesque;
 import java.io.Serializable;
 
 /**
- * A builder for Configs.
+ * A fluent-style builder for {@link Config}s.
  * 
  * @author Greg Haines
  * @see Config
@@ -131,7 +131,7 @@ public class ConfigBuilder implements Serializable {
      * Redis password.
      * 
      * @param password
-     *            the Redis pasword
+     *            the Redis password
      * @return this ConfigBuilder
      */
     public ConfigBuilder withPassword(final String password) {
