@@ -35,7 +35,7 @@ public class TestConfigBuilder {
                 .withDatabase(10).withPassword("bar").withPort(123)
                 .withHost("abc.com").withTimeout(10000).build();
         final Config copy = new ConfigBuilder(orig).build();
-        Assert.assertEquals(orig, copy);
+        TestUtils.assertFullyEquals(orig, copy);
     }
 
     @Test
