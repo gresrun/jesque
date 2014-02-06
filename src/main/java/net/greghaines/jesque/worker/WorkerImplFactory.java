@@ -32,8 +32,17 @@ public class WorkerImplFactory implements Callable<WorkerImpl> {
     private final Config config;
     private final Collection<String> queues;
     private final Map<String, ? extends Class<?>> jobTypes;
+    private JobFactory jobFactory = null;
 
-    /**
+    public JobFactory getJobFactory() {
+		return jobFactory;
+	}
+
+	public void setJobFactory(JobFactory jobFactory) {
+		this.jobFactory = jobFactory;
+	}
+
+	/**
      * Create a new factory. Returned <code>WorkerImpl</code>s will use the
      * provided arguments.
      * 
@@ -57,6 +66,10 @@ public class WorkerImplFactory implements Callable<WorkerImpl> {
      * factory's constructor.
      */
     public WorkerImpl call() {
-        return new WorkerImpl(this.config, this.queues, this.jobTypes);
+        WorkerImpl result = new WorkerImpl(this.config, this.queues, this.jobTypes);
+        if(jobFactory != null) {
+        	result.setJobFactory(jobFactory);
+        }
+        return result;
     }
 }
