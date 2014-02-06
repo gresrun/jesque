@@ -57,5 +57,6 @@ public class TestConfig {
         Assert.assertEquals("foo", config.getHost());
         Assert.assertEquals("redis://foo:123/10", config.getURI());
         Assert.assertNotNull(config.toString());
+        Assert.assertTrue(config.equals(config));
     }
 }

@@ -69,6 +69,11 @@ public class TestJob {
         TestUtils.assertFullyEquals(protoJob, job);
     }
 
+    @Test(expected=IllegalArgumentException.class)
+    public void testConstructor_Clone_Null() {
+        new Job((Job)null);
+    }
+
     @Test
     public void testSetters() {
         final String className1 = "foo";
