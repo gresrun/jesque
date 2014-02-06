@@ -147,8 +147,17 @@ public class WorkerImpl implements Worker {
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
     private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(
             new DefaultExceptionHandler());
+	private JobFactory jobFactory = null;
 
-    /**
+    public JobFactory getJobFactory() {
+		return jobFactory;
+	}
+
+	public void setJobFactory(JobFactory jobFactory) {
+		this.jobFactory = jobFactory;
+	}
+
+	/**
      * Creates a new WorkerImpl, which creates it's own connection to Redis
      * using values from the config. The worker will only listen to the supplied
      * queues and only execute jobs that are in the supplied job types.
@@ -523,9 +532,15 @@ public class WorkerImpl implements Worker {
             }
             this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null);
             this.jedis.set(key(WORKER, this.name), statusMsg(curQueue, job));
-            final Object instance = JesqueUtils.materializeJob(job, this.jobTypes);
-            final Object result = execute(job, curQueue, instance);
-            success(job, instance, result, curQueue);
+            if(this.jobFactory != null) {
+            	final Object instance = this.jobFactory.materializeJob(job);
+            	final Object result = execute(job, curQueue, instance);
+            	success(job, instance, result, curQueue);
+            } else {
+            	final Object instance = JesqueUtils.materializeJob(job, this.jobTypes);
+            	final Object result = execute(job, curQueue, instance);
+            	success(job, instance, result, curQueue);
+            }
         } catch (Exception e) {
             failure(e, job, curQueue);
         } finally {
