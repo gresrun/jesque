@@ -339,6 +339,17 @@ public final class JesqueUtils {
     public static <K> Set<K> set(final K... keys) {
         return new LinkedHashSet<K>(Arrays.asList(keys));
     }
+    
+    /**
+     * Test for equality.
+     * @param obj1 the first object
+     * @param obj2 the second object
+     * @return true if both are null or the two objects are equal
+     */
+    public static boolean nullSafeEquals(final Object obj1, final Object obj2) {
+        return ((obj1 == null && obj2 == null)
+                || (obj1 != null && obj2 != null && obj1.equals(obj2)));
+    }
 
     /**
      * Materializes a job by assuming the {@link Job#getClassName()} is a

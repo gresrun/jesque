@@ -18,6 +18,8 @@ package net.greghaines.jesque;
 import java.io.Serializable;
 import java.util.Date;
 
+import net.greghaines.jesque.utils.JesqueUtils;
+
 /**
  * A bean to hold information about the status of a Worker.
  * 
@@ -33,7 +35,7 @@ public class WorkerStatus implements Serializable {
     private boolean paused = false;
 
     /**
-     * No-arg constructor.
+     * No-argument constructor.
      */
     public WorkerStatus() {
         // Do nothing
@@ -125,6 +127,18 @@ public class WorkerStatus implements Serializable {
         this.paused = paused;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return "<WorkerStatus queue=" + this.queue + " runAt=" + this.runAt 
+            + " paused=" + Boolean.toString(this.paused) + " payload=" + this.payload + ">";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -136,42 +150,21 @@ public class WorkerStatus implements Serializable {
         return result;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equals(final Object obj) {
+        boolean equal = false;
         if (this == obj) {
-            return true;
+            equal = true;
+        } else if (obj instanceof WorkerStatus) {
+            final WorkerStatus other = (WorkerStatus) obj;
+            equal = ((this.paused == other.paused)
+                    && JesqueUtils.nullSafeEquals(this.queue, other.queue)
+                    && JesqueUtils.nullSafeEquals(this.runAt, other.runAt)
+                    && JesqueUtils.nullSafeEquals(this.payload, other.payload));
         }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final WorkerStatus other = (WorkerStatus) obj;
-        if (this.paused != other.paused) {
-            return false;
-        }
-        if (this.queue == null) {
-            if (other.queue != null) {
-                return false;
-            }
-        } else if (!this.queue.equals(other.queue)) {
-            return false;
-        }
-        if (this.runAt == null) {
-            if (other.runAt != null) {
-                return false;
-            }
-        } else if (!this.runAt.equals(other.runAt)) {
-            return false;
-        }
-        if (this.payload == null) {
-            if (other.payload != null) {
-                return false;
-            }
-        } else if (!this.payload.equals(other.payload)) {
-            return false;
-        }
-        return true;
+        return equal;
     }
 }

@@ -95,6 +95,16 @@ public class TestMapBasedJobFactory {
         Assert.assertEquals(jobTypes, jobFactory.getJobTypes());
     }
     
+    @Test(expected = IllegalArgumentException.class)
+    public void testRemoveJobName_Null() {
+        final Map<String, Class<?>> jobTypes = new HashMap<String, Class<?>>();
+        jobTypes.put("TestRunnableJob", TestRunnableJob.class);
+        jobTypes.put("TestCallableJob", TestCallableJob.class);
+        final MapBasedJobFactory jobFactory = new MapBasedJobFactory(jobTypes);
+        Assert.assertEquals(jobTypes, jobFactory.getJobTypes());
+        jobFactory.removeJobName(null);
+    }
+    
     @Test
     public void testRemoveJobType() {
         final Map<String, Class<?>> jobTypes = new HashMap<String, Class<?>>();
@@ -105,6 +115,16 @@ public class TestMapBasedJobFactory {
         jobFactory.removeJobType(TestCallableJob.class);
         jobTypes.values().remove(TestCallableJob.class);
         Assert.assertEquals(jobTypes, jobFactory.getJobTypes());
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testRemoveJobType_Null() {
+        final Map<String, Class<?>> jobTypes = new HashMap<String, Class<?>>();
+        jobTypes.put("TestRunnableJob", TestRunnableJob.class);
+        jobTypes.put("TestCallableJob", TestCallableJob.class);
+        final MapBasedJobFactory jobFactory = new MapBasedJobFactory(jobTypes);
+        Assert.assertEquals(jobTypes, jobFactory.getJobTypes());
+        jobFactory.removeJobType(null);
     }
     
     @Test

@@ -19,6 +19,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
+import net.greghaines.jesque.utils.JesqueUtils;
+
 /**
  * A simple class to describe a job to be run by a worker.
  * 
@@ -149,26 +151,14 @@ public class Job implements Serializable {
      */
     @Override
     public boolean equals(final Object obj) {
+        boolean equal = false;
         if (this == obj) {
-            return true;
+            equal = true;
+        } else if (obj instanceof Job) {
+            final Job other = (Job) obj;
+            equal = (JesqueUtils.nullSafeEquals(this.className, other.className)
+                    && Arrays.equals(this.args, other.args));
         }
-        if (obj == null) {
-            return false;
-        }
-        if (!(obj instanceof Job)) {
-            return false;
-        }
-        final Job other = (Job) obj;
-        if (this.className == null) {
-            if (other.className != null) {
-                return false;
-            }
-        } else if (!this.className.equals(other.className)) {
-            return false;
-        }
-        if (!Arrays.equals(this.args, other.args)) {
-            return false;
-        }
-        return true;
+        return equal;
     }
 }

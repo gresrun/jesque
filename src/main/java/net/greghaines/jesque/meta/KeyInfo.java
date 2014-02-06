@@ -19,15 +19,17 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import net.greghaines.jesque.utils.JesqueUtils;
+
 /**
- * Encapsulates information about a key in Redis.
+ * Information about a key in Redis.
  * 
  * @author Greg Haines
  */
 public class KeyInfo implements Comparable<KeyInfo>, Serializable {
     
     private static final long serialVersionUID = 6243902746964006352L;
-    private static final Pattern colonPattern = Pattern.compile(":");
+    private static final Pattern COLON_PATTERN = Pattern.compile(":");
 
     private String name;
     private String namespace;
@@ -42,11 +44,16 @@ public class KeyInfo implements Comparable<KeyInfo>, Serializable {
         // Do nothing
     }
 
+    /**
+     * Constructor.
+     * @param fullKey the full name of the key including the namespace
+     * @param type the type of the key value
+     */
     public KeyInfo(final String fullKey, final KeyType type) {
         if (fullKey == null) {
             throw new IllegalArgumentException("fullKey must not be null");
         }
-        final String[] keyParts = colonPattern.split(fullKey, 2);
+        final String[] keyParts = COLON_PATTERN.split(fullKey, 2);
         if (keyParts.length != 2) {
             throw new IllegalArgumentException("Malformed fullKey: " + fullKey);
         }
@@ -55,42 +62,72 @@ public class KeyInfo implements Comparable<KeyInfo>, Serializable {
         this.type = type;
     }
 
+    /**
+     * @return the name of the key
+     */
     public String getName() {
         return this.name;
     }
 
+    /**
+     * @param name the name of the key
+     */
     public void setName(final String name) {
         this.name = name;
     }
 
+    /**
+     * @return the namespace of the key
+     */
     public String getNamespace() {
         return this.namespace;
     }
 
+    /**
+     * @param namespace the namespace of the key
+     */
     public void setNamespace(final String namespace) {
         this.namespace = namespace;
     }
 
+    /**
+     * @return the type of the key value
+     */
     public KeyType getType() {
         return this.type;
     }
 
+    /**
+     * @param type the type of the key value
+     */
     public void setType(final KeyType type) {
         this.type = type;
     }
 
+    /**
+     * @return the size of the key value
+     */
     public Long getSize() {
         return this.size;
     }
 
+    /**
+     * @param size the size of the key value
+     */
     public void setSize(final Long size) {
         this.size = size;
     }
 
+    /**
+     * @return the value as an array
+     */
     public List<String> getArrayValue() {
         return this.arrayValue;
     }
 
+    /**
+     * @param arrayValue the value as an array
+     */
     public void setArrayValue(final List<String> arrayValue) {
         this.arrayValue = arrayValue;
     }
@@ -101,6 +138,40 @@ public class KeyInfo implements Comparable<KeyInfo>, Serializable {
     @Override
     public String toString() {
         return this.name;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((this.arrayValue == null) ? 0 : this.arrayValue.hashCode());
+        result = prime * result + ((this.name == null) ? 0 : this.name.hashCode());
+        result = prime * result + ((this.namespace == null) ? 0 : this.namespace.hashCode());
+        result = prime * result + ((this.size == null) ? 0 : this.size.hashCode());
+        result = prime * result + ((this.type == null) ? 0 : this.type.hashCode());
+        return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(final Object obj) {
+        boolean equal = false;
+        if (this == obj) {
+            equal = true;
+        } else if (obj instanceof KeyInfo) {
+            final KeyInfo other = (KeyInfo) obj;
+            equal = (JesqueUtils.nullSafeEquals(this.arrayValue, other.arrayValue)
+                    && JesqueUtils.nullSafeEquals(this.name, other.name)
+                    && JesqueUtils.nullSafeEquals(this.namespace, other.namespace)
+                    && JesqueUtils.nullSafeEquals(this.size, other.size)
+                    && JesqueUtils.nullSafeEquals(this.type, other.type));
+        }
+        return equal;
     }
 
     /**

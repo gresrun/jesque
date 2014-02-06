@@ -17,6 +17,8 @@ package net.greghaines.jesque;
 
 import java.io.Serializable;
 
+import net.greghaines.jesque.utils.JesqueUtils;
+
 /**
  * An immutable configuration bean for use with the rest of the project.
  * 
@@ -122,11 +124,17 @@ public class Config implements Serializable {
         return "redis://" + this.host + ":" + this.port + "/" + this.database;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return "<" + getURI() + " namespace=" + this.namespace + " timeout=" + this.timeout + ">";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -139,41 +147,22 @@ public class Config implements Serializable {
         return result;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equals(final Object obj) {
+        boolean equal = false;
         if (this == obj) {
-            return true;
+            equal = true;
+        } else if (obj instanceof Config) {
+            final Config other = (Config) obj;
+            equal = ((this.database == other.database)
+                    && (this.port == other.port)
+                    && (this.timeout == other.timeout)
+                    && JesqueUtils.nullSafeEquals(this.host, other.host)
+                    && JesqueUtils.nullSafeEquals(this.namespace, other.namespace));
         }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final Config other = (Config) obj;
-        if (this.database != other.database) {
-            return false;
-        }
-        if (this.port != other.port) {
-            return false;
-        }
-        if (this.timeout != other.timeout) {
-            return false;
-        }
-        if (this.host == null) {
-            if (other.host != null) {
-                return false;
-            }
-        } else if (!this.host.equals(other.host)) {
-            return false;
-        }
-        if (this.namespace == null) {
-            if (other.namespace != null) {
-                return false;
-            }
-        } else if (!this.namespace.equals(other.namespace)) {
-            return false;
-        }
-        return true;
+        return equal;
     }
 }

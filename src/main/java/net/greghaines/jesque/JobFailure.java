@@ -247,75 +247,21 @@ public class JobFailure implements Serializable {
      */
     @Override
     public boolean equals(final Object obj) {
+        boolean equal = false;
         if (this == obj) {
-            return true;
+            equal = true;
+        } else if (obj instanceof JobFailure) {
+            final JobFailure other = (JobFailure) obj;
+            equal = (JesqueUtils.nullSafeEquals(this.queue, other.queue)
+                    && JesqueUtils.nullSafeEquals(this.worker, other.worker)
+                    && JesqueUtils.nullSafeEquals(this.exceptionString, other.exceptionString)
+                    && JesqueUtils.nullSafeEquals(this.error, other.error)
+                    && JesqueUtils.nullSafeEquals(this.failedAt, other.failedAt)
+                    && JesqueUtils.nullSafeEquals(this.retriedAt, other.retriedAt)
+                    && JesqueUtils.equal(this.exception, other.exception)
+                    && JesqueUtils.nullSafeEquals(this.payload, other.payload)
+                    && JesqueUtils.nullSafeEquals(this.backtrace, other.backtrace));
         }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final JobFailure other = (JobFailure) obj;
-        if (this.queue == null) {
-            if (other.queue != null) {
-                return false;
-            }
-        } else if (!this.queue.equals(other.queue)) {
-            return false;
-        }
-        if (this.worker == null) {
-            if (other.worker != null) {
-                return false;
-            }
-        } else if (!this.worker.equals(other.worker)) {
-            return false;
-        }
-        if (this.exceptionString == null) {
-            if (other.exceptionString != null) {
-                return false;
-            }
-        } else if (!this.exceptionString.equals(other.exceptionString)) {
-            return false;
-        }
-        if (this.error == null) {
-            if (other.error != null) {
-                return false;
-            }
-        } else if (!this.error.equals(other.error)) {
-            return false;
-        }
-        if (this.failedAt == null) {
-            if (other.failedAt != null) {
-                return false;
-            }
-        } else if (!this.failedAt.equals(other.failedAt)) {
-            return false;
-        }
-        if (this.retriedAt == null) {
-            if (other.retriedAt != null) {
-                return false;
-            }
-        } else if (!this.retriedAt.equals(other.retriedAt)) {
-            return false;
-        }
-        if (!JesqueUtils.equal(this.exception, other.exception)) {
-            return false;
-        }
-        if (this.payload == null) {
-            if (other.payload != null) {
-                return false;
-            }
-        } else if (!this.payload.equals(other.payload)) {
-            return false;
-        }
-        if (this.backtrace == null) {
-            if (other.backtrace != null) {
-                return false;
-            }
-        } else if (!this.backtrace.equals(other.backtrace)) {
-            return false;
-        }
-        return true;
+        return equal;
     }
 }

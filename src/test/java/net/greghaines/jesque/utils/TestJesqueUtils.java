@@ -166,6 +166,19 @@ public class TestJesqueUtils {
         Assert.assertTrue(JesqueUtils.equal(ex1, ex2));
     }
     
+    @Test
+    public void testNullSafeEquals() {
+        final String str1 = "foo";
+        final String str2 = "foo";
+        final String str3 = "bar";
+        Assert.assertTrue(JesqueUtils.nullSafeEquals(null, null));
+        Assert.assertFalse(JesqueUtils.nullSafeEquals(str1, null));
+        Assert.assertFalse(JesqueUtils.nullSafeEquals(null, str1));
+        Assert.assertTrue(JesqueUtils.nullSafeEquals(str1, str1));
+        Assert.assertTrue(JesqueUtils.nullSafeEquals(str1, str2));
+        Assert.assertFalse(JesqueUtils.nullSafeEquals(str1, str3));
+    }
+    
     public static class TestRunnableJob implements Runnable {
         @Override
         public void run() {

@@ -19,6 +19,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import net.greghaines.jesque.Job;
+import net.greghaines.jesque.utils.JesqueUtils;
 
 /**
  * Information about the current state of a queue.
@@ -33,26 +34,44 @@ public class QueueInfo implements Comparable<QueueInfo>, Serializable {
     private Long size;
     private List<Job> jobs;
 
+    /**
+     * @return the name of the queue
+     */
     public String getName() {
         return this.name;
     }
 
+    /**
+     * @param name the name of the queue
+     */
     public void setName(final String name) {
         this.name = name;
     }
 
+    /**
+     * @return the size of the queue
+     */
     public Long getSize() {
         return this.size;
     }
 
+    /**
+     * @param size the size of the queue
+     */
     public void setSize(final Long size) {
         this.size = size;
     }
 
+    /**
+     * @return the jobs in the queue
+     */
     public List<Job> getJobs() {
         return this.jobs;
     }
 
+    /**
+     * @param jobs the jobs in the queue
+     */
     public void setJobs(final List<Job> jobs) {
         this.jobs = jobs;
     }
@@ -63,6 +82,36 @@ public class QueueInfo implements Comparable<QueueInfo>, Serializable {
     @Override
     public String toString() {
         return this.name;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((this.jobs == null) ? 0 : this.jobs.hashCode());
+        result = prime * result + ((this.name == null) ? 0 : this.name.hashCode());
+        result = prime * result + ((this.size == null) ? 0 : this.size.hashCode());
+        return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(final Object obj) {
+        boolean equal = false;
+        if (this == obj) {
+            equal = true;
+        } else if (obj instanceof QueueInfo) {
+            final QueueInfo other = (QueueInfo) obj;
+            equal = (JesqueUtils.nullSafeEquals(this.jobs, other.jobs)
+                    && JesqueUtils.nullSafeEquals(this.name, other.name)
+                    && JesqueUtils.nullSafeEquals(this.size, other.size));
+        }
+        return equal;
     }
 
     /**

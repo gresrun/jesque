@@ -49,21 +49,31 @@ public class TestKeyInfo {
     }
     
     @Test
-    public void testCompareTo() {
+    public void testCompareToEqualsHashCode() {
         final KeyInfo ki1 = new KeyInfo();
         Assert.assertTrue(ki1.compareTo(null) > 0);
+        Assert.assertFalse(ki1.equals(null));
+        Assert.assertTrue(ki1.equals(ki1));
         final KeyInfo ki2 = new KeyInfo();
         Assert.assertEquals(0, ki1.compareTo(ki2));
+        Assert.assertTrue(ki1.equals(ki2));
+        Assert.assertEquals(ki1.hashCode(), ki2.hashCode());
         ki1.setName("foo");
         Assert.assertTrue(ki1.compareTo(ki2) > 0);
+        Assert.assertFalse(ki1.equals(ki2));
         ki1.setName(null);
         ki2.setName("foo");
         Assert.assertTrue(ki1.compareTo(ki2) < 0);
+        Assert.assertFalse(ki1.equals(ki2));
         ki1.setName("foo");
         Assert.assertEquals(0, ki1.compareTo(ki2));
+        Assert.assertTrue(ki1.equals(ki2));
+        Assert.assertEquals(ki1.hashCode(), ki2.hashCode());
         ki1.setName("bar");
         Assert.assertTrue(ki1.compareTo(ki2) < 0);
+        Assert.assertFalse(ki1.equals(ki2));
         ki1.setName("qux");
         Assert.assertTrue(ki1.compareTo(ki2) > 0);
+        Assert.assertFalse(ki1.equals(ki2));
     }
 }

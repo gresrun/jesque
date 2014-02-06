@@ -46,29 +46,42 @@ public class TestWorkerInfo {
     }
     
     @Test
-    public void testCompareTo() {
-        final WorkerInfo qi1 = new WorkerInfo();
-        Assert.assertTrue(qi1.compareTo(null) > 0);
-        final WorkerInfo qi2 = new WorkerInfo();
-        Assert.assertEquals(0, qi1.compareTo(qi2));
+    public void testCompareToEqualsHashCode() {
+        final WorkerInfo wi1 = new WorkerInfo();
+        Assert.assertTrue(wi1.compareTo(null) > 0);
+        Assert.assertFalse(wi1.equals(null));
+        Assert.assertTrue(wi1.equals(wi1));
+        final WorkerInfo wi2 = new WorkerInfo();
+        Assert.assertEquals(0, wi1.compareTo(wi2));
+        Assert.assertTrue(wi1.equals(wi2));
+        Assert.assertEquals(wi1.hashCode(), wi2.hashCode());
         final WorkerStatus status1 = new WorkerStatus();
-        qi1.setStatus(status1);
-        Assert.assertTrue(qi1.compareTo(qi2) > 0);
-        qi2.setStatus(status1);
-        Assert.assertEquals(0, qi1.compareTo(qi2));
-        qi1.setStatus(null);
-        Assert.assertTrue(qi1.compareTo(qi2) < 0);
-        qi1.setStatus(status1);
+        wi1.setStatus(status1);
+        Assert.assertTrue(wi1.compareTo(wi2) > 0);
+        Assert.assertFalse(wi1.equals(wi2));
+        wi2.setStatus(status1);
+        Assert.assertEquals(0, wi1.compareTo(wi2));
+        Assert.assertTrue(wi1.equals(wi2));
+        Assert.assertEquals(wi1.hashCode(), wi2.hashCode());
+        wi1.setStatus(null);
+        Assert.assertTrue(wi1.compareTo(wi2) < 0);
+        Assert.assertFalse(wi1.equals(wi2));
+        wi1.setStatus(status1);
         final Date runAt1 = new Date();
         status1.setRunAt(runAt1);
-        Assert.assertEquals(0, qi1.compareTo(qi2));
+        Assert.assertEquals(0, wi1.compareTo(wi2));
+        Assert.assertTrue(wi1.equals(wi2));
+        Assert.assertEquals(wi1.hashCode(), wi2.hashCode());
         final WorkerStatus status2 = new WorkerStatus();
-        qi2.setStatus(status2);
-        Assert.assertTrue(qi1.compareTo(qi2) > 0);
+        wi2.setStatus(status2);
+        Assert.assertTrue(wi1.compareTo(wi2) > 0);
+        Assert.assertFalse(wi1.equals(wi2));
         final Date runAt2 = new Date(runAt1.getTime() + 1000);
         status2.setRunAt(runAt2);
-        Assert.assertTrue(qi1.compareTo(qi2) < 0);
+        Assert.assertTrue(wi1.compareTo(wi2) < 0);
+        Assert.assertFalse(wi1.equals(wi2));
         status1.setRunAt(null);
-        Assert.assertTrue(qi1.compareTo(qi2) < 0);
+        Assert.assertTrue(wi1.compareTo(wi2) < 0);
+        Assert.assertFalse(wi1.equals(wi2));
     }
 }
