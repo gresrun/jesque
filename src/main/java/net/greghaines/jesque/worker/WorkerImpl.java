@@ -123,7 +123,7 @@ public class WorkerImpl implements Worker {
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
     private final AtomicReference<ExceptionHandler> exceptionHandlerRef = 
             new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
-	private final JobFactory jobFactory;
+    private final JobFactory jobFactory;
 
 	/**
      * Creates a new WorkerImpl, which creates it's own connection to Redis
@@ -475,9 +475,9 @@ public class WorkerImpl implements Worker {
             }
             this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null);
             this.jedis.set(key(WORKER, this.name), statusMsg(curQueue, job));
-        	final Object instance = this.jobFactory.materializeJob(job);
-        	final Object result = execute(job, curQueue, instance);
-        	success(job, instance, result, curQueue);
+            final Object instance = this.jobFactory.materializeJob(job);
+            final Object result = execute(job, curQueue, instance);
+            success(job, instance, result, curQueue);
         } catch (Exception e) {
             failure(e, job, curQueue);
         } finally {

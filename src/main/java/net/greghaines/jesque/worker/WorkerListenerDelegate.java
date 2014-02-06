@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
  * @author Greg Haines
  */
 public class WorkerListenerDelegate implements WorkerEventEmitter {
+    
     private static final Logger log = LoggerFactory.getLogger(WorkerListenerDelegate.class);
 
     private final Map<WorkerEvent, ConcurrentSet<WorkerListener>> eventListenerMap;

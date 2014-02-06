@@ -91,9 +91,7 @@ public class MapBasedJobFactory implements JobFactory {
     public void setJobTypes(final Map<String, ? extends Class<?>> jobTypes) {
         checkJobTypes(jobTypes);
         this.jobTypes.clear();
-        for (final Entry<String, ? extends Class<?>> entry : jobTypes.entrySet()) {
-            addJobType(entry.getKey(), entry.getValue());
-        }
+        this.jobTypes.putAll(jobTypes);
     }
 
     /**
