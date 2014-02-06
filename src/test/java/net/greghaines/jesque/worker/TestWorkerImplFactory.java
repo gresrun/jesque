@@ -23,13 +23,12 @@ public class TestWorkerImplFactory {
         final Collection<String> queues = Arrays.asList("foo", "bar");
         final Map<String,Class<?>> jobTypes = new LinkedHashMap<String,Class<?>>(1);
         jobTypes.put("test", TestAction.class);
-        final WorkerImplFactory factory = new WorkerImplFactory(new ConfigBuilder().build(), queues, jobTypes);
+        final MapBasedJobFactory jobFactory = new MapBasedJobFactory(jobTypes);
+        final WorkerImplFactory factory = new WorkerImplFactory(new ConfigBuilder().build(), queues, jobFactory);
         final WorkerImpl worker = factory.call();
         Assert.assertNotNull(worker);
         Assert.assertEquals(queues.size(), worker.getQueues().size());
         Assert.assertTrue(queues.containsAll(worker.getQueues()));
-        Assert.assertEquals(jobTypes.size(), worker.getJobTypes().size());
-        Assert.assertTrue(jobTypes.keySet().containsAll(worker.getJobTypes().keySet()));
-        Assert.assertTrue(jobTypes.values().containsAll(worker.getJobTypes().values()));
+        Assert.assertEquals(jobFactory, worker.getJobFactory());
     }
 }

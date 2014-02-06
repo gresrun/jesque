@@ -16,7 +16,6 @@
 package net.greghaines.jesque.worker;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 import net.greghaines.jesque.Config;
@@ -31,16 +30,7 @@ public class WorkerImplFactory implements Callable<WorkerImpl> {
     
     private final Config config;
     private final Collection<String> queues;
-    private final Map<String, ? extends Class<?>> jobTypes;
-    private JobFactory jobFactory = null;
-
-    public JobFactory getJobFactory() {
-		return jobFactory;
-	}
-
-	public void setJobFactory(JobFactory jobFactory) {
-		this.jobFactory = jobFactory;
-	}
+    private final JobFactory jobFactory;
 
 	/**
      * Create a new factory. Returned <code>WorkerImpl</code>s will use the
@@ -51,14 +41,14 @@ public class WorkerImplFactory implements Callable<WorkerImpl> {
      *            for incoming jobs
      * @param queues
      *            the list of queues to poll
-     * @param jobTypes
-     *            the list of job types to execute
+     * @param jobFactory
+     *            the job factory that materializes the jobs
      */
     public WorkerImplFactory(final Config config, final Collection<String> queues,
-            final Map<String, ? extends Class<?>> jobTypes) {
+            final JobFactory jobFactory) {
         this.config = config;
         this.queues = queues;
-        this.jobTypes = jobTypes;
+        this.jobFactory = jobFactory;
     }
 
     /**
@@ -66,10 +56,6 @@ public class WorkerImplFactory implements Callable<WorkerImpl> {
      * factory's constructor.
      */
     public WorkerImpl call() {
-        WorkerImpl result = new WorkerImpl(this.config, this.queues, this.jobTypes);
-        if(jobFactory != null) {
-        	result.setJobFactory(jobFactory);
-        }
-        return result;
+        return new WorkerImpl(this.config, this.queues, this.jobFactory);
     }
 }

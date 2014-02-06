@@ -1,11 +1,14 @@
 package net.greghaines.jesque.worker;
 
-import java.util.Map;
-
+/**
+ * JobExecutor is an object that executes jobs.
+ */
 public interface JobExecutor {
     
+    /**
+     * States of the job executor.
+     */
     public enum State {
-        
         /**
          * The JobExecutor has not started running.
          */
@@ -19,52 +22,18 @@ public interface JobExecutor {
          */
         SHUTDOWN;
     }
-
+    
     /**
-     * The allowed job names and types that this JobExecutor will execute.
+     * The job factory.
      * 
-     * @return an unmodifiable view of the allowed job names and types
+     * @return the job factory
      */
-    Map<String, Class<?>> getJobTypes();
-
-    /**
-     * Allow the given job type to be executed.
-     * 
-     * @param jobName
-     *            the job name as seen
-     * @param jobType
-     *            the job type to allow
-     */
-    void addJobType(String jobName, Class<?> jobType);
-
-    /**
-     * Disallow the job type from being executed.
-     * 
-     * @param jobType
-     *            the job type to disallow
-     */
-    void removeJobType(Class<?> jobType);
-
-    /**
-     * Disallow the job name from being executed.
-     * 
-     * @param jobName
-     *            the job name to disallow
-     */
-    void removeJobName(String jobName);
-
-    /**
-     * Clear any current allowed job types and use the given set.
-     * 
-     * @param jobTypes
-     *            the job types to allow
-     */
-    void setJobTypes(Map<String, ? extends Class<?>> jobTypes);
+    JobFactory getJobFactory();
 
     /**
      * The current exception handler.
      * 
-     * @return the current exception handler.
+     * @return the current exception handler
      */
     ExceptionHandler getExceptionHandler();
 

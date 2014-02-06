@@ -15,28 +15,9 @@
  */
 package net.greghaines.jesque.worker;
 
-import static net.greghaines.jesque.utils.ResqueConstants.COLON;
-import static net.greghaines.jesque.utils.ResqueConstants.DATE_FORMAT;
-import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
-import static net.greghaines.jesque.utils.ResqueConstants.JAVA_DYNAMIC_QUEUES;
-import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
-import static net.greghaines.jesque.utils.ResqueConstants.STARTED;
-import static net.greghaines.jesque.utils.ResqueConstants.STAT;
-import static net.greghaines.jesque.utils.ResqueConstants.WORKER;
-import static net.greghaines.jesque.utils.ResqueConstants.WORKERS;
-import static net.greghaines.jesque.worker.JobExecutor.State.NEW;
-import static net.greghaines.jesque.worker.JobExecutor.State.RUNNING;
-import static net.greghaines.jesque.worker.JobExecutor.State.SHUTDOWN;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_EXECUTE;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_FAILURE;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_PROCESS;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_SUCCESS;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_ERROR;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_START;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_STOP;
+import static net.greghaines.jesque.utils.ResqueConstants.*;
+import static net.greghaines.jesque.worker.JobExecutor.State.*;
+import static net.greghaines.jesque.worker.WorkerEvent.*;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -46,13 +27,9 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -136,7 +113,6 @@ public class WorkerImpl implements Worker {
     protected final Jedis jedis;
     protected final String namespace;
     protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<String>();
-    private final ConcurrentMap<String, Class<?>> jobTypes = new ConcurrentHashMap<String, Class<?>>();
     private final String name;
     protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
     protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
@@ -145,17 +121,9 @@ public class WorkerImpl implements Worker {
     private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
-    private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(
-            new DefaultExceptionHandler());
-	private JobFactory jobFactory = null;
-
-    public JobFactory getJobFactory() {
-		return jobFactory;
-	}
-
-	public void setJobFactory(JobFactory jobFactory) {
-		this.jobFactory = jobFactory;
-	}
+    private final AtomicReference<ExceptionHandler> exceptionHandlerRef = 
+            new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
+	private final JobFactory jobFactory;
 
 	/**
      * Creates a new WorkerImpl, which creates it's own connection to Redis
@@ -167,25 +135,27 @@ public class WorkerImpl implements Worker {
      *            for incoming jobs
      * @param queues
      *            the list of queues to poll
-     * @param jobTypes
-     *            the map of job names and types to execute
+     * @param jobFactory
+     *            the job factory that materializes the jobs
      * @throws IllegalArgumentException
      *             if the config is null, if the queues is null, or if the
      *             jobTypes is null or empty
      */
     public WorkerImpl(final Config config, final Collection<String> queues,
-            final Map<String, ? extends Class<?>> jobTypes) {
+           final JobFactory jobFactory) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
+        if (jobFactory == null) {
+            throw new IllegalArgumentException("jobFactory must not be null");
+        }
         checkQueues(queues);
-        checkJobTypes(jobTypes);
         this.config = config;
+        this.jobFactory = jobFactory;
         this.namespace = config.getNamespace();
         this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
         authenticateAndSelectDB();
         setQueues(queues);
-        setJobTypes(jobTypes);
         this.name = createName();
     }
 
@@ -329,36 +299,9 @@ public class WorkerImpl implements Worker {
             ? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
             : queues);
     }
-
-    public Map<String, Class<?>> getJobTypes() {
-        return Collections.unmodifiableMap(this.jobTypes);
-    }
-
-    public void addJobType(final String jobName, final Class<?> jobType) {
-        checkJobType(jobName, jobType);
-        this.jobTypes.put(jobName, jobType);
-    }
-
-    public void removeJobType(final Class<?> jobType) {
-        if (jobType == null) {
-            throw new IllegalArgumentException("jobType must not be null");
-        }
-        this.jobTypes.values().remove(jobType);
-    }
-
-    public void removeJobName(final String jobName) {
-        if (jobName == null) {
-            throw new IllegalArgumentException("jobName must not be null");
-        }
-        this.jobTypes.remove(jobName);
-    }
-
-    public void setJobTypes(final Map<String, ? extends Class<?>> jobTypes) {
-        checkJobTypes(jobTypes);
-        this.jobTypes.clear();
-        for (final Entry<String, ? extends Class<?>> entry : jobTypes.entrySet()) {
-            addJobType(entry.getKey(), entry.getValue());
-        }
+    
+    public JobFactory getJobFactory() {
+        return this.jobFactory;
     }
 
     public ExceptionHandler getExceptionHandler() {
@@ -532,15 +475,9 @@ public class WorkerImpl implements Worker {
             }
             this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null);
             this.jedis.set(key(WORKER, this.name), statusMsg(curQueue, job));
-            if(this.jobFactory != null) {
-            	final Object instance = this.jobFactory.materializeJob(job);
-            	final Object result = execute(job, curQueue, instance);
-            	success(job, instance, result, curQueue);
-            } else {
-            	final Object instance = JesqueUtils.materializeJob(job, this.jobTypes);
-            	final Object result = execute(job, curQueue, instance);
-            	success(job, instance, result, curQueue);
-            }
+        	final Object instance = this.jobFactory.materializeJob(job);
+        	final Object result = execute(job, curQueue, instance);
+        	success(job, instance, result, curQueue);
         } catch (Exception e) {
             failure(e, job, curQueue);
         } finally {
@@ -724,49 +661,6 @@ public class WorkerImpl implements Worker {
      */
     protected void renameThread(final String msg) {
         Thread.currentThread().setName(this.threadNameBase + msg);
-    }
-
-    /**
-     * Verify the given job types are all valid.
-     * 
-     * @param jobTypes
-     *            the given job types
-     * @throws IllegalArgumentException
-     *             if the job types are invalid
-     */
-    protected void checkJobTypes(final Map<String, ? extends Class<?>> jobTypes) {
-        if (jobTypes == null) {
-            throw new IllegalArgumentException("jobTypes must not be null");
-        }
-        for (final Entry<String, ? extends Class<?>> entry : jobTypes.entrySet()) {
-            try {
-                checkJobType(entry.getKey(), entry.getValue());
-            } catch (IllegalArgumentException iae) {
-                throw new IllegalArgumentException("jobTypes contained invalid value", iae);
-            }
-        }
-    }
-
-    /**
-     * Determine if a job name and job type are valid.
-     * 
-     * @param jobName
-     *            the name of the job
-     * @param jobType
-     *            the class of the job
-     * @throws IllegalArgumentException
-     *             if the name and type are invalid
-     */
-    protected void checkJobType(final String jobName, final Class<?> jobType) {
-        if (jobName == null) {
-            throw new IllegalArgumentException("jobName must not be null");
-        }
-        if (jobType == null) {
-            throw new IllegalArgumentException("jobType must not be null");
-        }
-        if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType))) {
-            throw new IllegalArgumentException("jobType must implement either Runnable or Callable: " + jobType);
-        }
     }
 
     @Override

@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 
@@ -60,14 +61,14 @@ public class DelayedQueueTest {
         }
 
         // Create and start worker
-        final Worker worker = new WorkerImpl(config, Arrays.asList(delayTestQueue), map(entry("TestAction",
-                TestAction.class)));
+        final Worker worker = new WorkerImpl(config, Arrays.asList(delayTestQueue), 
+                new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
         // start second thread
-        final Worker worker2 = new WorkerImpl(config, Arrays.asList(testQueue), map(entry("TestAction",
-                TestAction.class)));
+        final Worker worker2 = new WorkerImpl(config, Arrays.asList(testQueue), 
+                new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
         final Thread workerThread2 = new Thread(worker2);
         workerThread2.start();
 

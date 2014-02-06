@@ -5,7 +5,6 @@ import static net.greghaines.jesque.worker.JobExecutor.State.RUNNING;
 import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import net.greghaines.jesque.Config;
@@ -33,13 +32,13 @@ public class WorkerExitOnEmpty extends WorkerImpl {
     private final int maxLoopsOnEmptyQueues;
 
     public WorkerExitOnEmpty(final Config config, final Collection<String> queues,
-            final Map<String, ? extends Class<?>> jobTypes) {
-        this(config, queues, jobTypes, DEFAULT_MAX_LOOPS_ON_EMPTY_QUEUES);
+            final JobFactory jobFactory) {
+        this(config, queues, jobFactory, DEFAULT_MAX_LOOPS_ON_EMPTY_QUEUES);
     }
 
     public WorkerExitOnEmpty(final Config config, final Collection<String> queues,
-            final Map<String, ? extends Class<?>> jobTypes, final int maxLoopsOnEmptyQueues) {
-        super(config, queues, jobTypes);
+            final JobFactory jobFactory, final int maxLoopsOnEmptyQueues) {
+        super(config, queues, jobFactory);
         this.maxLoopsOnEmptyQueues = maxLoopsOnEmptyQueues;
     }
 

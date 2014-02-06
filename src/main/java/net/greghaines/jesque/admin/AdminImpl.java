@@ -1,21 +1,19 @@
 package net.greghaines.jesque.admin;
 
-import static net.greghaines.jesque.worker.JobExecutor.State.NEW;
-import static net.greghaines.jesque.worker.JobExecutor.State.RUNNING;
-import static net.greghaines.jesque.worker.JobExecutor.State.SHUTDOWN;
 import static net.greghaines.jesque.utils.JesqueUtils.entry;
 import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.JesqueUtils.set;
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
 import static net.greghaines.jesque.utils.ResqueConstants.CHANNEL;
+import static net.greghaines.jesque.worker.JobExecutor.State.NEW;
+import static net.greghaines.jesque.worker.JobExecutor.State.RUNNING;
+import static net.greghaines.jesque.worker.JobExecutor.State.SHUTDOWN;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -29,7 +27,9 @@ import net.greghaines.jesque.utils.ConcurrentSet;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.worker.DefaultExceptionHandler;
+import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.ExceptionHandler;
+import net.greghaines.jesque.worker.JobFactory;
 import net.greghaines.jesque.worker.RecoveryStrategy;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerAware;
@@ -48,7 +48,7 @@ public class AdminImpl implements Admin {
 
     protected final Jedis jedis;
     protected final String namespace;
-    private final ConcurrentMap<String, Class<?>> jobTypes = new ConcurrentHashMap<String, Class<?>>();
+    private final JobFactory jobFactory;
     private final ConcurrentSet<String> channels = new ConcurrentHashSet<String>();
     protected final PubSubListener jedisPubSub = new PubSubListener();
     protected final AtomicReference<Worker> workerRef = new AtomicReference<Worker>(null);
@@ -68,12 +68,17 @@ public class AdminImpl implements Admin {
         }
         this.jedis.select(config.getDatabase());
         setChannels(set(ADMIN_CHANNEL));
-        setJobTypes(map(entry("PauseCommand", PauseCommand.class), entry("ShutdownCommand", ShutdownCommand.class)));
+        this.jobFactory = new MapBasedJobFactory(map(
+                entry("PauseCommand", PauseCommand.class), 
+                entry("ShutdownCommand", ShutdownCommand.class)));
     }
 
-    public AdminImpl(final Config config, final Set<String> channels, final Map<String, ? extends Class<?>> jobTypes) {
+    public AdminImpl(final Config config, final Set<String> channels, final JobFactory jobFactory) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
+        }
+        if (jobFactory == null) {
+            throw new IllegalArgumentException("jobFactory must not be null");
         }
         this.namespace = config.getNamespace();
         this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
@@ -82,7 +87,7 @@ public class AdminImpl implements Admin {
         }
         this.jedis.select(config.getDatabase());
         setChannels(channels);
-        setJobTypes(jobTypes);
+        this.jobFactory = jobFactory;
     }
 
     public void run() {
@@ -154,43 +159,8 @@ public class AdminImpl implements Admin {
         }
     }
 
-    public Map<String, Class<?>> getJobTypes() {
-        return Collections.unmodifiableMap(this.jobTypes);
-    }
-
-    public void addJobType(final String jobName, final Class<?> jobType) {
-        if (jobName == null) {
-            throw new IllegalArgumentException("jobName must not be null");
-        }
-        if (jobType == null) {
-            throw new IllegalArgumentException("jobType must not be null");
-        }
-        if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType))) {
-            throw new IllegalArgumentException("jobType must implement either Runnable or Callable: " + jobType);
-        }
-        this.jobTypes.put(jobName, jobType);
-    }
-
-    public void removeJobType(final Class<?> jobType) {
-        if (jobType == null) {
-            throw new IllegalArgumentException("jobType must not be null");
-        }
-        this.jobTypes.values().remove(jobType);
-    }
-
-    public void removeJobName(final String jobName) {
-        if (jobName == null) {
-            throw new IllegalArgumentException("jobName must not be null");
-        }
-        this.jobTypes.remove(jobName);
-    }
-
-    public void setJobTypes(final Map<String, ? extends Class<?>> jobTypes) {
-        checkJobTypes(jobTypes);
-        this.jobTypes.clear();
-        for (final Entry<String, ? extends Class<?>> entry : jobTypes.entrySet()) {
-            addJobType(entry.getKey(), entry.getValue());
-        }
+    public JobFactory getJobFactory() {
+        return this.jobFactory;
     }
 
     public ExceptionHandler getExceptionHandler() {
@@ -211,7 +181,7 @@ public class AdminImpl implements Admin {
                 try {
                     AdminImpl.this.processingJob.set(true);
                     final Job job = ObjectMapperFactory.get().readValue(message, Job.class);
-                    execute(job, channel, JesqueUtils.materializeJob(job, AdminImpl.this.jobTypes));
+                    execute(job, channel, AdminImpl.this.jobFactory.materializeJob(job));
                 } catch (Exception e) {
                     recoverFromException(channel, e);
                 } finally {

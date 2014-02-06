@@ -11,6 +11,7 @@ import java.util.concurrent.Callable;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JUnit4Mockery;
+import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,16 +19,18 @@ import org.junit.Test;
 
 public class TestWorkerPool {
 
-    private int numWorkers = 2;
+    private static final int NUM_WORKERS = 2;
+    
     private Mockery mockCtx;
     private Callable<? extends Worker> workerFactory;
-    private final List<Worker> workers = new ArrayList<Worker>(this.numWorkers);
+    private final List<Worker> workers = new ArrayList<Worker>(NUM_WORKERS);
     private WorkerPool pool;
     
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() throws Exception {
         this.mockCtx = new JUnit4Mockery();
+        this.mockCtx.setThreadingPolicy(new Synchroniser());
         this.workerFactory = this.mockCtx.mock(Callable.class);
         this.workers.add(this.mockCtx.mock(Worker.class, "Worker1"));
         this.workers.add(this.mockCtx.mock(Worker.class, "Worker2"));
@@ -35,7 +38,7 @@ public class TestWorkerPool {
             oneOf(workerFactory).call(); will(returnValue(workers.get(0)));
             oneOf(workerFactory).call(); will(returnValue(workers.get(1)));
         }});
-        this.pool = new WorkerPool(this.workerFactory, this.numWorkers);
+        this.pool = new WorkerPool(this.workerFactory, NUM_WORKERS);
     }
     
     @After
@@ -46,6 +49,7 @@ public class TestWorkerPool {
         }});
         this.pool.endAndJoin(true, 1);
         this.mockCtx.assertIsSatisfied();
+        this.workers.clear();
     }
     
     @Test
@@ -214,55 +218,13 @@ public class TestWorkerPool {
     }
     
     @Test
-    public void testGetJobTypes() {
+    public void testGetJobFactory() {
         final Map<String, Class<?>> jobTypes = new LinkedHashMap<String, Class<?>>();
-        jobTypes.put("test", TestWorkerPool.class);
+        final MapBasedJobFactory jobFactory = new MapBasedJobFactory(jobTypes);
         this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).getJobTypes(); will(returnValue(jobTypes));
+            oneOf(workers.get(0)).getJobFactory(); will(returnValue(jobFactory));
         }});
-        Assert.assertEquals(jobTypes, this.pool.getJobTypes());
-    }
-    
-    @Test
-    public void testAddJobType() {
-        final String jobName = "type1";
-        final Class<?> jobType = TestWorkerPool.class;
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).addJobType(jobName, jobType);
-            oneOf(workers.get(1)).addJobType(jobName, jobType);
-        }});
-        this.pool.addJobType(jobName, jobType);
-    }
-    
-    @Test
-    public void testRemoveJobType() {
-        final Class<?> jobType = TestWorkerPool.class;
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).removeJobType(jobType);
-            oneOf(workers.get(1)).removeJobType(jobType);
-        }});
-        this.pool.removeJobType(jobType);
-    }
-    
-    @Test
-    public void testRemoveJobName() {
-        final String jobName = "type1";
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).removeJobName(jobName);
-            oneOf(workers.get(1)).removeJobName(jobName);
-        }});
-        this.pool.removeJobName(jobName);
-    }
-    
-    @Test
-    public void testSetJobTypes() {
-        final Map<String, Class<?>> jobTypes = new LinkedHashMap<String, Class<?>>();
-        jobTypes.put("test", TestWorkerPool.class);
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).setJobTypes(jobTypes);
-            oneOf(workers.get(1)).setJobTypes(jobTypes);
-        }});
-        this.pool.setJobTypes(jobTypes);
+        Assert.assertEquals(jobFactory, this.pool.getJobFactory());
     }
     
     @Test

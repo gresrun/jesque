@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 
@@ -41,14 +42,15 @@ public class InfiniteTest {
             }
             TestUtils.enqueueJobs("bar", jobs, config);
         }
-        final Worker worker = new WorkerImpl(config, Arrays.asList("foo0", "bar", "baz"), map(
-                entry("TestAction", TestAction.class), entry("FailAction", FailAction.class)));
+        final Worker worker = new WorkerImpl(config, Arrays.asList("foo0", "bar", "baz"), 
+                new MapBasedJobFactory(map(entry("TestAction", TestAction.class), 
+                        entry("FailAction", FailAction.class))));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
         TestUtils.enqueueJobs("inf", Arrays.asList(new Job("InfiniteAction")), config);
-        final Worker worker2 = new WorkerImpl(config, Arrays.asList("inf"), map(entry("InfiniteAction",
-                InfiniteAction.class)));
+        final Worker worker2 = new WorkerImpl(config, Arrays.asList("inf"), 
+                new MapBasedJobFactory(map(entry("InfiniteAction", InfiniteAction.class))));
         final Thread workerThread2 = new Thread(worker2);
         workerThread2.start();
         worker2.togglePause(true);
@@ -59,8 +61,9 @@ public class InfiniteTest {
     @Test
     @Ignore
     public void issue6() throws InterruptedException {
-        final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), map(entry("TestAction", TestAction.class),
-                entry("FailAction", FailAction.class)));
+        final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), 
+                new MapBasedJobFactory(map(entry("TestAction", TestAction.class),
+                        entry("FailAction", FailAction.class))));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 

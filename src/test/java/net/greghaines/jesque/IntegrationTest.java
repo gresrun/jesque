@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientImpl;
+import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.UnpermittedJobException;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
@@ -215,7 +216,7 @@ public class IntegrationTest {
 
     private static void doWork(final List<Job> jobs, final Map<String, ? extends Class<? extends Runnable>> jobTypes,
             final WorkerListener listener, final WorkerEvent... events) {
-        final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue), jobTypes);
+        final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue), new MapBasedJobFactory(jobTypes));
         if (listener != null && events.length > 0) {
             worker.addListener(listener, events);
         }

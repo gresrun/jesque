@@ -26,6 +26,7 @@ import static net.greghaines.jesque.utils.ResqueConstants.STAT;
 
 import java.util.Arrays;
 
+import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 
@@ -64,7 +65,7 @@ public class ClientBeforeWorkerTest {
 
         // Create and start worker
         final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue),
-                map(entry("TestAction", TestAction.class)));
+                new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
         try { // Wait a bit to ensure the worker had time to process the job
