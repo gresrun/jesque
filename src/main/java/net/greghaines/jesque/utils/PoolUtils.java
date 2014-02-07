@@ -17,7 +17,7 @@ package net.greghaines.jesque.utils;
 
 import net.greghaines.jesque.Config;
 
-import org.apache.commons.pool.impl.GenericObjectPool;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -89,17 +89,17 @@ public final class PoolUtils {
     }
 
     /**
-     * @return a GenericObjectPool.Config configured with: maxActive=-1,
+     * @return a GenericObjectPoolConfig configured with: maxActive=-1,
      *         maxIdle=10, minIdle=1, testOnBorrow=true,
-     *         whenExhaustedAction=GROW
+     *         blockWhenExhausted=false
      */
-    public static GenericObjectPool.Config getDefaultPoolConfig() {
-        final GenericObjectPool.Config cfg = new GenericObjectPool.Config();
-        cfg.maxActive = -1; // Infinite
-        cfg.maxIdle = 10;
-        cfg.minIdle = 1;
-        cfg.testOnBorrow = true;
-        cfg.whenExhaustedAction = GenericObjectPool.WHEN_EXHAUSTED_GROW;
+    public static GenericObjectPoolConfig getDefaultPoolConfig() {
+        final GenericObjectPoolConfig cfg = new GenericObjectPoolConfig();
+        cfg.setMaxTotal(-1); // Infinite
+        cfg.setMaxIdle(10);
+        cfg.setMinIdle(1);
+        cfg.setTestOnBorrow(true);
+        cfg.setBlockWhenExhausted(false);
         return cfg;
     }
 
@@ -125,7 +125,7 @@ public final class PoolUtils {
      *            the config used to create the pool
      * @return a configured Pool of Jedis connections
      */
-    public static Pool<Jedis> createJedisPool(final Config jesqueConfig, final GenericObjectPool.Config poolConfig) {
+    public static Pool<Jedis> createJedisPool(final Config jesqueConfig, final GenericObjectPoolConfig poolConfig) {
         if (jesqueConfig == null) {
             throw new IllegalArgumentException("jesqueConfig must not be null");
         }
