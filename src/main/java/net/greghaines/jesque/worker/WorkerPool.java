@@ -107,12 +107,17 @@ public class WorkerPool implements Worker {
      *             interrupted status of the current thread is cleared when this
      *             exception is thrown.
      */
+    @Override
     public void join(final long millis) throws InterruptedException {
         for (final Thread thread : this.threads) {
             thread.join(millis);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getName() {
         final StringBuilder sb = new StringBuilder(128 * this.threads.size());
         String prefix = "";
@@ -122,11 +127,19 @@ public class WorkerPool implements Worker {
         }
         return sb.toString();
     }
-    
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public WorkerEventEmitter getWorkerEventEmitter() {
         return this.eventEmitter;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void run() {
         for (final Thread thread : this.threads) {
             thread.start();
@@ -134,26 +147,46 @@ public class WorkerPool implements Worker {
         Thread.yield();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void end(final boolean now) {
         for (final Worker worker : this.workers) {
             worker.end(now);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isShutdown() {
         return this.workers.get(0).isShutdown();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isPaused() {
         return this.workers.get(0).isPaused();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void togglePause(final boolean paused) {
         for (final Worker worker : this.workers) {
             worker.togglePause(paused);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isProcessingJob() {
         boolean processingJob = false;
         for (final Worker worker : this.workers) {
@@ -164,43 +197,75 @@ public class WorkerPool implements Worker {
         }
         return processingJob;
     }
-    
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public JobFactory getJobFactory() {
         return this.workers.get(0).getJobFactory();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Collection<String> getQueues() {
         return this.workers.get(0).getQueues();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void addQueue(final String queueName) {
         for (final Worker worker : this.workers) {
             worker.addQueue(queueName);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeQueue(final String queueName, final boolean all) {
         for (final Worker worker : this.workers) {
             worker.removeQueue(queueName, all);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeAllQueues() {
         for (final Worker worker : this.workers) {
             worker.removeAllQueues();
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setQueues(final Collection<String> queues) {
         for (final Worker worker : this.workers) {
             worker.setQueues(queues);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ExceptionHandler getExceptionHandler() {
         return this.workers.get(0).getExceptionHandler();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setExceptionHandler(final ExceptionHandler exceptionHandler) {
         for (final Worker worker : this.workers) {
             worker.setExceptionHandler(exceptionHandler);
@@ -211,40 +276,68 @@ public class WorkerPool implements Worker {
         
         private final List<Worker> workers;
         
+        /**
+         * Constructor.
+         * @param workers the workers to manage
+         */
         public WorkerPoolEventEmitter(final List<Worker> workers) {
             this.workers = workers;
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void addListener(final WorkerListener listener) {
             for (final Worker worker : this.workers) {
                 worker.getWorkerEventEmitter().addListener(listener);
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void addListener(final WorkerListener listener, final WorkerEvent... events) {
             for (final Worker worker : this.workers) {
                 worker.getWorkerEventEmitter().addListener(listener, events);
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void removeListener(final WorkerListener listener) {
             for (final Worker worker : this.workers) {
                 worker.getWorkerEventEmitter().removeListener(listener);
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void removeListener(final WorkerListener listener, final WorkerEvent... events) {
             for (final Worker worker : this.workers) {
                 worker.getWorkerEventEmitter().removeListener(listener, events);
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void removeAllListeners() {
             for (final Worker worker : this.workers) {
                 worker.getWorkerEventEmitter().removeAllListeners();
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void removeAllListeners(final WorkerEvent... events) {
             for (final Worker worker : this.workers) {
                 worker.getWorkerEventEmitter().removeAllListeners(events);

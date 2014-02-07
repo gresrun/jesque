@@ -98,24 +98,37 @@ public class ClientImpl extends AbstractClient {
         }, initialDelay, period, timeUnit);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void doEnqueue(final String queue, final String jobJson) {
         ensureJedisConnection();
         doEnqueue(this.jedis, getNamespace(), queue, jobJson);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void doPriorityEnqueue(final String queue, final String jobJson) {
         ensureJedisConnection();
         doPriorityEnqueue(this.jedis, getNamespace(), queue, jobJson);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout) throws Exception {
         ensureJedisConnection();
         return doAcquireLock(this.jedis, getNamespace(), lockName, lockHolder, timeout);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void end() {
         if (this.keepAliveService != null) {
             this.keepAliveService.shutdownNow();
@@ -123,6 +136,9 @@ public class ClientImpl extends AbstractClient {
         this.jedis.quit();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void doDelayedEnqueue(final String queue, final String msg, final long future) throws Exception {
         ensureJedisConnection();

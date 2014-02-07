@@ -45,6 +45,11 @@ import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
+/**
+ * WorkerInfoDAORedisImpl gets worker information from Redis.
+ * 
+ * @author Greg Haines
+ */
 public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
     
     private static final Pattern colonPattern = Pattern.compile(":");
@@ -53,6 +58,11 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
     private final Config config;
     private final Pool<Jedis> jedisPool;
 
+    /**
+     * Constructor.
+     * @param config the Jesque configuration
+     * @param jedisPool the pool of Jedis connections
+     */
     public WorkerInfoDAORedisImpl(final Config config, final Pool<Jedis> jedisPool) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");

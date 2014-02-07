@@ -19,17 +19,44 @@ import java.util.List;
 
 import net.greghaines.jesque.meta.QueueInfo;
 
+/**
+ * QueueInfoDAO provides access to the queues in use by Jesque.
+ * 
+ * @author Greg Haines
+ */
 public interface QueueInfoDAO {
     
+    /**
+     * @return the list of queue names
+     */
     List<String> getQueueNames();
 
+    /**
+     * @return total number of jobs pending in all queues
+     */
     long getPendingCount();
 
+    /**
+     * @return total number of jobs processed
+     */
     long getProcessedCount();
 
+    /**
+     * @return the list of queue informations
+     */
     List<QueueInfo> getQueueInfos();
 
+    /**
+     * @param name the queue name
+     * @param jobOffset the offset into the queue
+     * @param jobCount the number of jobs to return
+     * @return the queue information or null if the queue does not exist
+     */
     QueueInfo getQueueInfo(String name, long jobOffset, long jobCount);
 
+    /**
+     * Delete the given queue.
+     * @param name the name of the queue
+     */
     void removeQueue(String name);
 }

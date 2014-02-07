@@ -170,6 +170,7 @@ public class WorkerImpl implements Worker {
      * Starts this worker. Registers the worker in Redis and begins polling the
      * queues for jobs. Stop this worker by calling end() on any thread.
      */
+    @Override
     public void run() {
         if (this.state.compareAndSet(NEW, RUNNING)) {
             try {
@@ -205,6 +206,7 @@ public class WorkerImpl implements Worker {
      * @param now
      *            if true, an effort will be made to stop any job in progress
      */
+    @Override
     public void end(final boolean now) {
         this.state.set(SHUTDOWN);
         if (now) {
@@ -216,18 +218,34 @@ public class WorkerImpl implements Worker {
         togglePause(false); // Release any threads waiting in checkPaused()
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isShutdown() {
         return SHUTDOWN.equals(this.state.get());
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isPaused() {
         return this.paused.get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isProcessingJob() {
         return this.processingJob.get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void togglePause(final boolean paused) {
         this.paused.set(paused);
         synchronized (this.paused) {
@@ -235,18 +253,34 @@ public class WorkerImpl implements Worker {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getName() {
         return this.name;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public WorkerEventEmitter getWorkerEventEmitter() {
         return this.listenerDelegate;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Collection<String> getQueues() {
         return Collections.unmodifiableCollection(this.queueNames);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void addQueue(final String queueName) {
         if (queueName == null || "".equals(queueName)) {
             throw new IllegalArgumentException("queueName must not be null or empty: " + queueName);
@@ -254,6 +288,10 @@ public class WorkerImpl implements Worker {
         this.queueNames.add(queueName);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeQueue(final String queueName, final boolean all) {
         if (queueName == null || "".equals(queueName)) {
             throw new IllegalArgumentException("queueName must not be null or empty: " + queueName);
@@ -268,10 +306,18 @@ public class WorkerImpl implements Worker {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeAllQueues() {
         this.queueNames.clear();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setQueues(final Collection<String> queues) {
         checkQueues(queues);
         this.queueNames.clear();
@@ -279,15 +325,27 @@ public class WorkerImpl implements Worker {
             ? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
             : queues);
     }
-    
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public JobFactory getJobFactory() {
         return this.jobFactory;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ExceptionHandler getExceptionHandler() {
         return this.exceptionHandlerRef.get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setExceptionHandler(final ExceptionHandler exceptionHandler) {
         if (exceptionHandler == null) {
             throw new IllegalArgumentException("exceptionHandler must not be null");
@@ -295,6 +353,10 @@ public class WorkerImpl implements Worker {
         this.exceptionHandlerRef.set(exceptionHandler);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void join(final long millis) throws InterruptedException {
         final Thread workerThread = this.threadRef.get();
         if (workerThread != null && workerThread.isAlive()) {
@@ -643,6 +705,9 @@ public class WorkerImpl implements Worker {
         Thread.currentThread().setName(this.threadNameBase + msg);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return this.namespace + COLON + WORKER + COLON + this.name;

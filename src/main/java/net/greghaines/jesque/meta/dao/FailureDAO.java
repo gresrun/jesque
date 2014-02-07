@@ -20,15 +20,40 @@ import java.util.List;
 
 import net.greghaines.jesque.JobFailure;
 
+/**
+ * FailureDAO provides access to job failures.
+ * 
+ * @author Greg Haines
+ */
 public interface FailureDAO {
     
+    /**
+     * @return total number of failures
+     */
     long getCount();
 
+    /**
+     * @param offset offset into the failures
+     * @param count number of failures to return
+     * @return a sub-list of the failures
+     */
     List<JobFailure> getFailures(long offset, long count);
 
+    /**
+     * Clear the list of failures.
+     */
     void clear();
 
+    /**
+     * Re-queue a job for execution.
+     * @param index the index into the failure list
+     * @return the date the job was re-queued
+     */
     Date requeue(long index);
 
+    /**
+     * Remove a failure from the list.
+     * @param index the index of the failure to remove
+     */
     void remove(long index);
 }

@@ -42,6 +42,9 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure> {
     private static final TypeReference<List<String>> stringListTypeRef = 
             new TypeReference<List<String>>() {};
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public JobFailure deserialize(final JsonParser jp, final DeserializationContext ctxt) throws IOException,
             JsonProcessingException {

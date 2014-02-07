@@ -36,6 +36,11 @@ import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
+/**
+ * KeysDAORedisImpl gets key information from Redis.
+ * 
+ * @author Greg Haines
+ */
 public class KeysDAORedisImpl implements KeysDAO {
     
     private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\r\n");
@@ -44,6 +49,11 @@ public class KeysDAORedisImpl implements KeysDAO {
     private final Config config;
     private final Pool<Jedis> jedisPool;
 
+    /**
+     * Constructor.
+     * @param config the Jesque configuration
+     * @param jedisPool the pool of Jedis connections
+     */
     public KeysDAORedisImpl(final Config config, final Pool<Jedis> jedisPool) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");

@@ -20,13 +20,37 @@ import java.util.Map;
 
 import net.greghaines.jesque.meta.KeyInfo;
 
+/**
+ * KeysDAO provides access to available keys.
+ * 
+ * @author Greg Haines
+ */
 public interface KeysDAO {
     
+    /**
+     * Get basic key info.
+     * @param key the key name
+     * @return the key information or null if the key did not exist
+     */
     KeyInfo getKeyInfo(String key);
 
+    /**
+     * Get basic key info plus a sub-list of the array value for the key, if applicable.
+     * @param key the key name
+     * @param offset the offset into the array
+     * @param count the number of values to return
+     * @return the key information or null if the key did not exist
+     */
     KeyInfo getKeyInfo(String key, int offset, int count);
 
+    /**
+     * Get basic info on all keys.
+     * @return a list of key informations
+     */
     List<KeyInfo> getKeyInfos();
 
+    /**
+     * @return information about the backing Redis database
+     */
     Map<String, String> getRedisInfo();
 }

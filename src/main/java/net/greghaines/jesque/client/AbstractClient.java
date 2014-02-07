@@ -65,6 +65,10 @@ public abstract class AbstractClient implements Client {
         return JesqueUtils.createKey(this.namespace, parts);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void enqueue(final String queue, final Job job) {
         validateArguments(queue, job);
         try {
@@ -76,6 +80,10 @@ public abstract class AbstractClient implements Client {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void priorityEnqueue(final String queue, final Job job) {
         validateArguments(queue, job);
         try {
@@ -87,6 +95,10 @@ public abstract class AbstractClient implements Client {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean acquireLock(final String lockName, final String lockHolder, final int timeout) {
         if ((lockName == null) || "".equals(lockName)) {
             throw new IllegalArgumentException("lockName must not be null or empty: " + lockName);
@@ -264,6 +276,10 @@ public abstract class AbstractClient implements Client {
 
     protected abstract void doDelayedEnqueue(String queue, String msg, long future) throws Exception;
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void delayedEnqueue(final String queue, final Job job, final long future) {
         validateArguments(queue, job, future);
         try {

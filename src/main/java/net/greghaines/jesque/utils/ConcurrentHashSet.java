@@ -111,51 +111,81 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int size() {
         return this.delegate.size();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isEmpty() {
         return this.delegate.isEmpty();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean contains(final Object o) {
         return this.delegate.containsKey(o);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Iterator<E> iterator() {
         return this.delegate.keySet().iterator();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Object[] toArray() {
         return this.delegate.keySet().toArray();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T> T[] toArray(final T[] a) {
         return this.delegate.keySet().toArray(a);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean add(final E e) {
         return (this.delegate.put(e, Nothing.NOTHING) == null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean remove(final Object o) {
         return (this.delegate.remove(o) != null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean containsAll(final Collection<?> c) {
         return this.delegate.keySet().containsAll(c);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean addAll(final Collection<? extends E> c) {
         boolean changed = false;
@@ -165,16 +195,25 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E> {
         return changed;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean retainAll(final Collection<?> c) {
         return this.delegate.keySet().retainAll(c);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean removeAll(final Collection<?> c) {
         return this.delegate.keySet().removeAll(c);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void clear() {
         this.delegate.clear();

@@ -19,6 +19,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * KeyTypes are the types of Redis keys that Jesque uses.
+ * 
+ * @author Greg Haines
+ */
 public enum KeyType {
     
     HASH("hash"), 
@@ -34,6 +39,9 @@ public enum KeyType {
         this.val = val;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return this.val;
@@ -49,6 +57,10 @@ public enum KeyType {
         valTypeMap = Collections.unmodifiableMap(vtm);
     }
 
+    /**
+     * @param val the Redis type name
+     * @return the KeyType for the given type name or null if the type is unknown
+     */
     public static KeyType getKeyTypeByValue(final String val) {
         return valTypeMap.get(val);
     }

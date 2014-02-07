@@ -58,7 +58,7 @@ public final class VersionUtils {
      * element is a String that is either null, for releases, or "SNAPSHOT", for
      * snapshots. <br/>
      * <br/>
-     * If this is a developement build, the array is [-1, -1, -1,
+     * If this is a development build, the array is [-1, -1, -1,
      * "DEVELOPMENT"].<br/>
      * If there is an error determining the version, the array is [-1, -1, -1,
      * "ERROR"].

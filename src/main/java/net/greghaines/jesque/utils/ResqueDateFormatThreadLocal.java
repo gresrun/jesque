@@ -52,6 +52,9 @@ public final class ResqueDateFormatThreadLocal extends ThreadLocal<DateFormat> {
         // Singleton
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected DateFormat initialValue() {
         final SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);

@@ -50,10 +50,18 @@ public class WorkerListenerDelegate implements WorkerEventEmitter {
         this.eventListenerMap = Collections.unmodifiableMap(elp);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void addListener(final WorkerListener listener) {
         addListener(listener, WorkerEvent.values());
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void addListener(final WorkerListener listener, final WorkerEvent... events) {
         if (listener != null) {
             for (final WorkerEvent event : events) {
@@ -65,10 +73,18 @@ public class WorkerListenerDelegate implements WorkerEventEmitter {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeListener(final WorkerListener listener) {
         removeListener(listener, WorkerEvent.values());
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeListener(final WorkerListener listener, final WorkerEvent... events) {
         if (listener != null) {
             for (final WorkerEvent event : events) {
@@ -80,10 +96,18 @@ public class WorkerListenerDelegate implements WorkerEventEmitter {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeAllListeners() {
         removeAllListeners(WorkerEvent.values());
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeAllListeners(final WorkerEvent... events) {
         for (final WorkerEvent event : events) {
             final ConcurrentSet<WorkerListener> listeners = this.eventListenerMap.get(event);
@@ -94,13 +118,12 @@ public class WorkerListenerDelegate implements WorkerEventEmitter {
     }
 
     /**
-     * Notify all WorkerListeners currently registered for the given
-     * WorkerEvent.
+     * Notify all WorkerListeners currently registered for the given WorkerEvent.
      * 
      * @param event
-     *            the WorkerEvent that occured
+     *            the WorkerEvent that occurred
      * @param worker
-     *            the Worker that the event occured in
+     *            the Worker that the event occurred in
      * @param queue
      *            the queue the Worker is processing
      * @param job
@@ -117,8 +140,8 @@ public class WorkerListenerDelegate implements WorkerEventEmitter {
      *            the Exception that caused the event (only supply for
      *            JOB_FAILURE and ERROR events)
      */
-    public void fireEvent(final WorkerEvent event, final Worker worker, final String queue, final Job job,
-            final Object runner, final Object result, final Exception ex) {
+    public void fireEvent(final WorkerEvent event, final Worker worker, final String queue, 
+            final Job job, final Object runner, final Object result, final Exception ex) {
         final ConcurrentSet<WorkerListener> listeners = this.eventListenerMap.get(event);
         if (listeners != null) {
             for (final WorkerListener listener : listeners) {
@@ -126,8 +149,8 @@ public class WorkerListenerDelegate implements WorkerEventEmitter {
                     try {
                         listener.onEvent(event, worker, queue, job, runner, result, ex);
                     } catch (Exception e) {
-                        log.error("Failure executing listener " + listener + " for event " + event + " from queue "
-                                + queue + " on worker " + worker, e);
+                        log.error("Failure executing listener " + listener + " for event " + event 
+                                + " from queue " + queue + " on worker " + worker, e);
                     }
                 }
             }

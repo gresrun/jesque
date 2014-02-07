@@ -1,3 +1,18 @@
+/*
+ * Copyright 2012 Greg Haines
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package net.greghaines.jesque.admin;
 
 import static net.greghaines.jesque.utils.JesqueUtils.entry;
@@ -40,6 +55,11 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
 
+/**
+ * AdminImpl receives administrative jobs for a worker.
+ * 
+ * @author Greg Haines
+ */
 public class AdminImpl implements Admin {
     
     private static final Logger log = LoggerFactory.getLogger(AdminImpl.class);
@@ -57,6 +77,10 @@ public class AdminImpl implements Admin {
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
     private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
 
+    /**
+     * Constructor.
+     * @param config the Jesque configuration
+     */
     public AdminImpl(final Config config) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
@@ -73,6 +97,12 @@ public class AdminImpl implements Admin {
                 entry("ShutdownCommand", ShutdownCommand.class)));
     }
 
+    /**
+     * Constructor.
+     * @param config the Jesque configuration
+     * @param channels the channels to subscribe to
+     * @param jobFactory the job factory that materializes the jobs
+     */
     public AdminImpl(final Config config, final Set<String> channels, final JobFactory jobFactory) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
@@ -90,6 +120,10 @@ public class AdminImpl implements Admin {
         this.jobFactory = jobFactory;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void run() {
         if (this.state.compareAndSet(NEW, RUNNING)) {
             try {
@@ -112,10 +146,18 @@ public class AdminImpl implements Admin {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Set<String> getChannels() {
         return Collections.unmodifiableSet(this.channels);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setChannels(final Set<String> channels) {
         checkChannels(channels);
         this.channels.clear();
@@ -125,14 +167,26 @@ public class AdminImpl implements Admin {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Worker getWorker() {
         return this.workerRef.get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setWorker(final Worker worker) {
         this.workerRef.set(worker);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void end(final boolean now) {
         this.state.set(SHUTDOWN);
         this.jedisPubSub.unsubscribe();
@@ -144,14 +198,26 @@ public class AdminImpl implements Admin {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isShutdown() {
         return SHUTDOWN.equals(this.state.get());
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean isProcessingJob() {
         return this.processingJob.get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void join(final long millis) throws InterruptedException {
         final Thread workerThread = this.threadRef.get();
         if (workerThread != null && workerThread.isAlive()) {
@@ -159,14 +225,26 @@ public class AdminImpl implements Admin {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public JobFactory getJobFactory() {
         return this.jobFactory;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public ExceptionHandler getExceptionHandler() {
         return this.exceptionHandlerRef.get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setExceptionHandler(final ExceptionHandler exceptionHandler) {
         if (exceptionHandler == null) {
             throw new IllegalArgumentException("exceptionHandler must not be null");
@@ -175,7 +253,10 @@ public class AdminImpl implements Admin {
     }
 
     protected class PubSubListener extends JedisPubSub {
-        
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void onMessage(final String channel, final String message) {
             if (message != null) {
                 try {
@@ -190,18 +271,38 @@ public class AdminImpl implements Admin {
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void onPMessage(final String pattern, final String channel, final String message) {
         } // NOOP
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void onSubscribe(final String channel, final int subscribedChannels) {
         } // NOOP
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void onUnsubscribe(final String channel, final int subscribedChannels) {
         } // NOOP
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void onPUnsubscribe(final String pattern, final int subscribedChannels) {
         } // NOOP
 
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         public void onPSubscribe(final String pattern, final int subscribedChannels) {
         } // NOOP
     }

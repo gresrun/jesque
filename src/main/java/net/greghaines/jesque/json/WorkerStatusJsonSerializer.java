@@ -32,6 +32,9 @@ import com.fasterxml.jackson.databind.SerializerProvider;
  */
 public class WorkerStatusJsonSerializer extends JsonSerializer<WorkerStatus> {
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void serialize(final WorkerStatus workerStatus, final JsonGenerator jgen, final SerializerProvider provider)
             throws IOException, JsonProcessingException {

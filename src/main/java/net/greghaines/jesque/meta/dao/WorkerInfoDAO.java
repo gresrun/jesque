@@ -20,22 +20,52 @@ import java.util.Map;
 
 import net.greghaines.jesque.meta.WorkerInfo;
 
+/**
+ * WorkerInfoDAO provides access to information about workers.
+ * 
+ * @author Greg Haines
+ */
 public interface WorkerInfoDAO {
     
+    /**
+     * @return total number of workers known
+     */
     long getWorkerCount();
 
+    /**
+     * @return number of active workers
+     */
     long getActiveWorkerCount();
 
+    /**
+     * @return number of paused workers
+     */
     long getPausedWorkerCount();
 
+    /**
+     * @return information about all active workers
+     */
     List<WorkerInfo> getActiveWorkers();
 
+    /**
+     * @return information about all paused workers
+     */
     List<WorkerInfo> getPausedWorkers();
 
+    /**
+     * @return information about all workers
+     */
     List<WorkerInfo> getAllWorkers();
 
+    /**
+     * @param workerName the name of the worker
+     * @return information about the given worker or null if that worker does not exist
+     */
     WorkerInfo getWorker(String workerName);
 
+    /**
+     * @return a map of worker informations by hostname
+     */
     Map<String, List<WorkerInfo>> getWorkerHostMap();
 
     /**

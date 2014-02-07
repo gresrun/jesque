@@ -48,7 +48,6 @@ public class FailureDAORedisImpl implements FailureDAO {
 
     /**
      * Constructor.
-     * 
      * @param config the Jesque configuration
      * @param jedisPool the connection pool to Redis
      */
@@ -69,6 +68,10 @@ public class FailureDAORedisImpl implements FailureDAO {
     @Override
     public long getCount() {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
             public Long doWork(final Jedis jedis) throws Exception {
                 return jedis.llen(key(FAILED));
             }

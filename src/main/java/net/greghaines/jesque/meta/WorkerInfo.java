@@ -31,6 +31,11 @@ public class WorkerInfo implements Comparable<WorkerInfo>, Serializable {
     
     private static final long serialVersionUID = 7780544212376833441L;
 
+    /**
+     * Possible states of a worker.
+     * 
+     * @author Greg Haines
+     */
     public enum State {
         IDLE, PAUSED, WORKING;
     }

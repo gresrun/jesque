@@ -1,3 +1,18 @@
+/*
+ * Copyright 2012 Greg Haines
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package net.greghaines.jesque.admin;
 
 import java.util.concurrent.Executors;
@@ -8,6 +23,11 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.utils.JedisUtils;
 import redis.clients.jedis.Jedis;
 
+/**
+ * AdminClientImpl publishes jobs to channels.
+ * 
+ * @author Greg Haines
+ */
 public class AdminClientImpl extends AbstractAdminClient {
     
     public static final boolean DEFAULT_CHECK_CONNECTION_BEFORE_USE = false;
@@ -71,18 +91,28 @@ public class AdminClientImpl extends AbstractAdminClient {
         this.checkConnectionBeforeUse = false;
         this.keepAliveService = Executors.newSingleThreadScheduledExecutor();
         this.keepAliveService.scheduleAtFixedRate(new Runnable() {
+            /**
+             * {@inheritDoc}
+             */
             public void run() {
                 ensureJedisConnection();
             }
         }, initialDelay, period, timeUnit);
     }
-
+    
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected void doPublish(final String queue, final String jobJson) {
         ensureJedisConnection();
         doPublish(this.jedis, getNamespace(), queue, jobJson);
     }
-
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void end() {
         if (this.keepAliveService != null) {
             this.keepAliveService.shutdownNow();

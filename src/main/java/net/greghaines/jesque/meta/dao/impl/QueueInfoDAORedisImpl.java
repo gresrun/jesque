@@ -38,6 +38,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
 /**
+ * QueueInfoDAORedisImpl gets queue information from Redis.
  * 
  * @author Greg Haines
  * @author Animesh Kumar <smile.animesh@gmail.com>
@@ -47,6 +48,11 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
     private final Config config;
     private final Pool<Jedis> jedisPool;
 
+    /**
+     * Constructor.
+     * @param config the Jesque configuration
+     * @param jedisPool the pool of Jedis connections
+     */
     public QueueInfoDAORedisImpl(final Config config, final Pool<Jedis> jedisPool) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");

@@ -36,6 +36,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
  */
 public class WorkerStatusJsonDeserializer extends JsonDeserializer<WorkerStatus> {
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public WorkerStatus deserialize(final JsonParser jp, final DeserializationContext ctxt) throws IOException,
             JsonProcessingException {

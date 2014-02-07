@@ -38,6 +38,9 @@ public class JobJsonDeserializer extends JsonDeserializer<Job> {
     private static final TypeReference<Object[]> objectArrTypeRef = 
             new TypeReference<Object[]>() {};
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Job deserialize(final JsonParser jp, final DeserializationContext ctxt) throws IOException,
             JsonProcessingException {

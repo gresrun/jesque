@@ -50,26 +50,50 @@ public abstract class AbstractAdminClient implements AdminClient {
         return this.namespace;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void shutdownWorkers(final boolean now) {
         publish(new Job("ShutdownCommand", now));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void shutdownWorkers(final String channel, final boolean now) {
         publish(channel, new Job("ShutdownCommand", now));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void togglePausedWorkers(final boolean paused) {
         publish(new Job("PauseCommand", paused));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void togglePausedWorkers(final String channel, final boolean paused) {
         publish(channel, new Job("PauseCommand", paused));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void publish(final Job job) {
         publish(ADMIN_CHANNEL, job);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void publish(final String channel, final Job job) {
         validateArguments(channel, job);
         try {
