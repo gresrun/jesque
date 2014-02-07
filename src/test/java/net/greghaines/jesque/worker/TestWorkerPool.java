@@ -24,6 +24,8 @@ public class TestWorkerPool {
     private Mockery mockCtx;
     private Callable<? extends Worker> workerFactory;
     private final List<Worker> workers = new ArrayList<Worker>(NUM_WORKERS);
+    private final List<WorkerEventEmitter> eventEmitters = 
+            new ArrayList<WorkerEventEmitter>(NUM_WORKERS);
     private WorkerPool pool;
     
     @SuppressWarnings("unchecked")
@@ -34,9 +36,13 @@ public class TestWorkerPool {
         this.workerFactory = this.mockCtx.mock(Callable.class);
         this.workers.add(this.mockCtx.mock(Worker.class, "Worker1"));
         this.workers.add(this.mockCtx.mock(Worker.class, "Worker2"));
+        this.eventEmitters.add(this.mockCtx.mock(WorkerEventEmitter.class, "WorkerEventEmitter1"));
+        this.eventEmitters.add(this.mockCtx.mock(WorkerEventEmitter.class, "WorkerEventEmitter2"));
         this.mockCtx.checking(new Expectations(){{
             oneOf(workerFactory).call(); will(returnValue(workers.get(0)));
             oneOf(workerFactory).call(); will(returnValue(workers.get(1)));
+            allowing(workers.get(0)).getWorkerEventEmitter(); will(returnValue(eventEmitters.get(0)));
+            allowing(workers.get(1)).getWorkerEventEmitter(); will(returnValue(eventEmitters.get(1)));
         }});
         this.pool = new WorkerPool(this.workerFactory, NUM_WORKERS);
     }
@@ -68,10 +74,10 @@ public class TestWorkerPool {
     public void testAddListener() {
         final WorkerListener listener = this.mockCtx.mock(WorkerListener.class);
         this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).addListener(listener);
-            oneOf(workers.get(1)).addListener(listener);
+            oneOf(eventEmitters.get(0)).addListener(listener);
+            oneOf(eventEmitters.get(1)).addListener(listener);
         }});
-        this.pool.addListener(listener);
+        this.pool.getWorkerEventEmitter().addListener(listener);
     }
     
     @Test
@@ -80,20 +86,20 @@ public class TestWorkerPool {
         final WorkerEvent event = WorkerEvent.JOB_EXECUTE;
         final WorkerEvent event2 = WorkerEvent.JOB_FAILURE;
         this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).addListener(listener, event, event2);
-            oneOf(workers.get(1)).addListener(listener, event, event2);
+            oneOf(eventEmitters.get(0)).addListener(listener, event, event2);
+            oneOf(eventEmitters.get(1)).addListener(listener, event, event2);
         }});
-        this.pool.addListener(listener, event, event2);
+        this.pool.getWorkerEventEmitter().addListener(listener, event, event2);
     }
     
     @Test
     public void testRemoveListener() {
         final WorkerListener listener = this.mockCtx.mock(WorkerListener.class);
         this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).removeListener(listener);
-            oneOf(workers.get(1)).removeListener(listener);
+            oneOf(eventEmitters.get(0)).removeListener(listener);
+            oneOf(eventEmitters.get(1)).removeListener(listener);
         }});
-        this.pool.removeListener(listener);
+        this.pool.getWorkerEventEmitter().removeListener(listener);
     }
     
     @Test
@@ -102,19 +108,19 @@ public class TestWorkerPool {
         final WorkerEvent event = WorkerEvent.JOB_EXECUTE;
         final WorkerEvent event2 = WorkerEvent.JOB_FAILURE;
         this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).removeListener(listener, event, event2);
-            oneOf(workers.get(1)).removeListener(listener, event, event2);
+            oneOf(eventEmitters.get(0)).removeListener(listener, event, event2);
+            oneOf(eventEmitters.get(1)).removeListener(listener, event, event2);
         }});
-        this.pool.removeListener(listener, event, event2);
+        this.pool.getWorkerEventEmitter().removeListener(listener, event, event2);
     }
     
     @Test
     public void testRemoveAllListeners() {
         this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).removeAllListeners();
-            oneOf(workers.get(1)).removeAllListeners();
+            oneOf(eventEmitters.get(0)).removeAllListeners();
+            oneOf(eventEmitters.get(1)).removeAllListeners();
         }});
-        this.pool.removeAllListeners();
+        this.pool.getWorkerEventEmitter().removeAllListeners();
     }
     
     @Test
@@ -122,10 +128,10 @@ public class TestWorkerPool {
         final WorkerEvent event = WorkerEvent.JOB_EXECUTE;
         final WorkerEvent event2 = WorkerEvent.JOB_FAILURE;
         this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).removeAllListeners(event, event2);
-            oneOf(workers.get(1)).removeAllListeners(event, event2);
+            oneOf(eventEmitters.get(0)).removeAllListeners(event, event2);
+            oneOf(eventEmitters.get(1)).removeAllListeners(event, event2);
         }});
-        this.pool.removeAllListeners(event, event2);
+        this.pool.getWorkerEventEmitter().removeAllListeners(event, event2);
     }
     
     @Test

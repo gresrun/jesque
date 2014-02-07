@@ -218,7 +218,7 @@ public class IntegrationTest {
             final WorkerListener listener, final WorkerEvent... events) {
         final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue), new MapBasedJobFactory(jobTypes));
         if (listener != null && events.length > 0) {
-            worker.addListener(listener, events);
+            worker.getWorkerEventEmitter().addListener(listener, events);
         }
         final Thread workerThread = new Thread(worker);
         workerThread.start();

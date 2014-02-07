@@ -53,7 +53,7 @@ public class LongRunningTest {
         final Worker worker2 = new WorkerImpl(config, Arrays.asList("longRunning"), 
                 new MapBasedJobFactory(map(entry("LongRunningAction", LongRunningAction.class))));
         final AtomicBoolean successRef = new AtomicBoolean(false);
-        worker2.addListener(new WorkerListener() {
+        worker2.getWorkerEventEmitter().addListener(new WorkerListener() {
             @Override
             public void onEvent(final WorkerEvent event, final Worker worker, final String queue, final Job job,
                     final Object runner, final Object result, final Exception ex) {

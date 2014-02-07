@@ -32,6 +32,7 @@ public class WorkerPool implements Worker {
     
     private final List<Worker> workers;
     private final List<Thread> threads;
+    private final WorkerEventEmitter eventEmitter;
 
     /**
      * Create a WorkerPool with the given number of Workers and the default
@@ -61,6 +62,7 @@ public class WorkerPool implements Worker {
             final ThreadFactory threadFactory) {
         this.workers = new ArrayList<Worker>(numWorkers);
         this.threads = new ArrayList<Thread>(numWorkers);
+        this.eventEmitter = new WorkerPoolEventEmitter(this.workers);
         for (int i = 0; i < numWorkers; i++) {
             try {
                 final Worker worker = workerFactory.call();
@@ -120,48 +122,16 @@ public class WorkerPool implements Worker {
         }
         return sb.toString();
     }
+    
+    public WorkerEventEmitter getWorkerEventEmitter() {
+        return this.eventEmitter;
+    }
 
     public void run() {
         for (final Thread thread : this.threads) {
             thread.start();
         }
         Thread.yield();
-    }
-
-    public void addListener(final WorkerListener listener) {
-        for (final Worker worker : this.workers) {
-            worker.addListener(listener);
-        }
-    }
-
-    public void addListener(final WorkerListener listener, final WorkerEvent... events) {
-        for (final Worker worker : this.workers) {
-            worker.addListener(listener, events);
-        }
-    }
-
-    public void removeListener(final WorkerListener listener) {
-        for (final Worker worker : this.workers) {
-            worker.removeListener(listener);
-        }
-    }
-
-    public void removeListener(final WorkerListener listener, final WorkerEvent... events) {
-        for (final Worker worker : this.workers) {
-            worker.removeListener(listener, events);
-        }
-    }
-
-    public void removeAllListeners() {
-        for (final Worker worker : this.workers) {
-            worker.removeAllListeners();
-        }
-    }
-
-    public void removeAllListeners(final WorkerEvent... events) {
-        for (final Worker worker : this.workers) {
-            worker.removeAllListeners(events);
-        }
     }
 
     public void end(final boolean now) {
@@ -234,6 +204,51 @@ public class WorkerPool implements Worker {
     public void setExceptionHandler(final ExceptionHandler exceptionHandler) {
         for (final Worker worker : this.workers) {
             worker.setExceptionHandler(exceptionHandler);
+        }
+    }
+    
+    private static class WorkerPoolEventEmitter implements WorkerEventEmitter {
+        
+        private final List<Worker> workers;
+        
+        public WorkerPoolEventEmitter(final List<Worker> workers) {
+            this.workers = workers;
+        }
+
+        public void addListener(final WorkerListener listener) {
+            for (final Worker worker : this.workers) {
+                worker.getWorkerEventEmitter().addListener(listener);
+            }
+        }
+
+        public void addListener(final WorkerListener listener, final WorkerEvent... events) {
+            for (final Worker worker : this.workers) {
+                worker.getWorkerEventEmitter().addListener(listener, events);
+            }
+        }
+
+        public void removeListener(final WorkerListener listener) {
+            for (final Worker worker : this.workers) {
+                worker.getWorkerEventEmitter().removeListener(listener);
+            }
+        }
+
+        public void removeListener(final WorkerListener listener, final WorkerEvent... events) {
+            for (final Worker worker : this.workers) {
+                worker.getWorkerEventEmitter().removeListener(listener, events);
+            }
+        }
+
+        public void removeAllListeners() {
+            for (final Worker worker : this.workers) {
+                worker.getWorkerEventEmitter().removeAllListeners();
+            }
+        }
+
+        public void removeAllListeners(final WorkerEvent... events) {
+            for (final Worker worker : this.workers) {
+                worker.getWorkerEventEmitter().removeAllListeners(events);
+            }
         }
     }
 }

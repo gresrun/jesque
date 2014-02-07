@@ -239,28 +239,8 @@ public class WorkerImpl implements Worker {
         return this.name;
     }
 
-    public void addListener(final WorkerListener listener) {
-        this.listenerDelegate.addListener(listener);
-    }
-
-    public void addListener(final WorkerListener listener, final WorkerEvent... events) {
-        this.listenerDelegate.addListener(listener, events);
-    }
-
-    public void removeListener(final WorkerListener listener) {
-        this.listenerDelegate.removeListener(listener);
-    }
-
-    public void removeListener(final WorkerListener listener, final WorkerEvent... events) {
-        this.listenerDelegate.removeListener(listener, events);
-    }
-
-    public void removeAllListeners() {
-        this.listenerDelegate.removeAllListeners();
-    }
-
-    public void removeAllListeners(final WorkerEvent... events) {
-        this.listenerDelegate.removeAllListeners(events);
+    public WorkerEventEmitter getWorkerEventEmitter() {
+        return this.listenerDelegate;
     }
 
     public Collection<String> getQueues() {

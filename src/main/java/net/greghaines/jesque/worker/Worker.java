@@ -38,7 +38,7 @@ import java.util.Collections;
  * 
  * @author Greg Haines
  */
-public interface Worker extends JobExecutor, Runnable, WorkerEventEmitter {
+public interface Worker extends JobExecutor, Runnable {
     
     /**
      * Special value to tell a Worker to poll all currently available queues.
@@ -111,4 +111,9 @@ public interface Worker extends JobExecutor, Runnable, WorkerEventEmitter {
      *            the queues to poll
      */
     void setQueues(Collection<String> queues);
+    
+    /**
+     * @return the worker event emitter for this worker
+     */
+    WorkerEventEmitter getWorkerEventEmitter();
 }
