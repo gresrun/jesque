@@ -92,7 +92,8 @@ public class KeysDAORedisImpl implements KeysDAO {
              */
             @Override
             public List<KeyInfo> doWork(final Jedis jedis) throws Exception {
-                final Set<String> keys = jedis.keys(KeysDAORedisImpl.this.config.getNamespace() + COLON + "*");
+                final Set<String> keys = jedis.keys(
+                        KeysDAORedisImpl.this.config.getNamespace() + COLON + "*");
                 final List<KeyInfo> keyInfos = new ArrayList<KeyInfo>(keys.size());
                 for (final String key : keys) {
                     keyInfos.add(new KeyDAOPoolWork(key).doWork(jedis));
@@ -154,25 +155,30 @@ public class KeysDAORedisImpl implements KeysDAO {
         @Override
         public KeyInfo doWork(final Jedis jedis) throws Exception {
             final KeyInfo keyInfo;
-            switch (KeyType.getKeyTypeByValue(jedis.type(this.key))) {
-            case HASH:
-                keyInfo = handleHash(jedis);
-                break;
-            case LIST:
-                keyInfo = handleList(jedis);
-                break;
-            case SET:
-                keyInfo = handleSet(jedis);
-                break;
-            case STRING:
-                keyInfo = handleString(jedis);
-                break;
-            case ZSET:
-                keyInfo = handleZSet(jedis);
-                break;
-            default:
+            final KeyType type = KeyType.getKeyTypeByValue(jedis.type(this.key));
+            if (type == null) {
                 keyInfo = null;
-                break;
+            } else {
+                switch (type) {
+                    case HASH:
+                        keyInfo = handleHash(jedis);
+                        break;
+                    case LIST:
+                        keyInfo = handleList(jedis);
+                        break;
+                    case SET:
+                        keyInfo = handleSet(jedis);
+                        break;
+                    case STRING:
+                        keyInfo = handleString(jedis);
+                        break;
+                    case ZSET:
+                        keyInfo = handleZSet(jedis);
+                        break;
+                    default: // NONE
+                        keyInfo = null;
+                        break;
+                }
             }
             return keyInfo;
         }
@@ -181,7 +187,8 @@ public class KeysDAORedisImpl implements KeysDAO {
             final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.ZSET);
             keyInfo.setSize(jedis.zcard(this.key));
             if (this.doArrayValue) {
-                keyInfo.setArrayValue(new ArrayList<String>(jedis.zrange(this.key, this.offset, this.offset + this.count)));
+                keyInfo.setArrayValue(new ArrayList<String>(
+                        jedis.zrange(this.key, this.offset, this.offset + this.count)));
             }
             return keyInfo;
         }
@@ -205,8 +212,11 @@ public class KeysDAORedisImpl implements KeysDAO {
                 if (this.offset >= allMembers.size()) {
                     keyInfo.setArrayValue(new ArrayList<String>(1));
                 } else {
-                    final int toIndex = (this.offset + this.count > allMembers.size()) ? allMembers.size() : (this.offset + this.count);
-                    keyInfo.setArrayValue(new ArrayList<String>(allMembers.subList(this.offset, toIndex)));
+                    final int toIndex = (this.offset + this.count > allMembers.size()) 
+                            ? allMembers.size() 
+                            : (this.offset + this.count);
+                    keyInfo.setArrayValue(new ArrayList<String>(
+                            allMembers.subList(this.offset, toIndex)));
                 }
             }
             return keyInfo;
@@ -229,9 +239,12 @@ public class KeysDAORedisImpl implements KeysDAO {
                 if (this.offset >= allFields.size()) {
                     keyInfo.setArrayValue(new ArrayList<String>(1));
                 } else {
-                    final int toIndex = (this.offset + this.count > allFields.size()) ? allFields.size() : (this.offset + this.count);
+                    final int toIndex = (this.offset + this.count > allFields.size()) 
+                            ? allFields.size() 
+                            : (this.offset + this.count);
                     final List<String> subFields = allFields.subList(this.offset, toIndex);
-                    final List<String> values = jedis.hmget(this.key, subFields.toArray(new String[subFields.size()]));
+                    final List<String> values = jedis.hmget(this.key, 
+                            subFields.toArray(new String[subFields.size()]));
                     final List<String> arrayValue = new ArrayList<String>(subFields.size());
                     for (int i = 0; i < subFields.size(); i++) {
                         arrayValue.add("{" + subFields.get(i) + "=" + values.get(i) + "}");
