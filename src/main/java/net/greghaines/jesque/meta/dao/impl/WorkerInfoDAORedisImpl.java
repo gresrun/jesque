@@ -52,8 +52,8 @@ import redis.clients.util.Pool;
  */
 public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
     
-    private static final Pattern colonPattern = Pattern.compile(":");
-    private static final Pattern commaPattern = Pattern.compile(",");
+    private static final Pattern COLON_PATTERN = Pattern.compile(":");
+    private static final Pattern COMMA_PATTERN = Pattern.compile(",");
 
     private final Config config;
     private final Pool<Jedis> jedisPool;
@@ -232,13 +232,13 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
     private WorkerInfo createWorker(final String workerName, final Jedis jedis) throws ParseException, IOException {
         final WorkerInfo workerInfo = new WorkerInfo();
         workerInfo.setName(workerName);
-        final String[] nameParts = colonPattern.split(workerName, 3);
+        final String[] nameParts = COLON_PATTERN.split(workerName, 3);
         if (nameParts.length < 3) {
             throw new ParseException("Malformed worker name: " + workerName, 0);
         }
         workerInfo.setHost(nameParts[0]);
         workerInfo.setPid(nameParts[1]);
-        workerInfo.setQueues(new ArrayList<String>(Arrays.asList(commaPattern.split(nameParts[2]))));
+        workerInfo.setQueues(new ArrayList<String>(Arrays.asList(COMMA_PATTERN.split(nameParts[2]))));
         final String statusPayload = jedis.get(key(WORKER, workerName));
         if (statusPayload != null) {
             workerInfo.setStatus(ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class));
