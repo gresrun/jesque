@@ -229,7 +229,8 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
         return JesqueUtils.createKey(this.config.getNamespace(), parts);
     }
 
-    private WorkerInfo createWorker(final String workerName, final Jedis jedis) throws ParseException, IOException {
+    protected WorkerInfo createWorker(final String workerName, final Jedis jedis) 
+            throws ParseException, IOException {
         final WorkerInfo workerInfo = new WorkerInfo();
         workerInfo.setName(workerName);
         final String[] nameParts = COLON_PATTERN.split(workerName, 3);
@@ -242,7 +243,9 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
         final String statusPayload = jedis.get(key(WORKER, workerName));
         if (statusPayload != null) {
             workerInfo.setStatus(ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class));
-            final WorkerInfo.State state = (workerInfo.getStatus().isPaused()) ? WorkerInfo.State.PAUSED : WorkerInfo.State.WORKING;
+            final WorkerInfo.State state = (workerInfo.getStatus().isPaused()) 
+                    ? WorkerInfo.State.PAUSED 
+                    : WorkerInfo.State.WORKING;
             workerInfo.setState(state);
         } else {
             workerInfo.setState(WorkerInfo.State.IDLE);
@@ -278,37 +281,31 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
             @Override
             public Void doWork(final Jedis jedis) throws Exception {
                 jedis.srem(key(WORKERS), workerName);
-                jedis.del(key(WORKER, workerName), key(WORKER, workerName, STARTED), key(STAT, FAILED, workerName), key(STAT, PROCESSED, workerName));
+                jedis.del(key(WORKER, workerName), key(WORKER, workerName, STARTED), 
+                        key(STAT, FAILED, workerName), key(STAT, PROCESSED, workerName));
                 return null;
             }
         });
     }
 
-    private boolean isWorkerInState(final String workerName, final WorkerInfo.State requestedState, final Jedis jedis) throws IOException {
+    protected boolean isWorkerInState(final String workerName, final WorkerInfo.State requestedState, 
+            final Jedis jedis) throws IOException {
         boolean proceed = true;
         if (requestedState != null) {
             final String statusPayload = jedis.get(key(WORKER, workerName));
+            final WorkerStatus status = (statusPayload == null) 
+                    ? null 
+                    : ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class);
             switch (requestedState) {
-            case IDLE:
-                proceed = (statusPayload == null);
-                break;
-            case PAUSED:
-                if (statusPayload != null) {
-                    final WorkerStatus status = ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class);
-                    proceed = status.isPaused();
-                }
-                break;
-            case WORKING:
-                if (statusPayload != null) {
-                    final WorkerStatus status = ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class);
-                    proceed = !status.isPaused();
-                } else {
-                    proceed = false;
-                }
-                break;
-            default:
-                proceed = true;
-                break;
+                case IDLE:
+                    proceed = (status == null);
+                    break;
+                case PAUSED:
+                    proceed = (status == null) ? true : status.isPaused();
+                    break;
+                case WORKING:
+                    proceed = (status == null) ? false : !status.isPaused();
+                    break;
             }
         }
         return proceed;
