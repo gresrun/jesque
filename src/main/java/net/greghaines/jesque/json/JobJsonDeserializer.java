@@ -16,16 +16,17 @@
 package net.greghaines.jesque.json;
 
 import java.io.IOException;
+import java.util.Map;
 
 import net.greghaines.jesque.Job;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
  * A custom Jackson deserializer for Jobs. Needed because Job uses Java-style
@@ -37,15 +38,18 @@ public class JobJsonDeserializer extends JsonDeserializer<Job> {
 
     private static final TypeReference<Object[]> objectArrTypeRef = 
             new TypeReference<Object[]>() {};
+    private static final TypeReference<Map<String,Object>> mapStringObjTypeRef = 
+            new TypeReference<Map<String,Object>>() {};
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Job deserialize(final JsonParser jp, final DeserializationContext ctxt) throws IOException,
-            JsonProcessingException {
+    public Job deserialize(final JsonParser jp, final DeserializationContext ctxt) 
+            throws IOException, JsonProcessingException {
         String clazz = null;
         Object[] args = null;
+        Map<String,Object> vars = null;
         while (jp.getCurrentToken() != JsonToken.END_OBJECT) {
             jp.nextToken();
             if ("class".equals(jp.getText())) {
@@ -54,10 +58,14 @@ public class JobJsonDeserializer extends JsonDeserializer<Job> {
             } else if ("args".equals(jp.getText())) {
                 jp.nextToken();
                 args = jp.readValueAs(objectArrTypeRef);
+            } else if ("vars".equals(jp.getText())) {
+                jp.nextToken();
+                vars = jp.readValueAs(mapStringObjTypeRef);
             } else if (jp.getCurrentToken() != JsonToken.END_OBJECT) {
-                throw new JsonMappingException("Unexpected field for Job: " + jp.getText(), jp.getCurrentLocation());
+                throw new JsonMappingException("Unexpected field for Job: " + jp.getText(), 
+                        jp.getCurrentLocation());
             }
         }
-        return new Job(clazz, args);
+        return new Job(clazz, args, vars);
     }
 }

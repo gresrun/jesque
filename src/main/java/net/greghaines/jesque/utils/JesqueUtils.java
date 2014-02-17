@@ -200,8 +200,8 @@ public final class JesqueUtils {
      *             if the constructor threw an exception
      * @see JesqueUtils#createBacktrace(Throwable)
      */
-    public static Throwable recreateThrowable(final String type, final String message, final List<String> backtrace) throws ParseException, ClassNotFoundException, NoSuchConstructorException,
-            AmbiguousConstructorException, InstantiationException, IllegalAccessException, InvocationTargetException {
+    public static Throwable recreateThrowable(final String type, final String message, final List<String> backtrace) 
+            throws ParseException, ClassNotFoundException, NoSuchConstructorException, AmbiguousConstructorException, ReflectiveOperationException {
         final LinkedList<String> bTrace = new LinkedList<String>(backtrace);
         Throwable cause = null;
         StackTraceElement[] stes = null;
@@ -217,8 +217,8 @@ public final class JesqueUtils {
         return instantiateThrowable(type, message, cause, stes);
     }
 
-    protected static Throwable instantiateThrowable(final String type, final String message, final Throwable cause, final StackTraceElement[] stes) throws ClassNotFoundException,
-            AmbiguousConstructorException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchConstructorException {
+    protected static Throwable instantiateThrowable(final String type, final String message, final Throwable cause, final StackTraceElement[] stes) 
+            throws ClassNotFoundException, AmbiguousConstructorException, ReflectiveOperationException, NoSuchConstructorException {
         Throwable throwable = null;
         boolean causeInited = false;
         final Class<?> throwableType = ReflectionUtils.forName(type);
@@ -369,7 +369,7 @@ public final class JesqueUtils {
         if (!Runnable.class.isAssignableFrom(clazz) && !Callable.class.isAssignableFrom(clazz)) {
             throw new ClassCastException("jobs must be a Runnable or a Callable: " + clazz.getName() + " - " + job);
         }
-        return ReflectionUtils.createObject(clazz, job.getArgs());
+        return ReflectionUtils.createObject(clazz, job.getArgs(), job.getVars());
     }
 
     /**
@@ -397,7 +397,7 @@ public final class JesqueUtils {
         if (!Runnable.class.isAssignableFrom(clazz) && !Callable.class.isAssignableFrom(clazz)) {
             throw new ClassCastException("jobs must be a Runnable or a Callable: " + clazz.getName() + " - " + job);
         }
-        return ReflectionUtils.createObject(clazz, job.getArgs());
+        return ReflectionUtils.createObject(clazz, job.getArgs(), job.getVars());
     }
     
     /**

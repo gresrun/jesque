@@ -15,6 +15,9 @@
  */
 package net.greghaines.jesque.json;
 
+import static net.greghaines.jesque.utils.JesqueUtils.entry;
+import static net.greghaines.jesque.utils.JesqueUtils.map;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
@@ -22,8 +25,8 @@ import java.util.Date;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
-
 import net.greghaines.jesque.utils.JesqueUtils;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,8 +40,13 @@ public class TestJsonSerialization {
     @Test
     public void serializeJob() throws Exception {
         assertSerializeRoundTrip(new Job("foo"));
-        final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
-        assertSerializeRoundTrip(job);
+        assertSerializeRoundTrip(new Job("TestAction", 
+                new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) }));
+        assertSerializeRoundTrip(new Job("TestAction", 
+                map(entry("foo", "bar"), entry("baz", 123), entry("key3", Arrays.asList("inner2", 6.7, false)))));
+        assertSerializeRoundTrip(new Job("TestAction", 
+                new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) }, 
+                map(entry("foo", "bar"), entry("baz", 123), entry("key3", Arrays.asList("inner2", 6.7, false)))));
     }
 
     @Test

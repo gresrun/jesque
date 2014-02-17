@@ -40,8 +40,14 @@ public class JobJsonSerializer extends JsonSerializer<Job> {
             throws IOException, JsonProcessingException {
         jgen.writeStartObject();
         jgen.writeStringField("class", job.getClassName());
-        jgen.writeFieldName("args");
-        ObjectMapperFactory.get().writeValue(jgen, job.getArgs());
+        if (job.getArgs() != null) {
+            jgen.writeFieldName("args");
+            ObjectMapperFactory.get().writeValue(jgen, job.getArgs());
+        }
+        if (job.getVars() != null) {
+            jgen.writeFieldName("vars");
+            ObjectMapperFactory.get().writeValue(jgen, job.getVars());
+        }
         jgen.writeEndObject();
     }
 }

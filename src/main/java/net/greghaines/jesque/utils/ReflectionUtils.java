@@ -18,7 +18,7 @@ package net.greghaines.jesque.utils;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -111,18 +112,39 @@ public final class ReflectionUtils {
      * @throws AmbiguousConstructorException
      *             if there is more than one constructor that matches the given
      *             arguments
-     * @throws InstantiationException
-     *             if the class that declares the underlying constructor
-     *             represents an abstract class
-     * @throws IllegalAccessException
-     *             if the Constructor object enforces Java language access
-     *             control and the underlying constructor is inaccessible
-     * @throws InvocationTargetException
-     *             if the underlying constructor throws an exception
+     * @throws ReflectiveOperationException
+     *             if any of the reflective operations throw an exception
      */
     public static <T> T createObject(final Class<T> clazz, final Object... args) throws NoSuchConstructorException,
-            AmbiguousConstructorException, InstantiationException, IllegalAccessException, InvocationTargetException {
+            AmbiguousConstructorException, ReflectiveOperationException {
         return findConstructor(clazz, args).newInstance(args);
+    }
+
+    /**
+     * Create an object of the given type using a constructor that matches the
+     * supplied arguments and invoke the setters with the supplied variables.
+     * 
+     * @param <T>
+     * @param clazz
+     *            the type to create
+     * @param args
+     *            the arguments to the constructor
+     * @param vars
+     *            the named arguments for setters
+     * @return a new object of the given type, initialized with the given
+     *         arguments
+     * @throws NoSuchConstructorException
+     *             if there is not a constructor that matches the given
+     *             arguments
+     * @throws AmbiguousConstructorException
+     *             if there is more than one constructor that matches the given
+     *             arguments
+     * @throws ReflectiveOperationException
+     *             if any of the reflective operations throw an exception
+     */
+    public static <T> T createObject(final Class<T> clazz, final Object[] args, final Map<String,Object> vars) 
+            throws NoSuchConstructorException, AmbiguousConstructorException, ReflectiveOperationException {
+        return invokeSetters(findConstructor(clazz, args).newInstance(args), vars);
     }
 
     /**
@@ -145,6 +167,7 @@ public final class ReflectionUtils {
     @SuppressWarnings("rawtypes")
     private static <T> Constructor<T> findConstructor(final Class<T> clazz, final Object... args)
             throws NoSuchConstructorException, AmbiguousConstructorException {
+        final Object[] cArgs = (args == null) ? new Object[0] : args;
         Constructor<T> constructorToUse = null;
         final Constructor<?>[] candidates = clazz.getConstructors();
         Arrays.sort(candidates, ConstructorComparator.INSTANCE);
@@ -152,19 +175,18 @@ public final class ReflectionUtils {
         Set<Constructor<?>> ambiguousConstructors = null;
         for (final Constructor candidate : candidates) {
             final Class[] paramTypes = candidate.getParameterTypes();
-            if (constructorToUse != null && args.length > paramTypes.length) {
+            if (constructorToUse != null && cArgs.length > paramTypes.length) {
                 // Already found greedy constructor that can be satisfied.
                 // Do not look any further, there are only less greedy
                 // constructors left.
                 break;
             }
-            if (paramTypes.length != args.length) {
+            if (paramTypes.length != cArgs.length) {
                 continue;
             }
-            final int typeDiffWeight = getTypeDifferenceWeight(paramTypes, args);
-            if (typeDiffWeight < minTypeDiffWeight) { // Choose this constructor
-                                                      // if it represents the
-                                                      // closest match.
+            final int typeDiffWeight = getTypeDifferenceWeight(paramTypes, cArgs);
+            if (typeDiffWeight < minTypeDiffWeight) { 
+                // Choose this constructor if it represents the closest match.
                 constructorToUse = candidate;
                 minTypeDiffWeight = typeDiffWeight;
                 ambiguousConstructors = null;
@@ -177,10 +199,10 @@ public final class ReflectionUtils {
             }
         }
         if (ambiguousConstructors != null && !ambiguousConstructors.isEmpty()) {
-            throw new AmbiguousConstructorException(clazz, args, ambiguousConstructors);
+            throw new AmbiguousConstructorException(clazz, cArgs, ambiguousConstructors);
         }
         if (constructorToUse == null) {
-            throw new NoSuchConstructorException(clazz, args);
+            throw new NoSuchConstructorException(clazz, cArgs);
         }
         return constructorToUse;
     }
@@ -250,21 +272,17 @@ public final class ReflectionUtils {
      * @return if the target type is assignable from the value type
      */
     public static boolean isAssignable(final Class<?> lhsType, final Class<?> rhsType) {
+        final boolean assignable;
         if (lhsType.isAssignableFrom(rhsType)) {
-            return true;
-        }
-        if (lhsType.isPrimitive()) {
+            assignable = true;
+        } else if (lhsType.isPrimitive()) {
             final Class<?> resolvedPrimitive = wrapperTypeToPrimitiveMap.get(rhsType);
-            if (resolvedPrimitive != null && lhsType.equals(resolvedPrimitive)) {
-                return true;
-            }
+            assignable = (resolvedPrimitive != null && lhsType.equals(resolvedPrimitive));
         } else {
             final Class<?> resolvedWrapper = primitiveTypeToWrapperMap.get(rhsType);
-            if (resolvedWrapper != null && lhsType.isAssignableFrom(resolvedWrapper)) {
-                return true;
-            }
+            assignable = (resolvedWrapper != null && lhsType.isAssignableFrom(resolvedWrapper));
         }
-        return false;
+        return assignable;
     }
 
     /**
@@ -293,8 +311,9 @@ public final class ReflectionUtils {
         public int compare(final Constructor<?> c1, final Constructor<?> c2) {
             final boolean p1 = Modifier.isPublic(c1.getModifiers());
             final boolean p2 = Modifier.isPublic(c2.getModifiers());
-            return (p1 != p2) ? (p1 ? -1 : 1) : Integer.valueOf(c2.getParameterTypes().length).compareTo(
-                    c1.getParameterTypes().length);
+            return (p1 != p2) 
+                ? (p1 ? -1 : 1) 
+                : Integer.valueOf(c2.getParameterTypes().length).compareTo(c1.getParameterTypes().length);
         }
     }
 
@@ -317,10 +336,8 @@ public final class ReflectionUtils {
         try {
             cl = Thread.currentThread().getContextClassLoader();
         } catch (Exception e) {
-        } // Cannot access thread context ClassLoader - falling back to system
-          // class loader...
-        if (cl == null) { // No thread context class loader -> use class loader
-                          // of this class.
+        } // Cannot access thread context ClassLoader - falling back to system class loader...
+        if (cl == null) { // No thread context class loader -> use class loader of this class.
             cl = ReflectionUtils.class.getClassLoader();
         }
         return cl;
@@ -393,10 +410,9 @@ public final class ReflectionUtils {
             final Class<?> elementClass = forName(elementName, classLoader);
             return Array.newInstance(elementClass, 0).getClass();
         }
-        ClassLoader classLoaderToUse = classLoader;
-        if (classLoaderToUse == null) {
-            classLoaderToUse = getDefaultClassLoader();
-        }
+        final ClassLoader classLoaderToUse = (classLoader == null) 
+                ? getDefaultClassLoader() 
+                : classLoader;
         try {
             return classLoaderToUse.loadClass(name);
         } catch (ClassNotFoundException ex) {
@@ -433,6 +449,38 @@ public final class ReflectionUtils {
             result = primitiveTypeNameMap.get(name);
         }
         return result;
+    }
+    
+    /**
+     * Invoke the setters for the given variables on the given instance.
+     * @param instance the instance to inject with the variables
+     * @param vars the variables to inject
+     * @return the instance
+     * @throws ReflectiveOperationException if there was a problem finding or invoking a setter method
+     */
+    public static <T> T invokeSetters(final T instance, final Map<String,Object> vars) 
+            throws ReflectiveOperationException {
+        if (instance != null && vars != null) {
+            final Class<?> clazz = instance.getClass();
+            final Method[] methods = clazz.getMethods();
+            for (final Entry<String,Object> entry : vars.entrySet()) {
+                final String methodName = "set" + entry.getKey().substring(0, 1).toUpperCase(Locale.US) 
+                        + entry.getKey().substring(1);
+                boolean found = false;
+                for (final Method method : methods) {
+                    if (methodName.equals(method.getName()) && method.getParameterTypes().length == 1) {
+                        method.invoke(instance, entry.getValue());
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    throw new NoSuchMethodException("Expected setter named '" + methodName 
+                            + "' for var '" + entry.getKey() + "'");
+                }
+            }
+        }
+        return instance;
     }
 
     private ReflectionUtils() {
