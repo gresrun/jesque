@@ -1,5 +1,6 @@
-Jesque
-======
+# Jesque
+
+[![Build Status](https://travis-ci.org/gresrun/jesque.png?branch=master)](https://travis-ci.org/gresrun/jesque) [![Coverage Status](https://coveralls.io/repos/gresrun/jesque/badge.png)](https://coveralls.io/r/gresrun/jesque) [![License Apache 2.0](https://go-shields.herokuapp.com/license-Apache_2.0-blue.png)](https://github.com/gresrun/jesque/blob/master/LICENSE)
 
 Jesque is an implementation of [Resque](https://github.com/defunkt/resque) in [Java](http://www.oracle.com/technetwork/java/index.html). It is fully-interoperable with the [Ruby](http://www.ruby-lang.org/en/) and [Node.js](http://nodejs.org/) ([Coffee-Resque](https://github.com/technoweenie/coffee-resque)) implementations.
 
@@ -7,12 +8,10 @@ Jesque is a [Maven](http://maven.apache.org/) project and depends on [Jedis](htt
 
 The project contains a client implementation as well as a worker implementation that supports listeners.
 
-[![Build Status](https://travis-ci.org/gresrun/jesque.png?branch=master)](https://travis-ci.org/gresrun/jesque) [![Coverage Status](https://coveralls.io/repos/gresrun/jesque/badge.png)](https://coveralls.io/r/gresrun/jesque)
-
 ***
 
-How do I use it?
-----------------
+## How do I use it?
+
 Download the latest source at:
 
 	https://github.com/gresrun/jesque
@@ -68,8 +67,8 @@ Use the resque-web application to see the status of your jobs and workers or, if
 
 ***
 
-Design Decisions
-----------------
+## Design Decisions
+
 * I chose to implement the jobs as classes that implement `java.lang.Runnable` or `java.util.concurrent.Callable`. If the job requires arguments (most do), there must be a constructor that matches the supplied arguments. I felt this was the most flexible option and didn't require the jobs to inherit or implement a special Jesque class. Because of this, the jobs don't even need to know about Jesque at all. Furthermore, the client need not have the job's `Class` in it's VM, it only needs to know the classname and all the parameters' `Class`es on it's classpath. Only the workers realize the job and then run them.
 * I chose to use Jedis because:
 	1. It is simple to use
@@ -85,8 +84,7 @@ Design Decisions
 
 ***
 
-Misc.
------
+## Misc.
 
 If you are on Mac OS X, I highly recommend using the fantasic [Homebrew package manager](https://github.com/mxcl/homebrew). It makes installing and maintaining libraries, tools and applications a cinch. E.g.:
 
@@ -101,8 +99,8 @@ Boom! Ready to go!
 
 ***
 
-License
--------
+## License
+
 Copyright 2013 Greg Haines
 
 Licensed under the Apache License, Version 2.0 (the "License");
