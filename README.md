@@ -2,9 +2,9 @@
 
 [![Build Status](https://travis-ci.org/gresrun/jesque.png?branch=master)](https://travis-ci.org/gresrun/jesque) [![Coverage Status](https://coveralls.io/repos/gresrun/jesque/badge.png)](https://coveralls.io/r/gresrun/jesque) [![License Apache 2.0](https://go-shields.herokuapp.com/license-Apache_2.0-blue.png)](https://github.com/gresrun/jesque/blob/master/LICENSE)
 
-Jesque is an implementation of [Resque](https://github.com/defunkt/resque) in [Java](http://www.oracle.com/technetwork/java/index.html). It is fully-interoperable with the [Ruby](http://www.ruby-lang.org/en/) and [Node.js](http://nodejs.org/) ([Coffee-Resque](https://github.com/technoweenie/coffee-resque)) implementations.
+Jesque is an implementation of [Resque](https://github.com/resque/resque) in [Java](http://www.oracle.com/technetwork/java/index.html). It is fully-interoperable with the [Ruby](http://www.ruby-lang.org/en/) and [Node.js](http://nodejs.org/) ([Coffee-Resque](https://github.com/technoweenie/coffee-resque)) implementations.
 
-Jesque is a [Maven](http://maven.apache.org/) project and depends on [Jedis](https://github.com/xetorthio/jedis) to connect to [Redis](http://redis.io/), [Jackson](http://jackson.codehaus.org/) to map to/from [JSON](http://www.json.org/) and [SLF4J](http://www.slf4j.org/) for logging.
+Jesque is a [Maven](http://maven.apache.org/) project and depends on [Jedis](https://github.com/xetorthio/jedis) to connect to [Redis](http://redis.io/), [Jackson](https://github.com/FasterXML/jackson) to map to/from [JSON](http://json.org/) and [SLF4J](http://slf4j.org/) for logging.
 
 The project contains a client implementation as well as a worker implementation that supports listeners.
 
@@ -12,7 +12,7 @@ The project contains a client implementation as well as a worker implementation 
 
 ## How do I use it?
 
-Download the latest source at:
+Jesque requires Java 7+. Download the latest source at:
 
 	https://github.com/gresrun/jesque
 Or, to use it in your Maven project, add it as a dependency:
@@ -101,7 +101,7 @@ Boom! Ready to go!
 
 ## License
 
-Copyright 2013 Greg Haines
+Copyright 2014 Greg Haines
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
