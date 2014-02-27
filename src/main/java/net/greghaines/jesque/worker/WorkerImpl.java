@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisException;
 
 /**
@@ -208,12 +209,14 @@ public class WorkerImpl implements Worker {
      */
     @Override
     public void end(final boolean now) {
-        this.state.set(SHUTDOWN);
         if (now) {
+            this.state.set(SHUTDOWN_IMMEDIATE);
             final Thread workerThread = this.threadRef.get();
             if (workerThread != null) {
                 workerThread.interrupt();
             }
+        } else {
+            this.state.set(SHUTDOWN);
         }
         togglePause(false); // Release any threads waiting in checkPaused()
     }
@@ -223,7 +226,7 @@ public class WorkerImpl implements Worker {
      */
     @Override
     public boolean isShutdown() {
-        return SHUTDOWN.equals(this.state.get());
+        return SHUTDOWN.equals(this.state.get()) || SHUTDOWN_IMMEDIATE.equals(this.state.get());
     }
 
     /**
@@ -427,8 +430,8 @@ public class WorkerImpl implements Worker {
                     payload = tmp;
                 }
             }
-        } else { // If not a delayed Queue, then use LPOP
-            payload = this.jedis.lpop(key);
+        } else { // If not a delayed Queue, then use RPOP
+            payload = lpoplpush(key, key(INFLIGHT, this.name, curQueue));
         }
         return payload;
     }
@@ -523,8 +526,18 @@ public class WorkerImpl implements Worker {
         } catch (Exception e) {
             failure(e, job, curQueue);
         } finally {
+            removeInFlight(curQueue);
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
+        }
+    }
+
+    private void removeInFlight(String curQueue) {
+        if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
+            lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
+        }
+        else {
+            this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
         }
     }
 
@@ -703,6 +716,31 @@ public class WorkerImpl implements Worker {
      */
     protected void renameThread(final String msg) {
         Thread.currentThread().setName(this.threadNameBase + msg);
+    }
+
+    protected String lpoplpush(String from, String to) {
+        while (true) {
+            this.jedis.watch(from);
+
+            // Get the leftmost value of the 'from' list. If it does not exist,
+            // there is nothing to pop.
+            String val = this.jedis.lindex(from, 0);
+            if (val == null) {
+                this.jedis.unwatch();
+                return val;
+            }
+
+            Transaction tx = this.jedis.multi();
+            tx.lpop(from);
+            tx.lpush(to, val);
+            if (tx.exec() != null) {
+                return val;
+            }
+
+            // If execution of the transaction failed, this means that 'from'
+            // was modified while we were watching it and the transaction was
+            // not executed. We simply retry the operation.
+        }
     }
 
     /**
