@@ -170,7 +170,7 @@ public abstract class AbstractClient implements Client {
      */
     public static void doEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
         jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-        jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+        jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
     }
 
     /**
@@ -188,7 +188,7 @@ public abstract class AbstractClient implements Client {
      */
     public static void doPriorityEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
         jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-        jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+        jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
     }
 
     /**
