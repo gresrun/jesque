@@ -209,12 +209,14 @@ public class WorkerImpl implements Worker {
      */
     @Override
     public void end(final boolean now) {
-        this.state.set(SHUTDOWN);
         if (now) {
+            this.state.set(SHUTDOWN_IMMEDIATE);
             final Thread workerThread = this.threadRef.get();
             if (workerThread != null) {
                 workerThread.interrupt();
             }
+        } else {
+            this.state.set(SHUTDOWN);
         }
         togglePause(false); // Release any threads waiting in checkPaused()
     }
@@ -224,7 +226,7 @@ public class WorkerImpl implements Worker {
      */
     @Override
     public boolean isShutdown() {
-        return SHUTDOWN.equals(this.state.get());
+        return SHUTDOWN.equals(this.state.get()) || SHUTDOWN_IMMEDIATE.equals(this.state.get());
     }
 
     /**
@@ -531,7 +533,7 @@ public class WorkerImpl implements Worker {
     }
 
     private void removeInFlight(String curQueue) {
-        if (isShutdown()) {
+        if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
             lpoprpush(key(INFLIGHT, this.name, curQueue), curQueue);
         }
         else {
