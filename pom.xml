@@ -58,10 +58,34 @@
     </developers>
     <contributors>
         <contributor>
+            <name>Michael Cameron</name>
+            <url>https://github.com/michaelcameron</url>
+        </contributor>
+        <contributor>
+            <name>Timothy Hruska</name>
+            <url>https://github.com/tjhruska</url>
+        </contributor>
+        <contributor>
             <name>Animesh Kumar</name>
             <email>smile.animesh@gmail.com</email>
             <url>http://animesh.org/</url>
             <timezone>Asia/Kolkata</timezone>
+        </contributor>
+        <contributor>
+            <name>David Parkinson</name>
+            <url>https://github.com/dparkinson</url>
+        </contributor>
+        <contributor>
+            <name>Gregory Jansen</name>
+            <email>count0@email.unc.edu</email>
+            <url>http://www.meekmok.com/janglejack</url>
+            <timezone>America/New_York</timezone>
+        </contributor>
+        <contributor>
+            <name>Daniël de Kok</name>
+            <email>me@danieldk.eu</email>
+            <url>http://danieldk.eu/</url>
+            <timezone>Europe/Zurich</timezone>
         </contributor>
     </contributors>
     <profiles>
