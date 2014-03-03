@@ -35,7 +35,11 @@ public interface JobExecutor {
         /**
          * The JobExecutor has shutdown.
          */
-        SHUTDOWN;
+        SHUTDOWN,
+        /**
+         * The JobExecutor has shutdown, interrupting running jobs.
+         */
+        SHUTDOWN_IMMEDIATE;
     }
     
     /**
