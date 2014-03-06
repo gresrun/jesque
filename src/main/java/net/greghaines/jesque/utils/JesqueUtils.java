@@ -322,7 +322,7 @@ public final class JesqueUtils {
      *            the key
      * @param value
      *            the value
-     * @return a Map.Entry object with the give key and value
+     * @return a Map.Entry object with the given key and value
      */
     public static <K, V> Entry<K, V> entry(final K key, final V value) {
         return new SimpleImmutableEntry<K, V>(key, value);
