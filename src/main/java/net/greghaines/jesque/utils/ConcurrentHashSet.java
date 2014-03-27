@@ -190,7 +190,7 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E> {
     public boolean addAll(final Collection<? extends E> c) {
         boolean changed = false;
         for (final E e : c) {
-            changed &= (this.delegate.put(e, Nothing.NOTHING) == null);
+            changed |= add(e);
         }
         return changed;
     }
