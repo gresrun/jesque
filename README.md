@@ -51,7 +51,7 @@ client.end();
 
 // Start a worker to run jobs from the queue
 final Worker worker = new WorkerImpl(config, 
-	Arrays.asList("foo"), map(entry("TestAction", TestAction.class)));
+	Arrays.asList("foo"), new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
 final Thread workerThread = new Thread(worker);
 workerThread.start();
 
