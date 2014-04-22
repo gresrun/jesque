@@ -57,13 +57,75 @@ public class TestReflectionUtils {
         Assert.assertEquals(vars.get("objVal"), obj.getObjVal());
     }
     
-    public static class SetterObj {
+    @Test
+    public void testCreateObject_NoArgs_NoVars() throws NoSuchConstructorException, AmbiguousConstructorException, 
+            ReflectiveOperationException {
+        final SetterObj obj = ReflectionUtils.createObject(SetterObj.class, null, null);
+        Assert.assertNotNull(obj);
+    }
+    
+    @Test
+    public void testCreateObject_NoArgs_Vars() throws NoSuchConstructorException, AmbiguousConstructorException, 
+            ReflectiveOperationException {
+        final Map<String,Object> vars = new HashMap<String,Object>();
+        vars.put("intVal", 1);
+        vars.put("floatVal", 2.3f);
+        vars.put("stringVal", "foobar");
+        vars.put("objVal", new Object());
+        final SetterObj obj = ReflectionUtils.createObject(SetterObj.class, null, vars);
+        Assert.assertNotNull(obj);
+        Assert.assertEquals(vars.get("intVal"), obj.getIntVal());
+        Assert.assertEquals(vars.get("floatVal"), obj.getFloatVal());
+        Assert.assertEquals(vars.get("stringVal"), obj.getStringVal());
+        Assert.assertEquals(vars.get("objVal"), obj.getObjVal());
+    }
+    
+    @Test
+    public void testCreateObject_Args_NoVars() throws NoSuchConstructorException, AmbiguousConstructorException, 
+            ReflectiveOperationException {
+        final Object[] args = {1, 2.3f, "foobar", new Object()};
+        final SetterObj obj = ReflectionUtils.createObject(SetterObj.class, args, null);
+        Assert.assertNotNull(obj);
+        Assert.assertEquals(args[0], obj.getIntVal());
+        Assert.assertEquals(args[1], obj.getFloatVal());
+        Assert.assertEquals(args[2], obj.getStringVal());
+        Assert.assertEquals(args[3], obj.getObjVal());
+    }
+    
+    @Test
+    public void testCreateObject_EmptyArgs_Vars() throws NoSuchConstructorException, AmbiguousConstructorException, 
+            ReflectiveOperationException {
+        final Map<String,Object> vars = new HashMap<String,Object>();
+        vars.put("intVal", 1);
+        vars.put("floatVal", 2.3f);
+        vars.put("stringVal", "foobar");
+        vars.put("objVal", new Object());
+        final SetterObj obj = ReflectionUtils.createObject(SetterObj.class, new Object[0], vars);
+        Assert.assertNotNull(obj);
+        Assert.assertEquals(vars.get("intVal"), obj.getIntVal());
+        Assert.assertEquals(vars.get("floatVal"), obj.getFloatVal());
+        Assert.assertEquals(vars.get("stringVal"), obj.getStringVal());
+        Assert.assertEquals(vars.get("objVal"), obj.getObjVal());
+    }
+    
+    public static class SetterObj implements Runnable {
         
         private int intVal;
         private float floatVal;
         private String stringVal;
         private Object objVal;
         
+        public SetterObj() {
+            // Do nothing
+        }
+        
+        public SetterObj(final int intVal, final float floatVal, final String stringVal, final Object objVal) {
+            this.intVal = intVal;
+            this.floatVal = floatVal;
+            this.stringVal = stringVal;
+            this.objVal = objVal;
+        }
+
         public int getIntVal() {
             return this.intVal;
         }
@@ -94,6 +156,11 @@ public class TestReflectionUtils {
         
         public void setObjVal(final Object objVal) {
             this.objVal = objVal;
+        }
+
+        @Override
+        public void run() {
+            // Do nothing
         }
     }
 }
