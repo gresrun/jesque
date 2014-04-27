@@ -27,10 +27,16 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,6 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
+import redis.clients.jedis.exceptions.JedisConnectionException;
 import redis.clients.jedis.exceptions.JedisException;
 
 /**
@@ -63,13 +70,13 @@ public class WorkerImpl implements Worker {
     
     private static final Logger LOG = LoggerFactory.getLogger(WorkerImpl.class);
     private static final AtomicLong WORKER_COUNTER = new AtomicLong(0);
-    protected static final long EMPTY_QUEUE_SLEEP_TIME = 500; // 500 ms
+    protected static final long EMPTY_QUEUE_SLEEP_TIME = 3000; // 500 ms
     protected static final long RECONNECT_SLEEP_TIME = 5000; // 5 sec
     protected static final int RECONNECT_ATTEMPTS = 120; // Total time: 10 min
     
     // Set the thread name to the message for debugging
-    private static volatile boolean threadNameChangingEnabled = false;
-
+    protected static volatile boolean threadNameChangingEnabled = false;    
+    
     /**
      * @return true if worker threads names will change during normal operation
      */
@@ -114,17 +121,25 @@ public class WorkerImpl implements Worker {
     protected final Jedis jedis;
     protected final String namespace;
     protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<String>();
-    private final String name;
+    protected final String name;
+    private final String redundantDataKey;
     protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
     protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
     private final AtomicBoolean paused = new AtomicBoolean(false);
     private final AtomicBoolean processingJob = new AtomicBoolean(false);
-    private final long workerId = WORKER_COUNTER.getAndIncrement();
+    protected final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
-    private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
-    private final AtomicReference<ExceptionHandler> exceptionHandlerRef = 
+    protected final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
+    protected final AtomicReference<ExceptionHandler> exceptionHandlerRef = 
             new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
     private final JobFactory jobFactory;
+    
+    protected boolean failoverEnabled;
+    protected int heartbeatTimeoutPeriodMs;
+    protected int heartbeatTransmissionPeriodMs;
+    protected String failoverQueueName;
+    protected FailoverHeartbeatThread failoverHeartbeatThread;
+    protected static Map<String, String> keyToScriptSha = new HashMap<String, String>();
 
 	/**
      * Creates a new WorkerImpl, which creates it's own connection to Redis
@@ -133,7 +148,7 @@ public class WorkerImpl implements Worker {
      * 
      * @param config
      *            used to create a connection to Redis and the package prefix
-     *            for incoming jobs
+     *            for incoming jobs and etc variables.
      * @param queues
      *            the list of queues to poll
      * @param jobFactory
@@ -156,8 +171,17 @@ public class WorkerImpl implements Worker {
         this.namespace = config.getNamespace();
         this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
         authenticateAndSelectDB();
+        this.failoverEnabled = config.isFailoverEnabled();
+        this.heartbeatTimeoutPeriodMs = config.getHeartbeatTimeoutPeriodSec()*1000;
+        this.heartbeatTransmissionPeriodMs = config.getHeartbeatTransmissionPeriodSec()*1000;
+        this.failoverQueueName = config.getFailoverQueueName();
+        if (failoverEnabled) {
+            jedis.sadd(JesqueUtils.createKey(namespace, FOQUEUES), config.getFailoverQueueName());
+        }
         setQueues(queues);
         this.name = createName();
+        this.redundantDataKey = createFailoverWorkerName(config.isFailoverDataKeyContainsUUID());
+        scriptLoad();
     }
 
     /**
@@ -166,7 +190,7 @@ public class WorkerImpl implements Worker {
     public long getWorkerId() {
         return this.workerId;
     }
-
+    
     /**
      * Starts this worker. Registers the worker in Redis and begins polling the
      * queues for jobs. Stop this worker by calling end() on any thread.
@@ -374,7 +398,45 @@ public class WorkerImpl implements Worker {
     protected int getReconnectAttempts() {
         return RECONNECT_ATTEMPTS;
     }
+    
+    /**
+     * @return true if failover is enabled
+     */
+    public boolean isFailoverEnabled() {
+        return failoverEnabled;
+    }
+    
+    /**
+     * Enable/disable redundant-data/heartbeat for failover. (Enabled by default)
+     * 
+     * @param enabled
+     *            whether failover is enabled or not
+     */
+    public void setFailoverEnabled(boolean failoverEnabled) {
+        this.failoverEnabled = failoverEnabled;
+    }
+    
+    /**
+     * @return name of the failoverQueue that save redundant-data
+     */
+    public String getFailoverQueueName() {
+        return failoverQueueName;
+    }
 
+    /**
+     * @return heartbeat timeout value in milliseconds for failover detection
+     */
+    public int getHeartbeatTimeoutPeriodMs() {
+        return heartbeatTimeoutPeriodMs;
+    }
+
+    /**
+     * @return heartebeat interval in milliseconds for failover detection
+     */
+    public int getHeartbeatTransmissionPeriodMs() {
+        return heartbeatTransmissionPeriodMs;
+    }
+    
     /**
      * Polls the queues for jobs and executes them.
      */
@@ -430,8 +492,13 @@ public class WorkerImpl implements Worker {
                     payload = tmp;
                 }
             }
-        } else { // If not a delayed Queue, then use RPOP
-            payload = lpoplpush(key, key(INFLIGHT, this.name, curQueue));
+        } else { 
+            if (failoverEnabled) {
+                // lpop and failOver
+                payload = lpopFailover(key, key(FAILOVER, this.redundantDataKey, key));
+            } else { // If not a delayed Queue, then use RPOP
+                payload = lpoplpush(key, key(INFLIGHT, this.name, curQueue));
+            }
         }
         return payload;
     }
@@ -526,6 +593,7 @@ public class WorkerImpl implements Worker {
         } catch (Exception e) {
             failure(e, job, curQueue);
         } finally {
+            stopFailoverHeartbeatThread();
             removeInFlight(curQueue);
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
@@ -533,11 +601,15 @@ public class WorkerImpl implements Worker {
     }
 
     private void removeInFlight(String curQueue) {
-        if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
-            lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
-        }
-        else {
-            this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
+        if (failoverEnabled) {
+            cleanupFailover(key(FAILOVER, this.redundantDataKey, key(QUEUE, curQueue)));
+        } else {
+            if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
+                lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
+            }
+            else {
+                this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
+            }
         }
     }
 
@@ -560,9 +632,15 @@ public class WorkerImpl implements Worker {
         }
         this.listenerDelegate.fireEvent(JOB_EXECUTE, this, curQueue, job, instance, null, null);
         final Object result;
+
         if (instance instanceof Callable) {
+            //hb
+            fireFailoverHeartbeatThread(curQueue);
+
             result = ((Callable<?>) instance).call(); // The job is executing!
         } else if (instance instanceof Runnable) {
+            //hb
+            fireFailoverHeartbeatThread(curQueue);
             ((Runnable) instance).run(); // The job is executing!
             result = null;
         } else { // Should never happen since we're testing the class earlier
@@ -696,6 +774,32 @@ public class WorkerImpl implements Worker {
         }
         return buf.toString();
     }
+    
+    /**
+     * Creates a unique name contains UUID, suitable for use with Resque.
+     * 
+     * @return a unique name for this worker
+     */
+    private String createFailoverWorkerName(boolean isFailoverDataKeyContainsUUID) {
+        if (isFailoverDataKeyContainsUUID) {
+            final StringBuilder buf = new StringBuilder(128);
+            try {
+                buf.append(InetAddress.getLocalHost().getHostName()).append(COLON)
+                        .append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
+                        .append('-').append(this.workerId)
+                        .append('-').append(UUID.randomUUID())
+                        .append(COLON).append(JAVA_DYNAMIC_QUEUES);
+                for (final String queueName : this.queueNames) {
+                    buf.append(',').append(queueName);
+                }
+            } catch (UnknownHostException uhe) {
+                throw new RuntimeException(uhe);
+            }
+            return buf.toString();
+        } else {
+            return createName();
+        }
+    }
 
     /**
      * Builds a namespaced Redis key with the given arguments.
@@ -717,7 +821,17 @@ public class WorkerImpl implements Worker {
     protected void renameThread(final String msg) {
         Thread.currentThread().setName(this.threadNameBase + msg);
     }
-
+    
+    /**
+     * Load lua-script to redis.
+     * 
+     */
+    protected void scriptLoad() {
+        keyToScriptSha.put(LPOP_FO, this.jedis.scriptLoad(LPOP_FO_SCRIPT));
+        keyToScriptSha.put(HEARTBEAT_FO, this.jedis.scriptLoad(HEARTBEAT_FO_SCRIPT));
+        keyToScriptSha.put(CLEANUP_FO, this.jedis.scriptLoad(CLEANUP_FO_SCRIPT));
+    }
+    
     protected String lpoplpush(String from, String to) {
         while (true) {
             this.jedis.watch(from);
@@ -749,5 +863,95 @@ public class WorkerImpl implements Worker {
     @Override
     public String toString() {
         return this.namespace + COLON + WORKER + COLON + this.name;
+    }
+   
+    protected void cleanupFailover(String redundantDataKey) {
+        this.jedis.evalsha(keyToScriptSha.get(CLEANUP_FO), 2, failoverQueueName, redundantDataKey);
+    }
+    
+    /**
+     * lpop and zadd key of the redundant-data for failover with the heartbeatTimeout.
+     * 
+     * @param queue
+     *            the queue the Job came from
+     * @param redundantDataKey
+     *            the key to set a redundant-data for failover
+     */
+    protected String lpopFailover(String queue, String redundantDataKey) {
+        return (String) this.jedis.evalsha(
+                keyToScriptSha.get(LPOP_FO), 4,
+                queue,
+                failoverQueueName,
+                redundantDataKey, 
+                String.valueOf(System.currentTimeMillis() + heartbeatTimeoutPeriodMs));
+    }
+    
+    /**
+     * send heartbeat to reset the timeout.
+     * 
+     * @param queue
+     *            the queue the Job came from
+     * @param redundantDataKey
+     *            the key to set a redundant-data for failover
+     */
+    protected Long heartbeatFailover(String redundantDataKey) {
+        return (Long) this.jedis.evalsha(
+                keyToScriptSha.get(HEARTBEAT_FO), 3,
+                failoverQueueName,
+                redundantDataKey, 
+                String.valueOf(System.currentTimeMillis() + heartbeatTimeoutPeriodMs));
+    }
+    
+    /**
+     * fire FailoverHeartbeat Thread.
+     */
+    private void fireFailoverHeartbeatThread(String curQueue) {
+        if (failoverEnabled) {
+            if (failoverHeartbeatThread == null) {
+                failoverHeartbeatThread = new FailoverHeartbeatThread();
+            }
+            failoverHeartbeatThread.start(curQueue);
+        }
+    }
+    
+    /**
+     * stop FailoverHeartbeat Thread.
+     */
+    private void stopFailoverHeartbeatThread() {
+        if (failoverEnabled) {
+            if (failoverHeartbeatThread != null) {
+                failoverHeartbeatThread.stop();
+            }
+        }
+    }
+    
+    class FailoverHeartbeatThread implements Runnable {
+        private ScheduledExecutorService scheduler  = Executors.newSingleThreadScheduledExecutor();
+        ScheduledFuture<?> handle;
+        int count = 0;
+        String curQueue;
+        
+        FailoverHeartbeatThread() {
+        }
+        public void run() {
+            try {
+                heartbeatFailover(key(FAILOVER, redundantDataKey, key(QUEUE, curQueue)));
+            } catch (JedisConnectionException e) {
+                LOG.warn("Error while failover heartbeat: return broken resource" +
+                        e.getMessage());
+            }
+        }
+
+        public void start(String curQueue) {
+            LOG.debug("start FailoverHeartbeatThread");
+            this.curQueue = curQueue;
+            handle = scheduler.scheduleAtFixedRate(this, heartbeatTransmissionPeriodMs, heartbeatTransmissionPeriodMs, TimeUnit.MILLISECONDS);
+        }
+        public void stop() {
+            LOG.debug("stop FailoverHeartbeatThread");
+            if (handle != null) {
+                handle.cancel(true);
+            }
+        }
     }
 }
