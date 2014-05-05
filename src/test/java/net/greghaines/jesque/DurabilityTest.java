@@ -15,6 +15,7 @@ import redis.clients.jedis.Jedis;
 import java.util.Arrays;
 
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
+import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 
 /**
  * Test job durability:
@@ -81,6 +82,30 @@ public class DurabilityTest {
         Assert.assertEquals("Incorrect job was requeued", ObjectMapperFactory.get().writeValueAsString(sleepJob),
                 jedis.lindex(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue), 0));
         Assert.assertTrue("In-flight list should be empty when finishing a job", jedis.llen(inFlightKey(worker, queue)) == 0L);
+    }
+
+    @Test
+    public void testJSONException() throws InterruptedException, JsonProcessingException {
+        final String queue = "baz";
+
+        final Jedis jedis = TestUtils.createJedis(config);
+
+        // Submit a job containing incorrect JSON.
+        String incorrectJson = "{";
+        jedis.sadd(JesqueUtils.createKey(config.getNamespace(), QUEUES), queue);
+        jedis.rpush(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue), incorrectJson);
+
+        final Worker worker = new WorkerImpl(config, Arrays.asList(queue),
+                new MapBasedJobFactory(JesqueUtils.map(JesqueUtils.entry("SleepAction", SleepAction.class))));
+        final Thread workerThread = new Thread(worker);
+        workerThread.start();
+
+        Thread.sleep(1000);
+
+        TestUtils.stopWorker(worker, workerThread, false);
+
+        Assert.assertEquals("In-flight list should have length zero if the worker failed during JSON deserialization",
+                jedis.llen(inFlightKey(worker, queue)), (Long) 0L);
     }
 
     private static String inFlightKey(final Worker worker, final String queue) {
