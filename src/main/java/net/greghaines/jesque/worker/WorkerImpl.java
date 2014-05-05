@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
@@ -409,6 +411,10 @@ public class WorkerImpl implements Worker {
                 if (!isShutdown()) {
                     recoverFromException(curQueue, ie);
                 }
+            } catch (JsonParseException | JsonMappingException e) {
+                // If the job JSON is not deserializable, we never want to submit it again...
+                removeInFlight(curQueue);
+                recoverFromException(curQueue, e);
             } catch (Exception e) {
                 recoverFromException(curQueue, e);
             }
