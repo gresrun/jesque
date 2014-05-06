@@ -421,7 +421,12 @@ public class WorkerImpl implements Worker {
         }
     }
 
-    private String pop(final String curQueue) {
+    /**
+     * Remove a job from the given queue.
+     * @param curQueue the queue to remove a job from
+     * @return a JSON string of a job or null if there was nothing to de-queue
+     */
+    protected String pop(final String curQueue) {
         final String key = key(QUEUE, curQueue);
         String payload = null;
         // If a delayed queue, peek and remove from ZSET
