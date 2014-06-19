@@ -39,17 +39,17 @@ public class JobFailureJsonSerializer extends JsonSerializer<JobFailure> {
     @Override
     public void serialize(final JobFailure jobFailure, final JsonGenerator jgen, final SerializerProvider provider)
             throws IOException, JsonProcessingException {
-        final boolean exceptionNull = (jobFailure.getException() == null);
+        final boolean exceptionNull = (jobFailure.getThrowable() == null);
         jgen.writeStartObject();
         jgen.writeStringField("worker", jobFailure.getWorker());
         jgen.writeStringField("queue", jobFailure.getQueue());
         jgen.writeFieldName("payload");
         ObjectMapperFactory.get().writeValue(jgen, jobFailure.getPayload());
-        jgen.writeStringField("exception", (exceptionNull) ? null : jobFailure.getException().getClass().getName());
-        jgen.writeStringField("error", (exceptionNull) ? jobFailure.getError() : jobFailure.getException().getMessage());
+        jgen.writeStringField("exception", (exceptionNull) ? null : jobFailure.getThrowable().getClass().getName());
+        jgen.writeStringField("error", (exceptionNull) ? jobFailure.getError() : jobFailure.getThrowable().getMessage());
         jgen.writeFieldName("backtrace");
         ObjectMapperFactory.get().writeValue(jgen,
-                (exceptionNull) ? null : JesqueUtils.createBacktrace(jobFailure.getException()));
+                (exceptionNull) ? null : JesqueUtils.createBacktrace(jobFailure.getThrowable()));
         jgen.writeFieldName("failed_at");
         ObjectMapperFactory.get().writeValue(jgen, jobFailure.getFailedAt());
         jgen.writeFieldName("retried_at");

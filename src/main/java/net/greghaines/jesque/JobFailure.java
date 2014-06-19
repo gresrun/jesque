@@ -33,8 +33,8 @@ public class JobFailure implements Serializable {
     private String worker;
     private String queue;
     private Job payload;
-    private Throwable exception;
-    private String exceptionString;
+    private Throwable throwable;
+    private String throwableString;
     private List<String> backtrace;
     private String error;
     private Date failedAt;
@@ -62,10 +62,10 @@ public class JobFailure implements Serializable {
         this.worker = origFailure.worker;
         this.queue = origFailure.queue;
         this.payload = origFailure.payload;
-        this.exception = origFailure.exception;
+        this.throwable = origFailure.throwable;
         this.failedAt = origFailure.failedAt;
         this.retriedAt = origFailure.retriedAt;
-        this.exceptionString = origFailure.exceptionString;
+        this.throwableString = origFailure.throwableString;
         this.error = origFailure.error;
         this.backtrace = origFailure.backtrace;
     }
@@ -124,25 +124,25 @@ public class JobFailure implements Serializable {
     /**
      * @return the exception that occurred
      */
-    public Throwable getException() {
-        return this.exception;
+    public Throwable getThrowable() {
+        return this.throwable;
     }
 
     /**
-     * Set the exception that occurred.
+     * Set the throwable that occurred.
      * 
-     * @param exception
-     *            the kind of exception that occurred
+     * @param throwable
+     *            the kind of throwable that occurred
      */
-    public void setException(final Throwable exception) {
-        this.exception = exception;
+    public void setThrowable(final Throwable throwable) {
+        this.throwable = throwable;
     }
 
     /**
      * @return the exception that occurred as a string
      */
-    public String getExceptionString() {
-        return this.exceptionString;
+    public String getThrowableString() {
+        return this.throwableString;
     }
 
     /**
@@ -151,8 +151,8 @@ public class JobFailure implements Serializable {
      * @param exceptionString
      *            the kind of exception that occurred as a string
      */
-    public void setExceptionString(final String exceptionString) {
-        this.exceptionString = exceptionString;
+    public void setThrowableString(final String throwablenString) {
+        this.throwableString = throwablenString;
     }
 
     /**
@@ -173,17 +173,17 @@ public class JobFailure implements Serializable {
     }
 
     /**
-     * @return the backtrace of the exception
+     * @return the backtrace of the throwable
      */
     public List<String> getBacktrace() {
         return this.backtrace;
     }
 
     /**
-     * Set the backtrace of the exception
+     * Set the backtrace of the throwable
      * 
      * @param backtrace
-     *            the backtrace of the exception
+     *            the backtrace of the throwable
      */
     public void setBacktrace(final List<String> backtrace) {
         this.backtrace = backtrace;
@@ -230,13 +230,13 @@ public class JobFailure implements Serializable {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((this.exception == null) ? 0 : this.exception.hashCode());
+        result = prime * result + ((this.throwable == null) ? 0 : this.throwable.hashCode());
         result = prime * result + ((this.failedAt == null) ? 0 : this.failedAt.hashCode());
         result = prime * result + ((this.retriedAt == null) ? 0 : this.retriedAt.hashCode());
         result = prime * result + ((this.payload == null) ? 0 : this.payload.hashCode());
         result = prime * result + ((this.worker == null) ? 0 : this.worker.hashCode());
         result = prime * result + ((this.queue == null) ? 0 : this.queue.hashCode());
-        result = prime * result + ((this.exceptionString == null) ? 0 : this.exceptionString.hashCode());
+        result = prime * result + ((this.throwableString == null) ? 0 : this.throwableString.hashCode());
         result = prime * result + ((this.error == null) ? 0 : this.error.hashCode());
         result = prime * result + ((this.backtrace == null) ? 0 : this.backtrace.hashCode());
         return result;
@@ -254,11 +254,11 @@ public class JobFailure implements Serializable {
             final JobFailure other = (JobFailure) obj;
             equal = (JesqueUtils.nullSafeEquals(this.queue, other.queue)
                     && JesqueUtils.nullSafeEquals(this.worker, other.worker)
-                    && JesqueUtils.nullSafeEquals(this.exceptionString, other.exceptionString)
+                    && JesqueUtils.nullSafeEquals(this.throwableString, other.throwableString)
                     && JesqueUtils.nullSafeEquals(this.error, other.error)
                     && JesqueUtils.nullSafeEquals(this.failedAt, other.failedAt)
                     && JesqueUtils.nullSafeEquals(this.retriedAt, other.retriedAt)
-                    && JesqueUtils.equal(this.exception, other.exception)
+                    && JesqueUtils.equal(this.throwable, other.throwable)
                     && JesqueUtils.nullSafeEquals(this.payload, other.payload)
                     && JesqueUtils.nullSafeEquals(this.backtrace, other.backtrace));
         }

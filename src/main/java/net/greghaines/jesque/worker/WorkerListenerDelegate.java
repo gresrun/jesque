@@ -136,18 +136,18 @@ public class WorkerListenerDelegate implements WorkerEventEmitter {
      *            the result of the successful execution of the Job (only set
      *            for JOB_SUCCESS and if the Job was a Callable that returned a
      *            value)
-     * @param ex
-     *            the Exception that caused the event (only supply for
+     * @param t
+     *            the Throwable that caused the event (only supply for
      *            JOB_FAILURE and ERROR events)
      */
     public void fireEvent(final WorkerEvent event, final Worker worker, final String queue, 
-            final Job job, final Object runner, final Object result, final Exception ex) {
+            final Job job, final Object runner, final Object result, final Throwable t) {
         final ConcurrentSet<WorkerListener> listeners = this.eventListenerMap.get(event);
         if (listeners != null) {
             for (final WorkerListener listener : listeners) {
                 if (listener != null) {
                     try {
-                        listener.onEvent(event, worker, queue, job, runner, result, ex);
+                        listener.onEvent(event, worker, queue, job, runner, result, t);
                     } catch (Exception e) {
                         log.error("Failure executing listener " + listener + " for event " + event 
                                 + " from queue " + queue + " on worker " + worker, e);

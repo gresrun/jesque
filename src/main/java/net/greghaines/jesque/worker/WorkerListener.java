@@ -17,6 +17,8 @@ package net.greghaines.jesque.worker;
 
 import net.greghaines.jesque.Job;
 
+import java.lang.Throwable;
+
 /**
  * A WorkerListener can register with a Worker to be notified of WorkerEvents.
  * 
@@ -44,9 +46,9 @@ public interface WorkerListener {
      *            the result of the successful execution of the Job (only set
      *            for JOB_SUCCESS and if the Job was a Callable that returned a
      *            value)
-     * @param ex
-     *            the Exception that caused the event (only set for JOB_FAILURE
+     * @param t
+     *            the Throwable that caused the event (only set for JOB_FAILURE
      *            and ERROR events)
      */
-    void onEvent(WorkerEvent event, Worker worker, String queue, Job job, Object runner, Object result, Exception ex);
+    void onEvent(WorkerEvent event, Worker worker, String queue, Job job, Object runner, Object result, Throwable t);
 }

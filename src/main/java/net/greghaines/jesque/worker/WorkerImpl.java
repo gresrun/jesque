@@ -20,6 +20,7 @@ import static net.greghaines.jesque.worker.JobExecutor.State.*;
 import static net.greghaines.jesque.worker.WorkerEvent.*;
 
 import java.io.IOException;
+import java.lang.Throwable;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -534,8 +535,8 @@ public class WorkerImpl implements Worker {
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
-        } catch (Exception e) {
-            failure(e, job, curQueue);
+        } catch (Throwable t) {
+            failure(t, job, curQueue);
         } finally {
             removeInFlight(curQueue);
             this.jedis.del(key(WORKER, this.name));
@@ -609,34 +610,34 @@ public class WorkerImpl implements Worker {
     /**
      * Update the status in Redis on failure
      * 
-     * @param ex
-     *            the Exception that occurred
+     * @param t
+     *            the Throwable that occurred
      * @param job
      *            the Job that failed
      * @param curQueue
      *            the queue the Job came from
      */
-    protected void failure(final Exception ex, final Job job, final String curQueue) {
+    protected void failure(final Throwable t, final Job job, final String curQueue) {
         // The job may have taken a long time; make an effort to ensure the
         // connection is OK
         JedisUtils.ensureJedisConnection(this.jedis);
         try {
             this.jedis.incr(key(STAT, FAILED));
             this.jedis.incr(key(STAT, FAILED, this.name));
-            this.jedis.rpush(key(FAILED), failMsg(ex, curQueue, job));
+            this.jedis.rpush(key(FAILED), failMsg(t, curQueue, job));
         } catch (JedisException je) {
-            LOG.warn("Error updating failure stats for exception=" + ex + " job=" + job, je);
+            LOG.warn("Error updating failure stats for throwable=" + t + " job=" + job, je);
         } catch (IOException ioe) {
-            LOG.warn("Error serializing failure payload for exception=" + ex + " job=" + job, ioe);
+            LOG.warn("Error serializing failure payload for throwable=" + t + " job=" + job, ioe);
         }
-        this.listenerDelegate.fireEvent(JOB_FAILURE, this, curQueue, job, null, null, ex);
+        this.listenerDelegate.fireEvent(JOB_FAILURE, this, curQueue, job, null, null, t);
     }
 
     /**
      * Create and serialize a JobFailure.
      * 
-     * @param ex
-     *            the Exception that occurred
+     * @param t
+     *            the Throwable that occurred
      * @param queue
      *            the queue the job came from
      * @param job
@@ -645,13 +646,13 @@ public class WorkerImpl implements Worker {
      * @throws IOException
      *             if there was an error serializing the JobFailure
      */
-    protected String failMsg(final Exception ex, final String queue, final Job job) throws IOException {
+    protected String failMsg(final Throwable t, final String queue, final Job job) throws IOException {
         final JobFailure failure = new JobFailure();
         failure.setFailedAt(new Date());
         failure.setWorker(this.name);
         failure.setQueue(queue);
         failure.setPayload(job);
-        failure.setException(ex);
+        failure.setThrowable(t);
         return ObjectMapperFactory.get().writeValueAsString(failure);
     }
 

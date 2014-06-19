@@ -127,7 +127,7 @@ public class TestExceptionSerialization {
     public void testDeseralize() throws Exception {
         final String payload = "{\"worker\":\"test5:12385-1:JAVA_DYNAMIC_QUEUES,SomeQueue\",\"queue\":\"audioTranscode\",\"payload\":{\"class\":\"SomeClass\",\"args\":[1234]},\"exception\":\"groovy.lang.MissingMethodException\",\"error\":\"SomeError\",\"backtrace\":[\"\\tat sompackage.someclass(somefile.java:42)\"],\"failed_at\":\"2011-10-17T18:01:33.185+0000\",\"retried_at\":null}";
         final JobFailure jobFailure = ObjectMapperFactory.get().readValue(payload, JobFailure.class);
-        Assert.assertNull(jobFailure.getException());
+        Assert.assertNull(jobFailure.getThrowable());
     }
 
     private static void serialize(final Throwable t) throws Exception {
