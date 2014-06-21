@@ -57,7 +57,8 @@ public class AmbiguousConstructorException extends Exception {
      *            the possible matching Constructors
      */
     public AmbiguousConstructorException(final Class<?> type, final Object[] args, final Set<Constructor<?>> options) {
-        super("Found " + options.size() + " possible matches for class=" + type.getName() + " args=" + Arrays.toString(args) + ": " + options);
+        super("Found " + options.size() + " possible matches for class=" + type.getName() 
+                + " args=" + Arrays.toString(args) + ": " + options);
         this.type = type;
         this.args = args.clone();
         this.options = options;
