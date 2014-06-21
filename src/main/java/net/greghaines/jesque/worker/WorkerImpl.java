@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
@@ -53,6 +51,9 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisException;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
  * Basic implementation of the Worker interface. Obeys the contract of a Resque
@@ -131,7 +132,7 @@ public class WorkerImpl implements Worker {
 	/**
      * Creates a new WorkerImpl, which creates it's own connection to Redis
      * using values from the config. The worker will only listen to the supplied
-     * queues and only execute jobs that are in the supplied job types.
+     * queues and execute jobs that are provided by the given job factory.
      * 
      * @param config
      *            used to create a connection to Redis and the package prefix
@@ -141,22 +142,47 @@ public class WorkerImpl implements Worker {
      * @param jobFactory
      *            the job factory that materializes the jobs
      * @throws IllegalArgumentException
-     *             if the config is null, if the queues is null, or if the
-     *             jobTypes is null or empty
+     *             if either config, queues or jobFactory is null
      */
     public WorkerImpl(final Config config, final Collection<String> queues,
            final JobFactory jobFactory) {
+        this(config, queues, jobFactory, 
+                new Jedis(config.getHost(), config.getPort(), config.getTimeout()));
+    }
+    
+    /**
+     * Creates a new WorkerImpl, with the given connection to Redis. 
+     * The worker will only listen to the supplied queues and execute jobs 
+     * that are provided by the given job factory.
+     * 
+     * @param config
+     *            used to create a connection to Redis and the package prefix
+     *            for incoming jobs
+     * @param queues
+     *            the list of queues to poll
+     * @param jobFactory
+     *            the job factory that materializes the jobs
+     * @param jedis
+     *            the connection to Redis
+     * @throws IllegalArgumentException
+     *             if either config, queues, jobFactory or jedis is null
+     */
+    public WorkerImpl(final Config config, final Collection<String> queues,
+            final JobFactory jobFactory, final Jedis jedis) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
         if (jobFactory == null) {
             throw new IllegalArgumentException("jobFactory must not be null");
         }
+        if (jedis == null) {
+            throw new IllegalArgumentException("jedis must not be null");
+        }
         checkQueues(queues);
         this.config = config;
         this.jobFactory = jobFactory;
         this.namespace = config.getNamespace();
-        this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+        this.jedis = jedis;
         authenticateAndSelectDB();
         setQueues(queues);
         this.name = createName();
