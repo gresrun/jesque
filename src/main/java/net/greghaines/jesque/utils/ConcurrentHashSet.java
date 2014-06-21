@@ -15,6 +15,7 @@
  */
 package net.greghaines.jesque.utils;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,8 +29,10 @@ import java.util.concurrent.ConcurrentMap;
  * @param <E>
  *            the type of elements maintained by this set
  */
-public class ConcurrentHashSet<E> implements ConcurrentSet<E> {
+public class ConcurrentHashSet<E> implements ConcurrentSet<E>, Serializable {
     
+    private static final long serialVersionUID = -7388600825502125963L;
+
     private enum Nothing {
         NOTHING;
     }
@@ -98,16 +101,16 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E> {
      * given collection or 16 (whichever is greater), and a default load factor
      * (0.75) and concurrencyLevel (16).
      * 
-     * @param c
+     * @param collection
      *            the collection
      */
-    public ConcurrentHashSet(final Collection<? extends E> c) {
-        if (c == null) {
-            throw new IllegalArgumentException("set must not be null");
+    public ConcurrentHashSet(final Collection<? extends E> collection) {
+        if (collection == null) {
+            throw new IllegalArgumentException("collection must not be null");
         }
-        this.delegate = new ConcurrentHashMap<E, Nothing>(Math.max(16, Math.round(c.size() * 1.5f)));
-        for (final E e : c) {
-            this.delegate.put(e, Nothing.NOTHING);
+        this.delegate = new ConcurrentHashMap<E, Nothing>(Math.max(16, Math.round(collection.size() * 1.5f)));
+        for (final E elem : collection) {
+            this.delegate.put(elem, Nothing.NOTHING);
         }
     }
 
@@ -131,8 +134,8 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E> {
      * {@inheritDoc}
      */
     @Override
-    public boolean contains(final Object o) {
-        return this.delegate.containsKey(o);
+    public boolean contains(final Object obj) {
+        return this.delegate.containsKey(obj);
     }
 
     /**
@@ -155,42 +158,42 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E> {
      * {@inheritDoc}
      */
     @Override
-    public <T> T[] toArray(final T[] a) {
-        return this.delegate.keySet().toArray(a);
+    public <T> T[] toArray(final T[] array) {
+        return this.delegate.keySet().toArray(array);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean add(final E e) {
-        return (this.delegate.put(e, Nothing.NOTHING) == null);
+    public boolean add(final E elem) {
+        return (this.delegate.put(elem, Nothing.NOTHING) == null);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean remove(final Object o) {
-        return (this.delegate.remove(o) != null);
+    public boolean remove(final Object obj) {
+        return (this.delegate.remove(obj) != null);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean containsAll(final Collection<?> c) {
-        return this.delegate.keySet().containsAll(c);
+    public boolean containsAll(final Collection<?> collection) {
+        return this.delegate.keySet().containsAll(collection);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean addAll(final Collection<? extends E> c) {
+    public boolean addAll(final Collection<? extends E> collection) {
         boolean changed = false;
-        for (final E e : c) {
-            changed |= add(e);
+        for (final E elem : collection) {
+            changed |= add(elem);
         }
         return changed;
     }
@@ -199,16 +202,16 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E> {
      * {@inheritDoc}
      */
     @Override
-    public boolean retainAll(final Collection<?> c) {
-        return this.delegate.keySet().retainAll(c);
+    public boolean retainAll(final Collection<?> collection) {
+        return this.delegate.keySet().retainAll(collection);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean removeAll(final Collection<?> c) {
-        return this.delegate.keySet().removeAll(c);
+    public boolean removeAll(final Collection<?> collection) {
+        return this.delegate.keySet().removeAll(collection);
     }
 
     /**
