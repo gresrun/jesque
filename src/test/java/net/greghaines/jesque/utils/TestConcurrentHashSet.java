@@ -1,6 +1,7 @@
 package net.greghaines.jesque.utils;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Assert;
@@ -60,6 +61,16 @@ public class TestConcurrentHashSet {
         Assert.assertTrue(set.contains(bar));
         Assert.assertTrue(set.contains(baz));
         Assert.assertTrue(set.contains(qux));
+        
+        final Iterator<String> iter = set.iterator();
+        Assert.assertNotNull(iter);
+        int i = 0;
+        for (final String elem : set) {
+            if (elem != null) {
+                i++;
+            }
+        }
+        Assert.assertEquals(set.size(), i);
 
         Assert.assertTrue(set.retainAll(noQux));
         Assert.assertFalse(set.isEmpty());
