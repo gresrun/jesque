@@ -1,11 +1,35 @@
 package net.greghaines.jesque.worker;
 
+import static net.greghaines.jesque.utils.JesqueUtils.entry;
+import static net.greghaines.jesque.utils.JesqueUtils.map;
+
 import java.util.Arrays;
+
+import net.greghaines.jesque.Config;
+import net.greghaines.jesque.ConfigBuilder;
+import net.greghaines.jesque.TestAction;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 public class TestWorkerImpl {
+    
+    private static final Config CONFIG = new ConfigBuilder().build();
+    
+    @Test(expected=IllegalArgumentException.class)
+    public void testConstructor_NullConfig() {
+        new WorkerImpl(null, null, null, null);
+    }
+    
+    @Test(expected=IllegalArgumentException.class)
+    public void testConstructor_NullJobFactory() {
+        new WorkerImpl(CONFIG, null, null, null);
+    }
+    
+    @Test(expected=IllegalArgumentException.class)
+    public void testConstructor_NullJedis() {
+        new WorkerImpl(CONFIG, null, new MapBasedJobFactory(map(entry("Test", TestAction.class))), null);
+    }
 
     @Test
     public void testSetThreadNameChangingEnabled() {
