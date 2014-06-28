@@ -2,6 +2,7 @@ package net.greghaines.jesque.utils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -10,6 +11,66 @@ import org.junit.Test;
  * Tests ReflectionUtils.
  */
 public class TestReflectionUtils {
+    
+    @Test(expected=IllegalArgumentException.class)
+    public void testForName_Null() throws ClassNotFoundException {
+        ReflectionUtils.forName(null);
+    }
+    
+    @Test(expected=ClassNotFoundException.class)
+    public void testForName_NotFound() throws ClassNotFoundException {
+        ReflectionUtils.forName("123Bogus");
+    }
+    
+    @Test
+    public void testForName_Primitive() throws ClassNotFoundException {
+        Assert.assertSame(int.class, ReflectionUtils.forName("int"));
+    }
+    
+    @Test
+    public void testForName_PrimitiveArray() throws ClassNotFoundException {
+        Assert.assertSame(int[].class, ReflectionUtils.forName("[I"));
+    }
+    
+    @Test
+    public void testForName_Common() throws ClassNotFoundException {
+        Assert.assertSame(String.class, ReflectionUtils.forName(String.class.getName()));
+    }
+    
+    @Test
+    public void testForName_Standard() throws ClassNotFoundException {
+        Assert.assertSame(Map.class, ReflectionUtils.forName(Map.class.getName()));
+    }
+    
+    @Test
+    public void testForName_Inner() throws ClassNotFoundException {
+        Assert.assertSame(Entry.class, ReflectionUtils.forName(Entry.class.getName()));
+    }
+    
+    @Test
+    public void testForName_InnerDot() throws ClassNotFoundException {
+        Assert.assertSame(Entry.class, ReflectionUtils.forName("java.util.Map.Entry"));
+    }
+    
+    @Test
+    public void testForName_Array() throws ClassNotFoundException {
+        Assert.assertSame(String[].class, ReflectionUtils.forName("[Ljava.lang.String;"));
+    }
+    
+    @Test
+    public void testForName_ArraySuffix() throws ClassNotFoundException {
+        Assert.assertSame(String[].class, ReflectionUtils.forName("java.lang.String[]"));
+    }
+    
+    @Test
+    public void testForName_DoubleArray() throws ClassNotFoundException {
+        Assert.assertSame(String[][].class, ReflectionUtils.forName("[[Ljava.lang.String;"));
+    }
+    
+    @Test
+    public void testForName_DoubleArraySuffix() throws ClassNotFoundException {
+        Assert.assertSame(String[][].class, ReflectionUtils.forName("java.lang.String[][]"));
+    }
 
     @Test
     public void testInvokeSetters_NullInstance() throws ReflectiveOperationException {
