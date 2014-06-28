@@ -61,7 +61,7 @@ public class TestKeysDAORedisImpl {
     
     @Test
     public void testGetRedisInfo() {
-        final String infoString = "foo:bar\r\nbaz\r\nqux";
+        final String infoString = "foo:bar\r\n# CPU\r\nbaz\r\nqux";
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).info(); will(returnValue(infoString));

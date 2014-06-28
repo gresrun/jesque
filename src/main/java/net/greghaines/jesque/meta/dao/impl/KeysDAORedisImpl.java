@@ -119,9 +119,11 @@ public class KeysDAORedisImpl implements KeysDAO {
                 final String infoStr = jedis.info();
                 final String[] keyValueStrs = NEW_LINE_PATTERN.split(infoStr);
                 for (final String keyValueStr : keyValueStrs) {
-                    final String[] keyAndValue = COLON_PATTERN.split(keyValueStr, 2);
-                    final String value = (keyAndValue.length == 1) ? null : keyAndValue[1];
-                    infoMap.put(keyAndValue[0], value);
+                    if (keyValueStr.charAt(0) != '#') { // Ignore categories for now
+                        final String[] keyAndValue = COLON_PATTERN.split(keyValueStr, 2);
+                        final String value = (keyAndValue.length == 1) ? null : keyAndValue[1];
+                        infoMap.put(keyAndValue[0], value);
+                    }
                 }
                 return new LinkedHashMap<String, String>(infoMap);
             }
