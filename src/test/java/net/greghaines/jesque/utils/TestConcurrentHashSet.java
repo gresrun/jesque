@@ -93,4 +93,23 @@ public class TestConcurrentHashSet {
         Assert.assertTrue(set.isEmpty());
         Assert.assertEquals(0, set.size());
     }
+    
+    @Test(expected=IllegalArgumentException.class)
+    public void testCollectionConstructor_Null() {
+        new ConcurrentHashSet<String>(null);
+    }
+    
+    @Test
+    public void testCollectionConstructor() {
+        final List<String> fullList = Arrays.asList("foo", "bar", "baz", "qux");
+        final ConcurrentHashSet<String> set = new ConcurrentHashSet<>(fullList);
+        Assert.assertEquals(fullList.size(), set.size());
+        Assert.assertTrue(set.containsAll(fullList));
+    }
+    
+    @Test
+    public void testOtherConstructors() {
+        Assert.assertNotNull(new ConcurrentHashSet<String>(4, 0.75f));
+        Assert.assertNotNull(new ConcurrentHashSet<String>(4, 0.75f, 2));
+    }
 }

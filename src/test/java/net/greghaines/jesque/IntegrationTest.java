@@ -57,79 +57,79 @@ import redis.clients.jedis.Jedis;
  */
 public class IntegrationTest {
     
-    private static final Logger log = LoggerFactory.getLogger(IntegrationTest.class);
-    private static final Config config = new ConfigBuilder().build();
-    private static final String testQueue = "foo";
+    private static final Logger LOG = LoggerFactory.getLogger(IntegrationTest.class);
+    private static final Config CONFIG = new ConfigBuilder().build();
+    private static final String TEST_QUEUE = "foo";
 
     @Before
     public void resetRedis() {
-        TestUtils.resetRedis(config);
+        TestUtils.resetRedis(CONFIG);
     }
 
     @Test
     public void jobSuccess() throws Exception {
-        log.info("Running jobSuccess()...");
+        LOG.info("Running jobSuccess()...");
         assertSuccess(null);
     }
 
     @Test
     public void jobFailure() throws Exception {
-        log.info("Running jobFailure()...");
+        LOG.info("Running jobFailure()...");
         assertFailure(null);
     }
 
     @Test
     public void jobMixed() throws Exception {
-        log.info("Running jobMixed()...");
+        LOG.info("Running jobMixed()...");
         assertMixed(null);
     }
 
     @Test
     public void successInSpiteOfListenerFailPoll() {
-        log.info("Running successInSpiteOfListenerFailPoll()...");
+        LOG.info("Running successInSpiteOfListenerFailPoll()...");
         assertSuccess(new FailingWorkerListener(), WORKER_POLL);
     }
 
     @Test
     public void successInSpiteOfListenerFailJob() {
-        log.info("Running successInSpiteOfListenerFailJob()...");
+        LOG.info("Running successInSpiteOfListenerFailJob()...");
         assertSuccess(new FailingWorkerListener(), JOB_PROCESS);
     }
 
     @Test
     public void successInSpiteOfListenerFailSuccess() {
-        log.info("Running successInSpiteOfListenerFailSuccess()...");
+        LOG.info("Running successInSpiteOfListenerFailSuccess()...");
         assertSuccess(new FailingWorkerListener(), JOB_SUCCESS);
     }
 
     @Test
     public void successInSpiteOfListenerFailAll() {
-        log.info("Running successInSpiteOfListenerFailAll()...");
+        LOG.info("Running successInSpiteOfListenerFailAll()...");
         assertSuccess(new FailingWorkerListener(), WorkerEvent.values());
     }
 
     @Test
     public void failureInSpiteOfListenerFailError() {
-        log.info("Running failureInSpiteOfListenerFailError()...");
+        LOG.info("Running failureInSpiteOfListenerFailError()...");
         assertFailure(new FailingWorkerListener(), WORKER_ERROR);
     }
 
     @Test
     public void failureInSpiteOfListenerFailAll() {
-        log.info("Running failureInSpiteOfListenerFailAll()...");
+        LOG.info("Running failureInSpiteOfListenerFailAll()...");
         assertFailure(new FailingWorkerListener(), WorkerEvent.values());
     }
 
     @Test
     public void mixedInSpiteOfListenerFailAll() {
-        log.info("Running mixedInSpiteOfListenerFailAll()...");
+        LOG.info("Running mixedInSpiteOfListenerFailAll()...");
         assertMixed(new FailingWorkerListener(), WorkerEvent.values());
     }
 
     @Test
     public void acquireLockSuccess() {
-        log.info("Running acquireLockSuccess()...");
-        final Client client = new ClientImpl(config);
+        LOG.info("Running acquireLockSuccess()...");
+        final Client client = new ClientImpl(CONFIG);
         Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
         Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
         Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
@@ -137,8 +137,8 @@ public class IntegrationTest {
 
     @Test
     public void acquireLockFail() {
-        log.info("Running acquireLockFail()...");
-        final Client client = new ClientImpl(config);
+        LOG.info("Running acquireLockFail()...");
+        final Client client = new ClientImpl(CONFIG);
         Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "pete", 10000));
         Assert.assertFalse("Acquired lock that should have been in use.",
                 client.acquireLock("systemLockA", "george", 10));
@@ -158,11 +158,11 @@ public class IntegrationTest {
             }
         }, JOB_FAILURE);
 
-        final Jedis jedis = createJedis(config);
+        final Jedis jedis = createJedis(CONFIG);
         try {
             Assert.assertTrue(didFailWithUnpermittedJob.get());
-            Assert.assertEquals("1", jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-            Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
+            Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
+            Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
         } finally {
             jedis.quit();
         }
@@ -173,10 +173,10 @@ public class IntegrationTest {
 
         doWork(Arrays.asList(job), map(entry("TestAction", TestAction.class)), listener, events);
 
-        final Jedis jedis = createJedis(config);
+        final Jedis jedis = createJedis(CONFIG);
         try {
-            Assert.assertEquals("1", jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
-            Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
+            Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
+            Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
         } finally {
             jedis.quit();
         }
@@ -187,10 +187,10 @@ public class IntegrationTest {
 
         doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)), listener, events);
 
-        final Jedis jedis = createJedis(config);
+        final Jedis jedis = createJedis(CONFIG);
         try {
-            Assert.assertEquals("1", jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-            Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
+            Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
+            Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
         } finally {
             jedis.quit();
         }
@@ -205,10 +205,10 @@ public class IntegrationTest {
         doWork(Arrays.asList(job1, job2, job3, job4),
                 map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)), listener, events);
 
-        final Jedis jedis = createJedis(config);
+        final Jedis jedis = createJedis(CONFIG);
         try {
-            Assert.assertEquals("2", jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-            Assert.assertEquals("2", jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
+            Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
+            Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
         } finally {
             jedis.quit();
         }
@@ -216,14 +216,14 @@ public class IntegrationTest {
 
     private static void doWork(final List<Job> jobs, final Map<String, ? extends Class<? extends Runnable>> jobTypes,
             final WorkerListener listener, final WorkerEvent... events) {
-        final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue), new MapBasedJobFactory(jobTypes));
+        final Worker worker = new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE), new MapBasedJobFactory(jobTypes));
         if (listener != null && events.length > 0) {
             worker.getWorkerEventEmitter().addListener(listener, events);
         }
         final Thread workerThread = new Thread(worker);
         workerThread.start();
         try {
-            TestUtils.enqueueJobs(testQueue, jobs, config);
+            TestUtils.enqueueJobs(TEST_QUEUE, jobs, CONFIG);
         } finally {
             TestUtils.stopWorker(worker, workerThread);
         }
