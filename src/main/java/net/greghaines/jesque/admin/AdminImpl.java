@@ -135,7 +135,7 @@ public class AdminImpl implements Admin {
             try {
                 LOG.debug("AdminImpl starting up");
                 this.threadRef.set(Thread.currentThread());
-                while (!this.isShutdown()) {
+                while (!isShutdown()) {
                     this.jedis.subscribe(this.jedisPubSub, createFullChannels());
                 }
             } finally {
