@@ -63,6 +63,11 @@ public class TestAdminImpl {
     }
 
     @Test(expected=IllegalArgumentException.class)
+    public void testSetChannels_Null() {
+        new AdminImpl(CONFIG).setChannels(null);
+    }
+
+    @Test(expected=IllegalArgumentException.class)
     public void testSetChannels_NullChannel() {
         new AdminImpl(CONFIG).setChannels(set((String)null));
     }
@@ -105,5 +110,6 @@ public class TestAdminImpl {
         Assert.assertEquals(1, admin.getChannels().size());
         Assert.assertNotNull(admin.getExceptionHandler());
         Assert.assertTrue(admin.getReconnectAttempts() > 0);
+        Assert.assertNull(admin.getWorker());
     }
 }

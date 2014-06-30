@@ -25,8 +25,6 @@ import static net.greghaines.jesque.worker.JobExecutor.State.RUNNING;
 import static net.greghaines.jesque.worker.JobExecutor.State.SHUTDOWN;
 
 import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,10 +39,11 @@ import net.greghaines.jesque.utils.ConcurrentHashSet;
 import net.greghaines.jesque.utils.ConcurrentSet;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
+import net.greghaines.jesque.utils.ResqueConstants;
 import net.greghaines.jesque.worker.DefaultExceptionHandler;
-import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.ExceptionHandler;
 import net.greghaines.jesque.worker.JobFactory;
+import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.RecoveryStrategy;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerAware;
@@ -399,31 +398,6 @@ public class AdminImpl implements Admin {
         for (final String channel : channels) {
             if (channel == null || "".equals(channel)) {
                 throw new IllegalArgumentException("channels' members must not be null: " + channels);
-            }
-        }
-    }
-
-    /**
-     * Verify the given job types are all valid.
-     * 
-     * @param jobTypes
-     *            the given job types
-     */
-    protected void checkJobTypes(final Map<String, ? extends Class<?>> jobTypes) {
-        if (jobTypes == null) {
-            throw new IllegalArgumentException("jobTypes must not be null");
-        }
-        for (final Entry<String, ? extends Class<?>> entry : jobTypes.entrySet()) {
-            if (entry.getKey() == null) {
-                throw new IllegalArgumentException("jobType's keys must not be null: " + jobTypes);
-            }
-            final Class<?> jobType = entry.getValue();
-            if (jobType == null) {
-                throw new IllegalArgumentException("jobType's values must not be null: " + jobTypes);
-            }
-            if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType))) {
-                throw new IllegalArgumentException("jobType's values must implement either Runnable or Callable: " 
-                        + jobTypes);
             }
         }
     }
