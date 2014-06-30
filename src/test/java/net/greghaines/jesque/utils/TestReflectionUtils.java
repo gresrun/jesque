@@ -54,7 +54,7 @@ public class TestReflectionUtils {
     
     @Test
     public void testForName_Array() throws ClassNotFoundException {
-        Assert.assertSame(String[].class, ReflectionUtils.forName("[Ljava.lang.String;"));
+        Assert.assertSame(Map[].class, ReflectionUtils.forName("[Ljava.util.Map;"));
     }
     
     @Test
