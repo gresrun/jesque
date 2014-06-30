@@ -62,9 +62,9 @@ import redis.clients.jedis.JedisPubSub;
  */
 public class AdminImpl implements Admin {
     
-    private static final Logger log = LoggerFactory.getLogger(AdminImpl.class);
-    private static final long reconnectSleepTime = 5000; // 5s
-    private static final int reconnectAttempts = 120; // Total time: 10min
+    private static final Logger LOG = LoggerFactory.getLogger(AdminImpl.class);
+    private static final long RECONNECT_SLEEP_TIME = 5000; // 5s
+    private static final int RECONNECT_ATTEMPTS = 120; // Total time: 10min
 
     protected final Jedis jedis;
     protected final String namespace;
@@ -75,43 +75,49 @@ public class AdminImpl implements Admin {
     protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
     private final AtomicBoolean processingJob = new AtomicBoolean(false);
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
-    private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
+    private final AtomicReference<ExceptionHandler> exceptionHandlerRef = 
+            new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
 
     /**
-     * Constructor.
+     * Create a new AdminImpl which subscribes to {@link ResqueConstants#ADMIN_CHANNEL}, registers the 
+     * {@link PauseCommand} and {@link ShutdownCommand} jobs, and creates a new Jedis connection.
      * @param config the Jesque configuration
      */
     public AdminImpl(final Config config) {
-        if (config == null) {
-            throw new IllegalArgumentException("config must not be null");
-        }
-        this.namespace = config.getNamespace();
-        this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-        if (config.getPassword() != null) {
-            this.jedis.auth(config.getPassword());
-        }
-        this.jedis.select(config.getDatabase());
-        setChannels(set(ADMIN_CHANNEL));
-        this.jobFactory = new MapBasedJobFactory(map(
+        this(config, set(ADMIN_CHANNEL), new MapBasedJobFactory(map(
                 entry("PauseCommand", PauseCommand.class), 
-                entry("ShutdownCommand", ShutdownCommand.class)));
+                entry("ShutdownCommand", ShutdownCommand.class))));
     }
 
     /**
-     * Constructor.
+     * Create a new AdminImpl which creates a new Jedis connection.
      * @param config the Jesque configuration
      * @param channels the channels to subscribe to
      * @param jobFactory the job factory that materializes the jobs
      */
     public AdminImpl(final Config config, final Set<String> channels, final JobFactory jobFactory) {
+        this(config, channels, jobFactory, new Jedis(config.getHost(), config.getPort(), config.getTimeout()));
+    }
+
+    /**
+     * Create a new AdminImpl.
+     * @param config the Jesque configuration
+     * @param channels the channels to subscribe to
+     * @param jobFactory the job factory that materializes the jobs
+     * @param jedis the connection to Redis
+     */
+    public AdminImpl(final Config config, final Set<String> channels, final JobFactory jobFactory, final Jedis jedis) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
         if (jobFactory == null) {
             throw new IllegalArgumentException("jobFactory must not be null");
         }
+        if (jedis == null) {
+            throw new IllegalArgumentException("jedis must not be null");
+        }
         this.namespace = config.getNamespace();
-        this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+        this.jedis = jedis;
         if (config.getPassword() != null) {
             this.jedis.auth(config.getPassword());
         }
@@ -127,13 +133,13 @@ public class AdminImpl implements Admin {
     public void run() {
         if (this.state.compareAndSet(NEW, RUNNING)) {
             try {
-                log.debug("AdminImpl starting up");
+                LOG.debug("AdminImpl starting up");
                 this.threadRef.set(Thread.currentThread());
                 while (!this.isShutdown()) {
                     this.jedis.subscribe(this.jedisPubSub, createFullChannels());
                 }
             } finally {
-                log.debug("AdminImpl shutting down");
+                LOG.debug("AdminImpl shutting down");
                 this.jedis.quit();
                 this.threadRef.set(null);
             }
@@ -330,7 +336,8 @@ public class AdminImpl implements Admin {
             ((Runnable) instance).run(); // The job is executing!
             result = null;
         } else { // Should never happen since we're testing the class earlier
-            throw new ClassCastException("instance must be a Runnable or a Callable: " + instance.getClass().getName() + " - " + instance);
+            throw new ClassCastException("instance must be a Runnable or a Callable: " + instance.getClass().getName() 
+                    + " - " + instance);
         }
         return result;
     }
@@ -340,7 +347,7 @@ public class AdminImpl implements Admin {
      *         before giving up
      */
     protected int getReconnectAttempts() {
-        return reconnectAttempts;
+        return RECONNECT_ATTEMPTS;
     }
 
     /**
@@ -357,23 +364,24 @@ public class AdminImpl implements Admin {
         final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, e, channel);
         switch (recoveryStrategy) {
         case RECONNECT:
-            log.info("Reconnecting to Redis in response to exception", e);
+            LOG.info("Reconnecting to Redis in response to exception", e);
             final int reconAttempts = getReconnectAttempts();
-            if (!JedisUtils.reconnect(this.jedis, reconAttempts, reconnectSleepTime)) {
-                log.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
+            if (!JedisUtils.reconnect(this.jedis, reconAttempts, RECONNECT_SLEEP_TIME)) {
+                LOG.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
                 end(false);
             } else {
-                log.info("Reconnected to Redis");
+                LOG.info("Reconnected to Redis");
             }
             break;
         case TERMINATE:
-            log.warn("Terminating in response to exception", e);
+            LOG.warn("Terminating in response to exception", e);
             end(false);
             break;
         case PROCEED:
             break;
         default:
-            log.error("Unknown RecoveryStrategy: " + recoveryStrategy + " while attempting to recover from the following exception; Admin proceeding...", e);
+            LOG.error("Unknown RecoveryStrategy: " + recoveryStrategy 
+                    + " while attempting to recover from the following exception; Admin proceeding...", e);
             break;
         }
     }
@@ -414,7 +422,8 @@ public class AdminImpl implements Admin {
                 throw new IllegalArgumentException("jobType's values must not be null: " + jobTypes);
             }
             if (!(Runnable.class.isAssignableFrom(jobType)) && !(Callable.class.isAssignableFrom(jobType))) {
-                throw new IllegalArgumentException("jobType's values must implement either Runnable or Callable: " + jobTypes);
+                throw new IllegalArgumentException("jobType's values must implement either Runnable or Callable: " 
+                        + jobTypes);
             }
         }
     }

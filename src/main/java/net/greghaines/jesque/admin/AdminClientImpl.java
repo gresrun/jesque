@@ -30,6 +30,9 @@ import redis.clients.jedis.Jedis;
  */
 public class AdminClientImpl extends AbstractAdminClient {
     
+    /**
+     * The default behavior for checking connection validity before use.
+     */
     public static final boolean DEFAULT_CHECK_CONNECTION_BEFORE_USE = false;
 
     private final Config config;
