@@ -35,16 +35,16 @@ public class LoggingWorkerListener implements WorkerListener {
     }
 
     /**
-     * If there is an Exception, it is logged as an error, otherwise it is
+     * If there is a Throwable, it is logged as an error, otherwise it is
      * logged as a debug message.
      */
     @Override
     public void onEvent(final WorkerEvent event, final Worker worker, final String queue,
-            final net.greghaines.jesque.Job job, final Object runner, final Object result, final Exception ex) {
-        if (ex == null) {
-            LOG.debug("{} {} {} {} {} {} {}", new Object[]{ event, worker, queue, job, runner, result, ex });
+            final net.greghaines.jesque.Job job, final Object runner, final Object result, final Throwable t) {
+        if (t == null) {
+            LOG.debug("{} {} {} {} {} {} {}", new Object[]{ event, worker, queue, job, runner, result, t });
         } else {
-            LOG.error(event + " " + worker + " " + queue + " " + job + " " + runner + " " + result, ex);
+            LOG.error(event + " " + worker + " " + queue + " " + job + " " + runner + " " + result, t);
         }
     }
 }

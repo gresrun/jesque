@@ -56,7 +56,7 @@ public class LongRunningTest {
         worker2.getWorkerEventEmitter().addListener(new WorkerListener() {
             @Override
             public void onEvent(final WorkerEvent event, final Worker worker, final String queue, final Job job,
-                    final Object runner, final Object result, final Exception ex) {
+                    final Object runner, final Object result, final Throwable t) {
                 successRef.set(true);
                 log.info("SUCCCESS: {}", job);
             }

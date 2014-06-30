@@ -28,6 +28,7 @@ import static net.greghaines.jesque.worker.WorkerEvent.JOB_SUCCESS;
 import static net.greghaines.jesque.worker.WorkerEvent.WORKER_ERROR;
 import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
 
+import java.lang.Throwable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -151,8 +152,8 @@ public class IntegrationTest {
         final AtomicBoolean didFailWithUnpermittedJob = new AtomicBoolean(false);
         doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)), new WorkerListener() {
             public void onEvent(final WorkerEvent event, final Worker worker, final String queue, final Job job,
-                    final Object runner, final Object result, final Exception ex) {
-                if (JOB_FAILURE.equals(event) && (ex instanceof UnpermittedJobException)) {
+                    final Object runner, final Object result, final Throwable t) {
+                if (JOB_FAILURE.equals(event) && (t instanceof UnpermittedJobException)) {
                     didFailWithUnpermittedJob.set(true);
                 }
             }
@@ -231,7 +232,7 @@ public class IntegrationTest {
 
     private static class FailingWorkerListener implements WorkerListener {
         public void onEvent(final WorkerEvent event, final Worker worker, final String queue, final Job job,
-                final Object runner, final Object result, final Exception ex) {
+                final Object runner, final Object result, final Throwable t) {
             throw new RuntimeException("Listener FAIL");
         }
     }

@@ -50,7 +50,7 @@ public class TestJsonSerialization {
     }
 
     @Test
-    public void serializeJobFailure() throws Exception {
+    public void serializeJobException() throws Exception {
         final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
         final Exception e = new Exception("Whoopie!");
         e.fillInStackTrace();
@@ -58,8 +58,25 @@ public class TestJsonSerialization {
         assertSerializeRoundTrip(jobFailure);
         jobFailure.setPayload(job);
         jobFailure.setFailedAt(new Date());
-        jobFailure.setException(e);
-        jobFailure.setExceptionString(e.getClass().getName());
+        jobFailure.setThrowable(e);
+        jobFailure.setThrowableString(e.getClass().getName());
+        jobFailure.setError(e.getMessage());
+        jobFailure.setBacktrace(JesqueUtils.createBacktrace(e));
+        jobFailure.setWorker("foo");
+        assertSerializeRoundTrip(jobFailure);
+    }
+
+    @Test
+    public void serializeJobError() throws Exception {
+        final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Error e = new Error("Whoopie!");
+        e.fillInStackTrace();
+        final JobFailure jobFailure = new JobFailure();
+        assertSerializeRoundTrip(jobFailure);
+        jobFailure.setPayload(job);
+        jobFailure.setFailedAt(new Date());
+        jobFailure.setThrowable(e);
+        jobFailure.setThrowableString(e.getClass().getName());
         jobFailure.setError(e.getMessage());
         jobFailure.setBacktrace(JesqueUtils.createBacktrace(e));
         jobFailure.setWorker("foo");

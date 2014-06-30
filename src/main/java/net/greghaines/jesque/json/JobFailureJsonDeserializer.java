@@ -62,7 +62,7 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure> {
                 jobFailure.setPayload(jp.readValueAs(Job.class));
             } else if ("exception".equals(jp.getText())) {
                 jp.nextToken();
-                jobFailure.setExceptionString(jp.readValueAs(String.class));
+                jobFailure.setThrowableString(jp.readValueAs(String.class));
             } else if ("error".equals(jp.getText())) {
                 jp.nextToken();
                 jobFailure.setError(jp.readValueAs(String.class));
@@ -80,9 +80,9 @@ public class JobFailureJsonDeserializer extends JsonDeserializer<JobFailure> {
                         jp.getCurrentLocation());
             }
         }
-        if (jobFailure.getExceptionString() != null) {
+        if (jobFailure.getThrowableString() != null) {
             try {
-                jobFailure.setException(JesqueUtils.recreateThrowable(jobFailure.getExceptionString(),
+                jobFailure.setThrowable(JesqueUtils.recreateThrowable(jobFailure.getThrowableString(),
                         jobFailure.getError(), jobFailure.getBacktrace()));
             } catch (Exception ignore) {
             }
