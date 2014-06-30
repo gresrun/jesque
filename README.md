@@ -59,6 +59,12 @@ workerThread.start();
 try { Thread.sleep(5000); } catch (Exception e){} // Give ourselves time to process
 worker.end(true);
 try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
+
+// Start a failoverWorker to failback from the failoverQueue
+final Worker failoverWorker = new FailoverWorkerImpl(config);
+final Thread failoverWorkerThread = new Thread(failoverWorker);
+failoverWorkerThread.start();
+
 ```
 
 For more usage examples check the tests. The tests require that Redis is running on localhost:6379.

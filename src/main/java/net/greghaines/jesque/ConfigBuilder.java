@@ -39,7 +39,18 @@ public class ConfigBuilder implements Serializable {
     public static final String DEFAULT_NAMESPACE = "resque";
     /** 0 */
     public static final int DEFAULT_DATABASE = 0;
-
+    
+    /** true */
+    public static final boolean DEFAULT_FAILOVER_ENABLED = true;
+    /** 130 */
+    public static final int DEFAULT_HEARTBEAT_TIMEOUT_PERIOD_SEC = 130;
+    /** 60 */
+    public static final int DEFAULT_HEARTBEAT_TRANSMISSION_PERIOD_SEC = 60;
+    /** FOQ */
+    public static final String DEFAULT_FAILOVER_QUEUE = "FOQ";
+    /** false */
+    public static final boolean DEFAULT_IS_FAILOVER_DATA_KEY_CONTAINS_UUID = false;
+    
     /**
      * @return a Config with all the default values set
      */
@@ -54,6 +65,12 @@ public class ConfigBuilder implements Serializable {
     private String namespace = DEFAULT_NAMESPACE;
     private int database = DEFAULT_DATABASE;
 
+    private boolean failoverEnabled = DEFAULT_FAILOVER_ENABLED;
+    private int heartbeatTimeoutPeriodSec = DEFAULT_HEARTBEAT_TIMEOUT_PERIOD_SEC;
+    private int heartbeatTransmissionPeriodSec = DEFAULT_HEARTBEAT_TRANSMISSION_PERIOD_SEC;
+    private String failoverQueueName = DEFAULT_FAILOVER_QUEUE;
+    private boolean isFailoverDataKeyContainsUUID = DEFAULT_IS_FAILOVER_DATA_KEY_CONTAINS_UUID;
+    
     /**
      * No-arg constructor.
      */
@@ -77,6 +94,11 @@ public class ConfigBuilder implements Serializable {
         this.timeout = startingPoint.getTimeout();
         this.namespace = startingPoint.getNamespace();
         this.database = startingPoint.getDatabase();
+        this.failoverEnabled = startingPoint.isFailoverEnabled();
+        this.heartbeatTimeoutPeriodSec = startingPoint.getHeartbeatTimeoutPeriodSec();
+        this.heartbeatTransmissionPeriodSec = startingPoint.getHeartbeatTransmissionPeriodSec();
+        this.failoverQueueName = startingPoint.getFailoverQueueName();
+        this.isFailoverDataKeyContainsUUID = startingPoint.isFailoverDataKeyContainsUUID();
     }
 
     /**
@@ -169,11 +191,85 @@ public class ConfigBuilder implements Serializable {
         this.database = database;
         return this;
     }
-
+    
+    /**
+     * Configs created by this ConfigBuilder will have the given failoverEnabled.
+     * 
+     * @param failoverEnabled
+     *            failoverEnabled
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withFailoverEnabled(final boolean failoverEnabled) {
+        this.failoverEnabled = failoverEnabled;
+        return this;
+    }
+    
+    /**
+     * Configs created by this ConfigBuilder will use the given heartbeatTimeoutPeriodSec.
+     * 
+     * @param heartbeatTimeoutPeriodSec
+     *            heartbeatTimeoutPeriodSec
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withHeartbeatTimeoutPeriodSec(final int heartbeatTimeoutPeriodSec) {
+        if (heartbeatTimeoutPeriodSec < 1) {
+            throw new IllegalArgumentException(
+                    "heartbeatTimeoutPeriodMs must not be negative or zero: " + heartbeatTimeoutPeriodSec);
+        }
+        this.heartbeatTimeoutPeriodSec = heartbeatTimeoutPeriodSec;
+        return this;
+    }
+    
+    /**
+     * Configs created by this ConfigBuilder will use the given heartbeatTransmissionPeriodSec.
+     * 
+     * @param heartbeatTransmissionPeriodSec
+     *            heartbeatTransmissionPeriodSec
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withHeartbeatTransmissionPeriodSec(final int heartbeatTransmissionPeriodSec) {
+        if (heartbeatTransmissionPeriodSec < 1) {
+            throw new IllegalArgumentException(""
+                    + "heartbeatTransmissionPeriodSec must not be negative or zero: "
+                    + heartbeatTransmissionPeriodSec);
+        }
+        this.heartbeatTransmissionPeriodSec = heartbeatTransmissionPeriodSec;
+        return this;
+    }
+    
+    /**
+     * Configs created by this ConfigBuilder will have the given failOverQueueName.
+     * 
+     * @param failoverQueueName
+     *            failoverQueueName
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withFailoverQueueName(final String failoverQueueName) {
+        if (failoverQueueName == null || "".equals(failoverQueueName)) {
+            throw new IllegalArgumentException("failoverQueueName must not be null or empty: " + failoverQueueName);
+        }
+        this.failoverQueueName = failoverQueueName;
+        return this;
+    }
+    
+    /**
+     * Configs created by this ConfigBuilder will have the given isFailoverDataKeyContainsUUID.
+     * 
+     * @param isFailoverDataKeyContainsUUID
+     *            isFailoverDataKeyContainsUUID
+     * @return this ConfigBuilder
+     */
+    public ConfigBuilder withFailoverDataKeyContainsUUID(final boolean isFailoverDataKeyContainsUUID) {
+        this.isFailoverDataKeyContainsUUID = isFailoverDataKeyContainsUUID;
+        return this;
+    }
+        
     /**
      * @return a new Config initialized with the current values
      */
     public Config build() {
-        return new Config(this.host, this.port, this.timeout, this.password, this.namespace, this.database);
+        return new Config(this.host, this.port, this.timeout, this.password, this.namespace, this.database,
+                this.failoverEnabled, this.heartbeatTimeoutPeriodSec, this.heartbeatTransmissionPeriodSec,
+                this.failoverQueueName, this.isFailoverDataKeyContainsUUID);
     }
 }
