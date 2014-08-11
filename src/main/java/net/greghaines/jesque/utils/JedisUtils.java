@@ -91,6 +91,7 @@ public final class JedisUtils {
         do {
             try {
                 jedis.disconnect();
+                jedis.getClient().resetPipelinedCount();
                 try {
                     Thread.sleep(reconnectSleepTime);
                 } catch (Exception e2) {
