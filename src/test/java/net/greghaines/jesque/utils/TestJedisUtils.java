@@ -55,12 +55,24 @@ public class TestJedisUtils {
     }
     
     @Test
+    public void testIsRegularQueue_Success() {
+        final Jedis jedis = createJedis(CONFIG);
+        jedis.lpush(TEST_KEY, "bar");
+        Assert.assertTrue(JedisUtils.isRegularQueue(jedis, TEST_KEY));
+    }
+
+    @Test
+    public void testIsRegularQueue_Failure() {
+        Assert.assertFalse(JedisUtils.isRegularQueue(createJedis(CONFIG), TEST_KEY));
+    }
+
+    @Test
     public void testIsDelayedQueue_Success() {
         final Jedis jedis = createJedis(CONFIG);
         jedis.zadd(TEST_KEY, 1.0, "bar");
         Assert.assertTrue(JedisUtils.isDelayedQueue(jedis, TEST_KEY));
     }
-    
+
     @Test
     public void testIsDelayedQueue_Failure() {
         Assert.assertFalse(JedisUtils.isDelayedQueue(createJedis(CONFIG), TEST_KEY));

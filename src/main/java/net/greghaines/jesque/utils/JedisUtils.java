@@ -32,6 +32,7 @@ public final class JedisUtils {
     public static final String PONG = "PONG";
 
     private static final Logger LOG = LoggerFactory.getLogger(JedisUtils.class);
+    private static final String LIST = "list";
     private static final String ZSET = "zset";
     private static final String NONE = "none";
 
@@ -104,6 +105,19 @@ public final class JedisUtils {
             }
         } while (++i <= reconAttempts && !testJedisConnection(jedis));
         return testJedisConnection(jedis);
+    }
+
+    /**
+     * Determines if the queue identified by the given key is a regular queue.
+     * 
+     * @param jedis
+     *            connection to Redis
+     * @param key
+     *            the key that identifies a queue
+     * @return true if the key identifies a regular queue, false otherwise
+     */
+    public static boolean isRegularQueue(final Jedis jedis, final String key) {
+        return LIST.equalsIgnoreCase(jedis.type(key));
     }
 
     /**

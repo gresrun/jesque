@@ -468,7 +468,7 @@ public class WorkerImpl implements Worker {
                     payload = tmp;
                 }
             }
-        } else { // If not a delayed Queue, then use RPOP
+        } else if (JedisUtils.isRegularQueue(this.jedis, key)) { // If a regular queue, pop from it
             payload = lpoplpush(key, key(INFLIGHT, this.name, curQueue));
         }
         return payload;
@@ -756,29 +756,32 @@ public class WorkerImpl implements Worker {
         Thread.currentThread().setName(this.threadNameBase + msg);
     }
 
-    protected String lpoplpush(String from, String to) {
-        while (true) {
+    protected String lpoplpush(final String from, final String to) {
+        String result = null;
+        while (JedisUtils.isRegularQueue(this.jedis, from)) {
             this.jedis.watch(from);
-
-            // Get the leftmost value of the 'from' list. If it does not exist,
-            // there is nothing to pop.
-            String val = this.jedis.lindex(from, 0);
+            // Get the leftmost value of the 'from' list. If it does not exist, there is nothing to pop.
+            String val = null;
+            if (JedisUtils.isRegularQueue(this.jedis, from)) {
+                val = this.jedis.lindex(from, 0);
+            }
             if (val == null) {
                 this.jedis.unwatch();
-                return val;
+                result = val;
+                break;
             }
-
-            Transaction tx = this.jedis.multi();
+            final Transaction tx = this.jedis.multi();
             tx.lpop(from);
             tx.lpush(to, val);
             if (tx.exec() != null) {
-                return val;
+                result = val;
+                break;
             }
-
             // If execution of the transaction failed, this means that 'from'
             // was modified while we were watching it and the transaction was
             // not executed. We simply retry the operation.
         }
+        return result;
     }
 
     /**
