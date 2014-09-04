@@ -146,6 +146,20 @@ public final class JedisUtils {
         return !NONE.equalsIgnoreCase(jedis.type(key));
     }
 
+    /**
+     * Determines if the queue identified by the given key can be used as a delayed queue.
+     * 
+     * @param jedis
+     *            connection to Redis
+     * @param key
+     *            the key that identifies a queue
+     * @return true if the key already is a delayed queue or is not currently used, false otherwise
+     */
+    public static boolean canUseAsDelayedQueue(final Jedis jedis, final String key) {
+        final String type = jedis.type(key);
+        return (ZSET.equalsIgnoreCase(type) || NONE.equalsIgnoreCase(type));
+    }
+
     private JedisUtils() {
         // Utility class
     }

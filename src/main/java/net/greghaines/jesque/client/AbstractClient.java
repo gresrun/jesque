@@ -266,11 +266,11 @@ public abstract class AbstractClient implements Client {
     public static void doDelayedEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future) {
         final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
         // Add task only if this queue is either delayed or unused
-        if (JedisUtils.isDelayedQueue(jedis, key) || !JedisUtils.isKeyUsed(jedis, key)) {
+        if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
             jedis.zadd(key, future, jobJson);
             jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
         } else {
-            throw new IllegalArgumentException(queue + " is not a delayed queue");
+            throw new IllegalArgumentException(queue + " cannot be used as a delayed queue");
         }
     }
 

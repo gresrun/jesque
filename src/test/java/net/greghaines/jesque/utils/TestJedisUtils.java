@@ -89,4 +89,23 @@ public class TestJedisUtils {
     public void testIsKeyUsed_Failure() {
         Assert.assertFalse(JedisUtils.isKeyUsed(createJedis(CONFIG), "foo"));
     }
+
+    @Test
+    public void testCanUseAsDelayedQueue_Success_ZSet() {
+        final Jedis jedis = createJedis(CONFIG);
+        jedis.zadd(TEST_KEY, 1.0, "bar");
+        Assert.assertTrue(JedisUtils.canUseAsDelayedQueue(jedis, TEST_KEY));
+    }
+
+    @Test
+    public void testCanUseAsDelayedQueue_Success_None() {
+        Assert.assertTrue(JedisUtils.canUseAsDelayedQueue(createJedis(CONFIG), TEST_KEY));
+    }
+
+    @Test
+    public void testCanUseAsDelayedQueue_Failure() {
+        final Jedis jedis = createJedis(CONFIG);
+        jedis.set(TEST_KEY, "bar");
+        Assert.assertFalse(JedisUtils.canUseAsDelayedQueue(jedis, TEST_KEY));
+    }
 }
