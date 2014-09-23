@@ -201,7 +201,8 @@ public final class JesqueUtils {
      * @see JesqueUtils#createBacktrace(Throwable)
      */
     public static Throwable recreateThrowable(final String type, final String message, final List<String> backtrace) 
-            throws ParseException, ClassNotFoundException, NoSuchConstructorException, AmbiguousConstructorException, ReflectiveOperationException {
+            throws ParseException, ClassNotFoundException, NoSuchConstructorException, 
+            AmbiguousConstructorException, ReflectiveOperationException {
         final LinkedList<String> bTrace = new LinkedList<String>(backtrace);
         Throwable cause = null;
         StackTraceElement[] stes = null;
@@ -217,8 +218,9 @@ public final class JesqueUtils {
         return instantiateThrowable(type, message, cause, stes);
     }
 
-    protected static Throwable instantiateThrowable(final String type, final String message, final Throwable cause, final StackTraceElement[] stes) 
-            throws ClassNotFoundException, AmbiguousConstructorException, ReflectiveOperationException, NoSuchConstructorException {
+    protected static Throwable instantiateThrowable(final String type, final String message, final Throwable cause, 
+            final StackTraceElement[] stes) throws ClassNotFoundException, AmbiguousConstructorException, 
+            ReflectiveOperationException, NoSuchConstructorException {
         Throwable throwable = null;
         boolean causeInited = false;
         final Class<?> throwableType = ReflectionUtils.forName(type);
@@ -387,7 +389,8 @@ public final class JesqueUtils {
      * @throws Exception
      *             if there was an exception creating the object
      */
-    public static Object materializeJob(final Job job, final Map<String, Class<?>> jobTypes) throws UnpermittedJobException, Exception {
+    public static Object materializeJob(final Job job, final Map<String, Class<?>> jobTypes) 
+            throws UnpermittedJobException, Exception {
         final String className = job.getClassName();
         final Class<?> clazz = jobTypes.get(className);
         if (clazz == null) {

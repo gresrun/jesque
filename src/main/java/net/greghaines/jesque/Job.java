@@ -17,11 +17,19 @@ package net.greghaines.jesque;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import net.greghaines.jesque.utils.JesqueUtils;
+
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A simple class to describe a job to be run by a worker.
@@ -35,6 +43,7 @@ public class Job implements Serializable {
     private String className;
     private Object[] args;
     private Map<String,Object> vars;
+    private Map<String,Object> unknownFields = new HashMap<String,Object>();
 
     /**
      * No-argument constructor.
@@ -119,7 +128,10 @@ public class Job implements Serializable {
      *            the named arguments for the Job
      */
     @SuppressWarnings("unchecked")
-    public Job(final String className, final Object[] args, final Map<String,? extends Object> vars) {
+    @JsonCreator
+    public Job(@JsonProperty("class") final String className, 
+            @JsonProperty("args") final Object[] args, 
+            @JsonProperty("vars") final Map<String,? extends Object> vars) {
         if (className == null || "".equals(className)) {
             throw new IllegalArgumentException("className must not be null or empty: " + className);
         }
@@ -131,6 +143,7 @@ public class Job implements Serializable {
     /**
      * @return the name of the Job's class
      */
+    @JsonProperty(value = "class", required = true)
     public String getClassName() {
         return this.className;
     }
@@ -148,6 +161,7 @@ public class Job implements Serializable {
     /**
      * @return the arguments for the job
      */
+    @JsonProperty
     public Object[] getArgs() {
         return this.args;
     }
@@ -165,6 +179,7 @@ public class Job implements Serializable {
     /**
      * @return the named arguments for the job
      */
+    @JsonProperty
     public Map<String, Object> getVars() {
         return this.vars;
     }
@@ -183,8 +198,27 @@ public class Job implements Serializable {
     /**
      * @return true if this Job has a valid class name and arguments
      */
+    @JsonIgnore
     public boolean isValid() {
         return ((this.args != null || this.vars != null) && this.className != null && !"".equals(this.className));
+    }
+
+    /**
+     * @return all unknown fields
+     */
+    @JsonAnyGetter
+    protected Map<String,Object> getUnknownFields() {
+        return this.unknownFields;
+    }
+
+    /**
+     * Set an unknown field.
+     * @param name the unknown property name
+     * @param value the unknown property value
+     */
+    @JsonAnySetter
+    protected void setUnknownField(final String name, final Object value) {
+        this.unknownFields.put(name, value);
     }
 
     /**
@@ -192,8 +226,8 @@ public class Job implements Serializable {
      */
     @Override
     public String toString() {
-        return "<Job className=" + this.className + " args=" + Arrays.toString(this.args) 
-                + " vars=" + this.vars + ">";
+        return "Job [class=" + this.className + ", args=" + Arrays.toString(this.args) 
+                + ", vars=" + this.vars + "]";
     }
 
     /**

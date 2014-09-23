@@ -43,7 +43,7 @@ public class TestJobFailure {
         final Throwable t = new Exception(tStr);
         protoFail.setThrowable(t);
         Assert.assertEquals(t, protoFail.getThrowable());
-        final Throwable t1 = new Error(tStr);
+        final Throwable t1 = null;// new Error(tStr);
         protoFail.setThrowable(t1);
         Assert.assertEquals(t1, protoFail.getThrowable());
         final Date failedAt = new Date();

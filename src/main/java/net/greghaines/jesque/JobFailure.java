@@ -21,6 +21,12 @@ import java.util.List;
 
 import net.greghaines.jesque.utils.JesqueUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * A bean to hold information about a job that failed.
  * 
@@ -29,15 +35,22 @@ import net.greghaines.jesque.utils.JesqueUtils;
 public class JobFailure implements Serializable {
     
     private static final long serialVersionUID = -2160045729341301316L;
+    private static final Logger LOG = LoggerFactory.getLogger(JobFailure.class);
 
+    @JsonProperty
     private String worker;
+    @JsonProperty
     private String queue;
+    @JsonProperty
     private Job payload;
+    @JsonIgnore
     private Throwable throwable;
     private String throwableString;
     private List<String> backtrace;
     private String error;
+    @JsonProperty("failed_at")
     private Date failedAt;
+    @JsonProperty("retried_at")
     private Date retriedAt;
 
     /**
@@ -141,8 +154,9 @@ public class JobFailure implements Serializable {
     /**
      * @return the exception that occurred as a string
      */
+    @JsonProperty("exception")
     public String getThrowableString() {
-        return this.throwableString;
+        return (this.throwable == null) ? this.throwableString : this.throwable.getClass().getName();
     }
 
     /**
@@ -151,15 +165,18 @@ public class JobFailure implements Serializable {
      * @param exceptionString
      *            the kind of exception that occurred as a string
      */
+    @JsonProperty("exception")
     public void setThrowableString(final String throwablenString) {
         this.throwableString = throwablenString;
+        tryCreateThrowable();
     }
 
     /**
      * @return the error that occurred
      */
+    @JsonProperty
     public String getError() {
-        return this.error;
+        return (this.throwable == null) ? this.error : this.throwable.getMessage();
     }
 
     /**
@@ -168,15 +185,18 @@ public class JobFailure implements Serializable {
      * @param error
      *            the error that occurred
      */
+    @JsonProperty
     public void setError(final String error) {
         this.error = error;
+        tryCreateThrowable();
     }
 
     /**
      * @return the backtrace of the throwable
      */
+    @JsonProperty
     public List<String> getBacktrace() {
-        return this.backtrace;
+        return (this.throwable == null) ? this.backtrace : JesqueUtils.createBacktrace(this.throwable);
     }
 
     /**
@@ -185,8 +205,10 @@ public class JobFailure implements Serializable {
      * @param backtrace
      *            the backtrace of the throwable
      */
+    @JsonProperty
     public void setBacktrace(final List<String> backtrace) {
         this.backtrace = backtrace;
+        tryCreateThrowable();
     }
 
     /**
@@ -221,6 +243,15 @@ public class JobFailure implements Serializable {
      */
     public void setRetriedAt(final Date retriedAt) {
         this.retriedAt = retriedAt;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return "JobFailure [worker=" + this.worker + ", queue=" + this.queue+ ", payload=" + this.payload
+            + ", throwable=" + this.throwable + ", failedAt=" + this.failedAt + ", retriedAt=" + this.retriedAt + "]";
     }
 
     /**
@@ -263,5 +294,16 @@ public class JobFailure implements Serializable {
                     && JesqueUtils.nullSafeEquals(this.backtrace, other.backtrace));
         }
         return equal;
+    }
+    
+    private void tryCreateThrowable() {
+        if (this.throwable == null && this.throwableString != null && this.error != null && this.backtrace != null) {
+            try {
+                this.throwable = JesqueUtils.recreateThrowable(this.throwableString, this.error, this.backtrace);
+            } catch (Exception e) {
+                LOG.warn("Error while recreating throwable: " + this.throwableString + " " 
+                        + this.error + " " + this.backtrace, e);
+            }
+        }
     }
 }

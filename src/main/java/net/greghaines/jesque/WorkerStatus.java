@@ -18,6 +18,8 @@ package net.greghaines.jesque;
 import java.io.Serializable;
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import net.greghaines.jesque.utils.JesqueUtils;
 
 /**
@@ -29,9 +31,13 @@ public class WorkerStatus implements Serializable {
     
     private static final long serialVersionUID = 1852915628988733048L;
 
+    @JsonProperty("run_at")
     private Date runAt;
+    @JsonProperty
     private String queue;
+    @JsonProperty
     private Job payload;
+    @JsonProperty
     private boolean paused = false;
 
     /**
@@ -132,8 +138,8 @@ public class WorkerStatus implements Serializable {
      */
     @Override
     public String toString() {
-        return "<WorkerStatus queue=" + this.queue + " runAt=" + this.runAt 
-            + " paused=" + Boolean.toString(this.paused) + " payload=" + this.payload + ">";
+        return "WorkerStatus [queue=" + this.queue + ", runAt=" + this.runAt 
+            + ", paused=" + Boolean.toString(this.paused) + ", payload=" + this.payload + "]";
     }
 
     /**

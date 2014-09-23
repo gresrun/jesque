@@ -15,21 +15,12 @@
  */
 package net.greghaines.jesque.json;
 
-import static net.greghaines.jesque.utils.VersionUtils.DEVELOPMENT;
-import static net.greghaines.jesque.utils.VersionUtils.ERROR;
-
 import java.text.DateFormat;
 
-import net.greghaines.jesque.Job;
-import net.greghaines.jesque.JobFailure;
-import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.utils.CompositeDateFormat;
-import net.greghaines.jesque.utils.VersionUtils;
 
-import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 
 /**
  * A helper that creates a fully-configured singleton ObjectMapper.
@@ -41,26 +32,10 @@ public final class ObjectMapperFactory {
 	private static final ObjectMapper mapper = new ObjectMapper();
 
 	static {
-		mapper.registerModule(new SimpleModule("net.greghaines.jesque", createJacksonVersion())
-			.addSerializer(Job.class, new JobJsonSerializer())
-			.addDeserializer(Job.class, new JobJsonDeserializer())
-			.addSerializer(JobFailure.class, new JobFailureJsonSerializer())
-			.addDeserializer(JobFailure.class, new JobFailureJsonDeserializer())
-			.addSerializer(WorkerStatus.class, new WorkerStatusJsonSerializer())
-			.addDeserializer(WorkerStatus.class, new WorkerStatusJsonDeserializer()));
 		mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 		final DateFormat jsonDateFormat = new CompositeDateFormat();
 		mapper.getDeserializationConfig().with(jsonDateFormat);
 		mapper.getSerializationConfig().with(jsonDateFormat);
-	}
-	
-	private static Version createJacksonVersion() {
-		final Object[] versionParts = VersionUtils.getVersionParts();
-		return (DEVELOPMENT.equals(versionParts[3]) || ERROR.equals(versionParts[3])) 
-				? Version.unknownVersion() 
-				: new Version((Integer) versionParts[0], 
-				        (Integer) versionParts[1], (Integer) versionParts[2], 
-				        (String) versionParts[3], "net.greghaines", "jesque");
 	}
 	
 	/**
@@ -69,6 +44,8 @@ public final class ObjectMapperFactory {
 	public static ObjectMapper get() {
 		return mapper;
 	}
-	
-	private ObjectMapperFactory(){} // Utility class
+
+	private ObjectMapperFactory() {
+	    // Utility class
+	}
 }
