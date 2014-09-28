@@ -203,10 +203,21 @@ public class Job implements Serializable {
     }
 
     /**
+     * Get an unknown field.
+     * @param fieldName the field name
+     * @return the value
+     */
+    @JsonIgnore
+    public Object getUnknownField(final String fieldName) {
+        return this.unknownFields.get(fieldName);
+    }
+
+    /**
+     * Get all unknown fields.
      * @return all unknown fields
      */
     @JsonAnyGetter
-    protected Map<String,Object> getUnknownFields() {
+    public Map<String,Object> getUnknownFields() {
         return this.unknownFields;
     }
 
@@ -216,8 +227,18 @@ public class Job implements Serializable {
      * @param value the unknown property value
      */
     @JsonAnySetter
-    protected void setUnknownField(final String name, final Object value) {
+    public void setUnknownField(final String name, final Object value) {
         this.unknownFields.put(name, value);
+    }
+
+    /**
+     * Set all unknown fields
+     * @param unknownFields the new unknown fields
+     */
+    @JsonIgnore
+    public void setUnknownFields(final Map<String,Object> unknownFields) {
+        this.unknownFields.clear();
+        this.unknownFields.putAll(unknownFields);
     }
 
     /**
