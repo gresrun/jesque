@@ -28,7 +28,7 @@ import redis.clients.jedis.Jedis;
  * Basic implementation of the Client interface.
  * 
  * @author Greg Haines
- * @author Animesh Kumar <smile.animesh@gmail.com>
+ * @author Animesh Kumar
  */
 public class ClientImpl extends AbstractClient {
     

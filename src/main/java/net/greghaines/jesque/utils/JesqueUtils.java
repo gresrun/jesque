@@ -157,8 +157,8 @@ public final class JesqueUtils {
     /**
      * Recreate an exception from a type name, a message and a backtrace
      * (created from <code>JesqueUtils.createBacktrace(Throwable)</code>).
-     * <p/>
-     * <b>Limitations:</b><br/>
+     * <p>
+     * <b>Limitations:</b><br>
      * This method cannot recreate Throwables with unusual/custom Constructors.
      * <ul>
      * <li>If the message is non-null and the cause is null, there must be a
@@ -303,6 +303,8 @@ public final class JesqueUtils {
     /**
      * A convenient way of creating a map on the fly.
      * 
+     * @param <K> the key type
+     * @param <V> the value type
      * @param entries
      *            Map.Entry objects to be added to the map
      * @return a LinkedHashMap with the supplied entries
@@ -320,6 +322,8 @@ public final class JesqueUtils {
      * Creates a Map.Entry out of the given key and value. Commonly used in
      * conjunction with map(Entry...)
      * 
+     * @param <K> the key type
+     * @param <V> the value type
      * @param key
      *            the key
      * @param value
@@ -333,6 +337,7 @@ public final class JesqueUtils {
     /**
      * Creates a Set out of the given keys
      * 
+     * @param <K> the key type
      * @param keys
      *            the keys
      * @return a Set containing the given keys

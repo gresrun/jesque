@@ -99,7 +99,7 @@ public final class ReflectionUtils {
      * Create an object of the given type using a constructor that matches the
      * supplied arguments.
      * 
-     * @param <T>
+     * @param <T> the object type
      * @param clazz
      *            the type to create
      * @param args
@@ -124,7 +124,7 @@ public final class ReflectionUtils {
      * Create an object of the given type using a constructor that matches the
      * supplied arguments and invoke the setters with the supplied variables.
      * 
-     * @param <T>
+     * @param <T> the object type
      * @param clazz
      *            the type to create
      * @param args
@@ -150,7 +150,7 @@ public final class ReflectionUtils {
     /**
      * Find a Constructor on the given type that matches the given arguments.
      * 
-     * @param <T>
+     * @param <T> the object type
      * @param clazz
      *            the type to create
      * @param args
@@ -453,6 +453,7 @@ public final class ReflectionUtils {
     
     /**
      * Invoke the setters for the given variables on the given instance.
+     * @param <T> the instance type
      * @param instance the instance to inject with the variables
      * @param vars the variables to inject
      * @return the instance

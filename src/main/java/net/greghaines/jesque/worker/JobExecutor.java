@@ -73,11 +73,9 @@ public interface JobExecutor {
     void end(boolean now);
 
     /**
-     * Returns whether this JobExecutor is either shutdown or in the process of
-     * shutting down.
+     * Returns whether this JobExecutor is either shutdown or in the process of shutting down.
      * 
-     * @return true if this JobExecutor is either shutdown or in the process of
-     *         shutting down
+     * @return true if this JobExecutor is either shutdown or in the process of shutting down
      */
     boolean isShutdown();
 
@@ -89,11 +87,8 @@ public interface JobExecutor {
     boolean isProcessingJob();
 
     /**
-     * Wait for this JobExecutor to complete. A timeout of 0 means to wait
-     * forever.
-     * <p/>
-     * This method will only return after a thread has called
-     * {@link #end(boolean)}.
+     * Wait for this JobExecutor to complete. A timeout of 0 means to wait forever.
+     * This method will only return after a thread has called {@link #end(boolean)}.
      * 
      * @param millis
      *            the time to wait in milliseconds

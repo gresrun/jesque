@@ -98,7 +98,7 @@ public class Job implements Serializable {
     }
 
     /**
-     * Create a new Job with the given class name and named arguments.<br/>
+     * Create a new Job with the given class name and named arguments.<br>
      * Resque 2.0-style Job.
      * 
      * @param className
@@ -116,7 +116,7 @@ public class Job implements Serializable {
     }
 
     /**
-     * Create a new Job with the given class name and both types of arguments.<br/>
+     * Create a new Job with the given class name and both types of arguments.<br>
      * Resque 2.0-style Job.
      * 
      * @param className
@@ -186,7 +186,7 @@ public class Job implements Serializable {
     /**
      * Set the named arguments.
      * 
-     * @param args
+     * @param vars
      *            the new named arguments
      */
     @SuppressWarnings("unchecked")

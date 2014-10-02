@@ -61,7 +61,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
  * worker in Redis.
  * 
  * @author Greg Haines
- * @author Animesh Kumar <smile.animesh@gmail.com>
+ * @author Animesh Kumar
  */
 public class WorkerImpl implements Worker {
     
@@ -84,9 +84,9 @@ public class WorkerImpl implements Worker {
     /**
      * Enable/disable worker thread renaming during normal operation. (Disabled
      * by default)
-     * <p/>
+     * <p>
      * <strong>Warning: Enabling this feature is very expensive
-     * CPU-wise!</strong><br/>
+     * CPU-wise!</strong><br>
      * This feature is designed to assist in debugging worker state but should
      * be disabled in production environments for performance reasons.
      * 
@@ -229,7 +229,7 @@ public class WorkerImpl implements Worker {
     }
 
     /**
-     * Shutdown this Worker.<br/>
+     * Shutdown this Worker.<br>
      * <b>The worker cannot be started again; create a new worker in this
      * case.</b>
      * 
@@ -617,6 +617,8 @@ public class WorkerImpl implements Worker {
      *            the Job that succeeded
      * @param runner
      *            the materialized Job
+     * @param result
+     *            the result of the successful execution of the Job
      * @param curQueue
      *            the queue the Job came from
      */

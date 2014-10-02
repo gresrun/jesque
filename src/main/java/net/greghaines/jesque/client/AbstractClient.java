@@ -28,7 +28,7 @@ import redis.clients.jedis.Jedis;
  * Common logic for Client implementations.
  * 
  * @author Greg Haines
- * @author Animesh Kumar <smile.animesh@gmail.com>
+ * @author Animesh Kumar
  */
 public abstract class AbstractClient implements Client {
 
@@ -152,8 +152,11 @@ public abstract class AbstractClient implements Client {
      * @param lockHolder
      *            a unique string identifying the caller
      * @return true, if the lock was acquired, false otherwise
+     * @throws Exception
+     *             in case something goes wrong
      */
-    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout) throws Exception;
+    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder, 
+            final int timeout) throws Exception;
 
     /**
      * Helper method that encapsulates the minimum logic for adding a job to a

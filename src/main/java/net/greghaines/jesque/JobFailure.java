@@ -162,12 +162,12 @@ public class JobFailure implements Serializable {
     /**
      * Set the exception that occurred.
      * 
-     * @param exceptionString
+     * @param throwableString
      *            the kind of exception that occurred as a string
      */
     @JsonProperty("exception")
-    public void setThrowableString(final String throwablenString) {
-        this.throwableString = throwablenString;
+    public void setThrowableString(final String throwableString) {
+        this.throwableString = throwableString;
         tryCreateThrowable();
     }
 

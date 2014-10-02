@@ -18,7 +18,7 @@ package net.greghaines.jesque.utils;
 import java.util.Set;
 
 /**
- * An interface that denotes the implementation of Set is thread-safe.<br/>
+ * An interface that denotes the implementation of Set is thread-safe.<br>
  * It adds no new methods.
  * 
  * @author Greg Haines

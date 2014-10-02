@@ -25,7 +25,7 @@ import redis.clients.jedis.Jedis;
 
 /**
  * 
- * @author Animesh Kumar <smile.animesh@gmail.com>
+ * @author Animesh Kumar
  */
 public class DelayedQueueTest {
     

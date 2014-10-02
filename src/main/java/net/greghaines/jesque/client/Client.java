@@ -21,7 +21,7 @@ import net.greghaines.jesque.Job;
  * A Client allows Jobs to be enqueued for execution by Workers.
  * 
  * @author Greg Haines
- * @author Animesh Kumar <smile.animesh@gmail.com>
+ * @author Animesh Kumar
  */
 public interface Client {
     

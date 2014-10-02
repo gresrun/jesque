@@ -321,6 +321,7 @@ public class AdminImpl implements Admin {
      *            the queue the job came from
      * @param instance
      *            the materialized job
+     * @return the result of the job execution
      * @throws Exception
      *             if the instance is a {@link Callable} and throws an exception
      */

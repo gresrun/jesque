@@ -26,7 +26,7 @@ import redis.clients.util.Pool;
  * pool.
  * 
  * @author Greg Haines
- * @author Animesh Kumar <smile.animesh@gmail.com>
+ * @author Animesh Kumar
  */
 public class ClientPoolImpl extends AbstractClient {
     

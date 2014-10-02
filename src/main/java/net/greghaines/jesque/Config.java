@@ -45,13 +45,16 @@ public class Config implements Serializable {
      *            the Redis port number
      * @param timeout
      *            the Redis connection timeout
+     * @param password
+     *            the Redis database password
      * @param namespace
      *            the Redis namespace to prefix keys with
      * @param database
      *            the Redis database to use
      * @see ConfigBuilder
      */
-    public Config(final String host, final int port, final int timeout, final String password, final String namespace, final int database) {
+    public Config(final String host, final int port, final int timeout, final String password, final String namespace, 
+            final int database) {
         if (host == null || "".equals(host)) {
             throw new IllegalArgumentException("host must not be null or empty: " + host);
         }

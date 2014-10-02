@@ -22,7 +22,7 @@ import java.util.Collections;
 /**
  * A Worker polls for Jobs from a specified list of queues, executing them in
  * sequence and notifying WorkerListeners in the process.
- * <p/>
+ * <p>
  * Workers are designed to be run in a Thread or an ExecutorService. E.g.:
  * 
  * <pre>
