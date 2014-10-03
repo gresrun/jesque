@@ -19,14 +19,13 @@ import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 
 /**
  * Test job durability:
- * <p>
  * <ul>
  * <li>A job should be in the in-flight list while being processed, but not afterwards.</li>
  * <li>A job should be re-queued when the worker is shut down immediately.</li>
  * <li>A job should <i>not</i> be re-queued when the worker shuts down after completing the job.</li>
  * </ul>
  *
- * @author Daniël de Kok <me@danieldk.eu>
+ * @author Daniël de Kok
  */
 public class DurabilityTest {
     

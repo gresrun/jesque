@@ -3,7 +3,7 @@ package net.greghaines.jesque;
 /**
  * An action that sleeps for the given number of milliseconds.
  *
- * @author Daniël de Kok <me@danieldk.eu>
+ * @author Daniël de Kok
  */
 public class SleepAction implements Runnable {
     private final int millis;
