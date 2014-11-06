@@ -56,7 +56,7 @@ final Thread workerThread = new Thread(worker);
 workerThread.start();
 
 // Wait a few secs then shutdown
-try { Thread.sleep(5000); } catch (Exception e){} // Give ourselves time to process
+try { Thread.sleep((delay * 1000) + 5000); } catch (Exception e){} // Give ourselves time to process
 worker.end(true);
 try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 ```
