@@ -32,14 +32,14 @@ Example usage (from IntegrationTest):
 final Config config = new ConfigBuilder().build();
 
 // Add a job to the queue
-final Job job = new Job("TestAction", 
+final Job job = new Job("TestAction",
 	new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 final Client client = new ClientImpl(config);
 client.enqueue("foo", job);
 client.end();
 
 // Add a job to the delayed queue
-final Job job = new Job("TestAction", 
+final Job job = new Job("TestAction",
 	new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 
 final long delay = 10; // in seconds
@@ -50,7 +50,7 @@ client.delayedEnqueue("fooDelay", job, future);
 client.end();
 
 // Start a worker to run jobs from the queue
-final Worker worker = new WorkerImpl(config, 
+final Worker worker = new WorkerImpl(config,
 	Arrays.asList("foo"), new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
 final Thread workerThread = new Thread(worker);
 workerThread.start();
@@ -64,6 +64,41 @@ try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 For more usage examples check the tests. The tests require that Redis is running on localhost:6379.
 
 Use the resque-web application to see the status of your jobs and workers or, if you prefer Java, try [Jesque-Web](https://github.com/gresrun/jesque-web).
+
+### Redis Configuration
+
+As mentioned Jesque depends on [Jedis](https://github.com/xetorthio/jedis) to connect to [Redis](http://redis.io/).
+
+You can configure Jesque to connect to Redis with the following snippit:
+
+```java
+final ConfigBuilder configBuilder = new ConfigBuilder();
+
+try {
+  URI redisUrl = new URI(System.getProperty("REDIS_PROVIDER", "127.0.0.1"));
+
+  String redisHost = redisUrl.getHost();
+  int redisPort = redisUrl.getPort();
+  String redisUserInfo = redisUrl.getUserInfo();
+
+  if (redisHost != null) {
+    configBuilder.withHost(redisHost);
+  }
+
+  if (redisPort > -1) {
+    configBuilder.withPort(redisPort);
+  }
+
+  if (redisUserInfo != null) {
+    configBuilder.withPassword(redisUserInfo.split(":",2)[1]);
+  }
+}
+catch (URISyntaxException e) {
+  // Handle error
+}
+
+final Config config = configBuilder.build();
+```
 
 ***
 
