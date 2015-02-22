@@ -14,14 +14,14 @@ The project contains a client implementation as well as a worker implementation 
 
 Jesque requires Java 7+. Download the latest source at:
 
-	https://github.com/gresrun/jesque
+  https://github.com/gresrun/jesque
 Or, to use it in your Maven project, add it as a dependency:
 
 ```xml
 <dependency>
-	<groupId>net.greghaines</groupId>
-	<artifactId>jesque</artifactId>
-	<version>2.0.1</version>
+  <groupId>net.greghaines</groupId>
+  <artifactId>jesque</artifactId>
+  <version>2.0.1</version>
 </dependency>
 ```
 
@@ -32,15 +32,15 @@ Example usage (from IntegrationTest):
 final Config config = new ConfigBuilder().build();
 
 // Add a job to the queue
-final Job job = new Job("TestAction", 
-	new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
+final Job job = new Job("TestAction",
+  new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 final Client client = new ClientImpl(config);
 client.enqueue("foo", job);
 client.end();
 
 // Add a job to the delayed queue
-final Job job = new Job("TestAction", 
-	new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
+final Job job = new Job("TestAction",
+  new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 
 final long delay = 10; // in seconds
 final long future = System.currentTimeMillis() + (delay * 1000); // timestamp
@@ -50,8 +50,19 @@ client.delayedEnqueue("fooDelay", job, future);
 client.end();
 
 // Start a worker to run jobs from the queue
-final Worker worker = new WorkerImpl(config, 
-	Arrays.asList("foo"), new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
+final Worker worker = new WorkerImpl(config,
+  Arrays.asList("foo"), new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
+
+// Optionally add a listener to listen to JOB_EXECUTE events and inject required code
+int myVar = 0;
+worker.getWorkerEventEmitter().addListener(new WorkerListener(){
+   public void onEvent(WorkerEvent event, Worker worker, String queue, Job job, Object runner, Object result, Throwable t) {
+    if (runner instanceof TestAction) {
+        ((TestAction) runner).setSomeVariable(myVar);
+    }
+  }
+}, WorkerEvent.JOB_EXECUTE);
+
 final Thread workerThread = new Thread(worker);
 workerThread.start();
 
@@ -65,22 +76,57 @@ For more usage examples check the tests. The tests require that Redis is running
 
 Use the resque-web application to see the status of your jobs and workers or, if you prefer Java, try [Jesque-Web](https://github.com/gresrun/jesque-web).
 
+### Redis Configuration
+
+As mentioned Jesque depends on [Jedis](https://github.com/xetorthio/jedis) to connect to [Redis](http://redis.io/).
+
+You can configure Jesque to connect to Redis with the following snippit:
+
+```java
+final ConfigBuilder configBuilder = new ConfigBuilder();
+
+try {
+  URI redisUrl = new URI(System.getProperty("REDIS_PROVIDER", "127.0.0.1"));
+
+  String redisHost = redisUrl.getHost();
+  int redisPort = redisUrl.getPort();
+  String redisUserInfo = redisUrl.getUserInfo();
+
+  if (redisHost != null) {
+    configBuilder.withHost(redisHost);
+  }
+
+  if (redisPort > -1) {
+    configBuilder.withPort(redisPort);
+  }
+
+  if (redisUserInfo != null) {
+    configBuilder.withPassword(redisUserInfo.split(":",2)[1]);
+  }
+}
+catch (URISyntaxException e) {
+  // Handle error
+}
+
+final Config config = configBuilder.build();
+```
+
 ***
 
 ## Design Decisions
 
 * I chose to implement the jobs as classes that implement `java.lang.Runnable` or `java.util.concurrent.Callable`. If the job requires arguments (most do), there must be a constructor that matches the supplied arguments. I felt this was the most flexible option and didn't require the jobs to inherit or implement a special Jesque class. Because of this, the jobs don't even need to know about Jesque at all. Furthermore, the client need not have the job's `Class` in its VM, it only needs to know the classname and all the parameters' `Class`es on its classpath. Only the workers realize the job and then run them.
 * I chose to use Jedis because:
-	1. It is simple to use
-	2. Fully supports Redis 2.0 and uses the new unified protocol
-	3. No dependencies
+  1. It is simple to use
+  2. Fully supports Redis 2.0 and uses the new unified protocol
+  3. No dependencies
 * I chose to use Jackson because:
-	1. I was already familiar with it
-	2. It performs great and does what it says on the tin
-	3. No dependencies
+  1. I was already familiar with it
+  2. It performs great and does what it says on the tin
+  3. No dependencies
 * I chose to use SLF4J because:
-	1. It lets the application choose how to log
-	2. No dependencies
+  1. It lets the application choose how to log
+  2. No dependencies
 
 ***
 
