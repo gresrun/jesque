@@ -106,7 +106,7 @@ public final class JesqueUtils {
     public static String createKey(final String namespace, final Iterable<String> parts) {
         final List<String> list = new LinkedList<String>();
         if (!"".equals(namespace)) {
-          list.add(namespace);
+            list.add(namespace);
         }
         for (final String part : parts) {
             list.add(part);
