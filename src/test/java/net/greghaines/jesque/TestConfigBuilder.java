@@ -55,12 +55,12 @@ public class TestConfigBuilder {
         Assert.assertEquals(ConfigBuilder.DEFAULT_PORT, config.getPort());
         Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testWithHost_Null() {
         new ConfigBuilder().withHost(null);
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testWithHost_Empty() {
         new ConfigBuilder().withHost("");
@@ -150,14 +150,16 @@ public class TestConfigBuilder {
         Assert.assertEquals(ConfigBuilder.DEFAULT_PORT, config.getPort());
         Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testWithNamespace_Null() {
         new ConfigBuilder().withNamespace(null);
     }
-    
-    @Test(expected = IllegalArgumentException.class)
+
+    @Test
     public void testWithNamespace_Empty() {
-        new ConfigBuilder().withNamespace("");
+        final String myNamespace = "";
+        final Config config = new ConfigBuilder().withNamespace(myNamespace).build();
+        Assert.assertEquals(myNamespace, config.getNamespace());
     }
 }

@@ -1,12 +1,12 @@
 /*
  * Copyright 2011 Greg Haines
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,7 +37,7 @@ import net.greghaines.jesque.worker.UnpermittedJobException;
 
 /**
  * Miscellaneous utilities.
- * 
+ *
  * @author Greg Haines
  */
 public final class JesqueUtils {
@@ -51,7 +51,7 @@ public final class JesqueUtils {
 
     /**
      * Join the given strings, separated by the given separator.
-     * 
+     *
      * @param sep
      *            the separator
      * @param strs
@@ -64,7 +64,7 @@ public final class JesqueUtils {
 
     /**
      * Join the given strings, separated by the given separator.
-     * 
+     *
      * @param sep
      *            the separator
      * @param strs
@@ -83,7 +83,7 @@ public final class JesqueUtils {
 
     /**
      * Builds a namespaced Redis key with the given arguments.
-     * 
+     *
      * @param namespace
      *            the namespace to use
      * @param parts
@@ -96,7 +96,7 @@ public final class JesqueUtils {
 
     /**
      * Builds a namespaced Redis key with the given arguments.
-     * 
+     *
      * @param namespace
      *            the namespace to use
      * @param parts
@@ -105,7 +105,9 @@ public final class JesqueUtils {
      */
     public static String createKey(final String namespace, final Iterable<String> parts) {
         final List<String> list = new LinkedList<String>();
-        list.add(namespace);
+        if (!"".equals(namespace)) {
+          list.add(namespace);
+        }
         for (final String part : parts) {
             list.add(part);
         }
@@ -115,7 +117,7 @@ public final class JesqueUtils {
     /**
      * Creates a Resque backtrace from a Throwable's stack trace. Includes
      * causes.
-     * 
+     *
      * @param t
      *            the Exception to use
      * @return a list of strings that represent how the exception's stacktrace
@@ -134,7 +136,7 @@ public final class JesqueUtils {
 
     /**
      * Add a cause to the backtrace.
-     * 
+     *
      * @param cause
      *            the cause
      * @param bTrace
@@ -174,7 +176,7 @@ public final class JesqueUtils {
      * only parameter or a Constructor with a String and a Throwable as its
      * parameters.</li>
      * </ul>
-     * 
+     *
      * @param type
      *            the String name of the Throwable type
      * @param message
@@ -200,8 +202,8 @@ public final class JesqueUtils {
      *             if the constructor threw an exception
      * @see JesqueUtils#createBacktrace(Throwable)
      */
-    public static Throwable recreateThrowable(final String type, final String message, final List<String> backtrace) 
-            throws ParseException, ClassNotFoundException, NoSuchConstructorException, 
+    public static Throwable recreateThrowable(final String type, final String message, final List<String> backtrace)
+            throws ParseException, ClassNotFoundException, NoSuchConstructorException,
             AmbiguousConstructorException, ReflectiveOperationException {
         final LinkedList<String> bTrace = new LinkedList<String>(backtrace);
         Throwable cause = null;
@@ -218,8 +220,8 @@ public final class JesqueUtils {
         return instantiateThrowable(type, message, cause, stes);
     }
 
-    protected static Throwable instantiateThrowable(final String type, final String message, final Throwable cause, 
-            final StackTraceElement[] stes) throws ClassNotFoundException, AmbiguousConstructorException, 
+    protected static Throwable instantiateThrowable(final String type, final String message, final Throwable cause,
+            final StackTraceElement[] stes) throws ClassNotFoundException, AmbiguousConstructorException,
             ReflectiveOperationException, NoSuchConstructorException {
         Throwable throwable = null;
         boolean causeInited = false;
@@ -302,7 +304,7 @@ public final class JesqueUtils {
 
     /**
      * A convenient way of creating a map on the fly.
-     * 
+     *
      * @param <K> the key type
      * @param <V> the value type
      * @param entries
@@ -321,7 +323,7 @@ public final class JesqueUtils {
     /**
      * Creates a Map.Entry out of the given key and value. Commonly used in
      * conjunction with map(Entry...)
-     * 
+     *
      * @param <K> the key type
      * @param <V> the value type
      * @param key
@@ -336,7 +338,7 @@ public final class JesqueUtils {
 
     /**
      * Creates a Set out of the given keys
-     * 
+     *
      * @param <K> the key type
      * @param keys
      *            the keys
@@ -346,7 +348,7 @@ public final class JesqueUtils {
     public static <K> Set<K> set(final K... keys) {
         return new LinkedHashSet<K>(Arrays.asList(keys));
     }
-    
+
     /**
      * Test for equality.
      * @param obj1 the first object
@@ -361,7 +363,7 @@ public final class JesqueUtils {
     /**
      * Materializes a job by assuming the {@link Job#getClassName()} is a
      * fully-qualified Java type.
-     * 
+     *
      * @param job
      *            the job to materialize
      * @return the materialized job
@@ -382,7 +384,7 @@ public final class JesqueUtils {
     /**
      * Materializes a job by looking up {@link Job#getClassName()} in the
      * provided map of job types.
-     * 
+     *
      * @param job
      *            the job to materialize
      * @param jobTypes
@@ -394,7 +396,7 @@ public final class JesqueUtils {
      * @throws Exception
      *             if there was an exception creating the object
      */
-    public static Object materializeJob(final Job job, final Map<String, Class<?>> jobTypes) 
+    public static Object materializeJob(final Job job, final Map<String, Class<?>> jobTypes)
             throws UnpermittedJobException, Exception {
         final String className = job.getClassName();
         final Class<?> clazz = jobTypes.get(className);
@@ -407,11 +409,11 @@ public final class JesqueUtils {
         }
         return ReflectionUtils.createObject(clazz, job.getArgs(), job.getVars());
     }
-    
+
     /**
      * This is needed because Throwable doesn't override equals() and object
      * equality is not what we want to test.
-     * 
+     *
      * @param ex1
      *            first Throwable
      * @param ex2

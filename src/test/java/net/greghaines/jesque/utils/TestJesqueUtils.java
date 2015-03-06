@@ -30,7 +30,7 @@ public class TestJesqueUtils {
 
     @Test
     public void testCreateKey_VarArgs() {
-        Assert.assertEquals("foo:bar:baz", JesqueUtils.createKey("foo", "bar", "baz"));
+        Assert.assertEquals("bar:baz", JesqueUtils.createKey("", "bar", "baz"));
     }
 
     @Test
@@ -65,7 +65,7 @@ public class TestJesqueUtils {
         Assert.assertEquals("quz", map.get("foo"));
         Assert.assertEquals("quz", map.get("baz"));
     }
-    
+
     @Test
     public void testMaterializeJob() throws Exception {
         final Object action = JesqueUtils.materializeJob(new Job(TestRunnableJob.class.getName()));
@@ -75,12 +75,12 @@ public class TestJesqueUtils {
         Assert.assertNotNull(action2);
         Assert.assertEquals(TestCallableJob.class, action2.getClass());
     }
-    
+
     @Test(expected = ClassCastException.class)
     public void testMaterializeJob_NotRunnable() throws Exception {
         JesqueUtils.materializeJob(new Job(TestBadJob.class.getName()));
     }
-    
+
     @Test
     public void testMaterializeJob_Types() throws Exception {
         final Map<String, Class<?>> jobTypes = new HashMap<String, Class<?>>();
@@ -93,57 +93,57 @@ public class TestJesqueUtils {
         Assert.assertNotNull(action2);
         Assert.assertEquals(TestCallableJob.class, action2.getClass());
     }
-    
+
     @Test(expected = UnpermittedJobException.class)
     public void testMaterializeJob_Types_NotPermitted() throws Exception {
         final Map<String, Class<?>> jobTypes = new HashMap<String, Class<?>>();
         JesqueUtils.materializeJob(new Job("TestRunnableJob"), jobTypes);
     }
-    
+
     @Test(expected = ClassCastException.class)
     public void testMaterializeJob_Types_NotRunnable() throws Exception {
         final Map<String, Class<?>> jobTypes = new HashMap<String, Class<?>>();
         jobTypes.put("TestBadJob", TestBadJob.class);
         JesqueUtils.materializeJob(new Job("TestBadJob"), jobTypes);
     }
-    
+
     @Test
     public void testRecreateStackTrace() throws ParseException {
-        final List<String> bTrace = new ArrayList<String>(Arrays.asList("foo", 
-                "\tat net.greghaines.jesque.Job.<init>(Job.java:30)", 
-                "\tat net.greghaines.jesque.Job.<init>(Job.java)", 
-                "\tat net.greghaines.jesque.Job.<init>(Unknown Source)", 
+        final List<String> bTrace = new ArrayList<String>(Arrays.asList("foo",
+                "\tat net.greghaines.jesque.Job.<init>(Job.java:30)",
+                "\tat net.greghaines.jesque.Job.<init>(Job.java)",
+                "\tat net.greghaines.jesque.Job.<init>(Unknown Source)",
                 "\tat net.greghaines.jesque.Job.<init>(Native Method)"));
         final StackTraceElement[] stes = JesqueUtils.recreateStackTrace(bTrace);
         Assert.assertEquals(4, stes.length);
     }
-    
+
     @Test(expected = ParseException.class)
     public void testRecreateStackTrace_BadFormat() throws ParseException {
         final List<String> bTrace = new ArrayList<String>(Arrays.asList("\tat net.greghaines"));
         final StackTraceElement[] stes = JesqueUtils.recreateStackTrace(bTrace);
         Assert.assertEquals(0, stes.length);
     }
-    
+
     @Test
     public void testRecreateStackTrace_NotFormat() throws ParseException {
         final List<String> bTrace = Arrays.asList("foo", "bar");
         final StackTraceElement[] stes = JesqueUtils.recreateStackTrace(bTrace);
         Assert.assertEquals(0, stes.length);
     }
-    
+
     @Test
     public void testRecreateStackTrace_Empty() throws ParseException {
         final StackTraceElement[] stes = JesqueUtils.recreateStackTrace(new ArrayList<String>());
         Assert.assertEquals(0, stes.length);
     }
-    
+
     @Test
     public void testRecreateStackTrace_Null() throws ParseException {
         final StackTraceElement[] stes = JesqueUtils.recreateStackTrace(null);
         Assert.assertEquals(0, stes.length);
     }
-    
+
     @Test
     public void testEqual() {
         Throwable ex1 = new RuntimeException();
@@ -165,7 +165,7 @@ public class TestJesqueUtils {
         ex2 = new RuntimeException("foo", new Exception());
         Assert.assertTrue(JesqueUtils.equal(ex1, ex2));
     }
-    
+
     @Test
     public void testNullSafeEquals() {
         final String str1 = "foo";
@@ -178,14 +178,14 @@ public class TestJesqueUtils {
         Assert.assertTrue(JesqueUtils.nullSafeEquals(str1, str2));
         Assert.assertFalse(JesqueUtils.nullSafeEquals(str1, str3));
     }
-    
+
     public static class TestRunnableJob implements Runnable {
         @Override
         public void run() {
             // Do nothing
         }
     }
-    
+
     public static class TestCallableJob implements Callable<Object> {
         @Override
         public Object call() {
@@ -193,7 +193,7 @@ public class TestJesqueUtils {
             return null;
         }
     }
-    
+
     public static class TestBadJob {
         public void run() {
             // Do nothing
