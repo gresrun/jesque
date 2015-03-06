@@ -8,6 +8,8 @@ Jesque is a [Maven](http://maven.apache.org/) project and depends on [Jedis](htt
 
 The project contains a client implementation as well as a worker implementation that supports listeners.
 
+*NOTE:* Jesque's delayed jobs implementation is not compatible with resque-scheduler
+
 ***
 
 ## How do I use it?
@@ -140,7 +142,7 @@ Boom! Ready to go!
 
 ## License
 
-Copyright 2014 Greg Haines
+Copyright 2015 Greg Haines
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
