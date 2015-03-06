@@ -1,12 +1,12 @@
 /*
  * Copyright 2011 Greg Haines
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,12 +21,12 @@ import net.greghaines.jesque.utils.JesqueUtils;
 
 /**
  * An immutable configuration bean for use with the rest of the project.
- * 
+ *
  * @author Greg Haines
  * @see ConfigBuilder
  */
 public class Config implements Serializable {
-    
+
     private static final long serialVersionUID = -6638770587683679373L;
 
     private final String host;
@@ -38,7 +38,7 @@ public class Config implements Serializable {
 
     /**
      * Using a ConfigBuilder is recommended...
-     * 
+     *
      * @param host
      *            the Reds hostname
      * @param port
@@ -53,7 +53,7 @@ public class Config implements Serializable {
      *            the Redis database to use
      * @see ConfigBuilder
      */
-    public Config(final String host, final int port, final int timeout, final String password, final String namespace, 
+    public Config(final String host, final int port, final int timeout, final String password, final String namespace,
             final int database) {
         if (host == null || "".equals(host)) {
             throw new IllegalArgumentException("host must not be null or empty: " + host);
@@ -63,9 +63,6 @@ public class Config implements Serializable {
         }
         if (timeout < 0) {
             throw new IllegalArgumentException("timeout must not be negative: " + timeout);
-        }
-        if (namespace == null || "".equals(namespace)) {
-            throw new IllegalArgumentException("namespace must not be null or empty: " + namespace);
         }
         if (database < 0) {
             throw new IllegalArgumentException("database must not be negative: " + database);

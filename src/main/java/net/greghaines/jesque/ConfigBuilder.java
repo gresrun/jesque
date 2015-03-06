@@ -1,12 +1,12 @@
 /*
  * Copyright 2011 Greg Haines
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,12 +19,12 @@ import java.io.Serializable;
 
 /**
  * A fluent-style builder for {@link Config}s.
- * 
+ *
  * @author Greg Haines
  * @see Config
  */
 public class ConfigBuilder implements Serializable {
-    
+
     private static final long serialVersionUID = 730947307298353317L;
 
     /** localhost */
@@ -64,7 +64,7 @@ public class ConfigBuilder implements Serializable {
     /**
      * Create a new ConfigBuilder using an existing Config as the starting
      * point.
-     * 
+     *
      * @param startingPoint
      *            the Config instance to copy the values from
      */
@@ -81,7 +81,7 @@ public class ConfigBuilder implements Serializable {
 
     /**
      * Configs created by this ConfigBuilder will have the given Redis hostname.
-     * 
+     *
      * @param host
      *            the Redis hostname
      * @return this ConfigBuilder
@@ -97,7 +97,7 @@ public class ConfigBuilder implements Serializable {
     /**
      * Configs created by this ConfigBuilder will have the given Redis port
      * number.
-     * 
+     *
      * @param port
      *            the Redis port number
      * @return this ConfigBuilder
@@ -113,7 +113,7 @@ public class ConfigBuilder implements Serializable {
     /**
      * Configs created by this ConfigBuilder will have the given Redis
      * connection timeout.
-     * 
+     *
      * @param timeout
      *            the Redis connection timeout
      * @return this ConfigBuilder
@@ -129,7 +129,7 @@ public class ConfigBuilder implements Serializable {
     /**
      * Configs created by this ConfigBuilder will authenticate with the given
      * Redis password.
-     * 
+     *
      * @param password
      *            the Redis password
      * @return this ConfigBuilder
@@ -142,22 +142,19 @@ public class ConfigBuilder implements Serializable {
     /**
      * Configs created by this ConfigBuilder will have the given Redis namespace
      * to prefix keys with.
-     * 
+     *
      * @param namespace
      *            the Redis namespace to prefix keys with
      * @return this ConfigBuilder
      */
     public ConfigBuilder withNamespace(final String namespace) {
-        if (namespace == null || "".equals(namespace)) {
-            throw new IllegalArgumentException("namespace must not be null or empty: " + namespace);
-        }
         this.namespace = namespace;
         return this;
     }
 
     /**
      * Configs created by this ConfigBuilder will use the given Redis database.
-     * 
+     *
      * @param database
      *            the Redis database to use
      * @return this ConfigBuilder
