@@ -1,6 +1,6 @@
 # Jesque
 
-[![Build Status](http://img.shields.io/travis/gresrun/jesque.svg)](https://travis-ci.org/gresrun/jesque) [![Coverage Status](http://img.shields.io/coveralls/gresrun/jesque.svg)](https://coveralls.io/r/gresrun/jesque) [![Metrics Status](https://scan.coverity.com/projects/2660/badge.svg)](https://scan.coverity.com/projects/2660) [![License Apache 2.0](http://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/gresrun/jesque/blob/master/LICENSE)
+[![Build Status](http://img.shields.io/travis/gresrun/jesque.svg)](https://travis-ci.org/gresrun/jesque) [![Coverage Status](http://img.shields.io/coveralls/gresrun/jesque.svg)](https://coveralls.io/r/gresrun/jesque) [![License Apache 2.0](http://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/gresrun/jesque/blob/master/LICENSE)
 
 Jesque is an implementation of [Resque](https://github.com/resque/resque) in [Java](http://www.oracle.com/technetwork/java/index.html). It is fully-interoperable with the [Ruby](http://www.ruby-lang.org/en/) and [Node.js](http://nodejs.org/) ([Coffee-Resque](https://github.com/technoweenie/coffee-resque)) implementations.
 
