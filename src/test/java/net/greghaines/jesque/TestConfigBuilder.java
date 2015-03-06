@@ -151,11 +151,9 @@ public class TestConfigBuilder {
         Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void testWithNamespace_Null() {
-        final String myNamespace = null;
-        final Config config = new ConfigBuilder().withNamespace(myNamespace).build();
-        Assert.assertEquals(myNamespace, config.getNamespace());
+        new ConfigBuilder().withNamespace(null);
     }
 
     @Test

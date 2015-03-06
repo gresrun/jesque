@@ -148,6 +148,9 @@ public class ConfigBuilder implements Serializable {
      * @return this ConfigBuilder
      */
     public ConfigBuilder withNamespace(final String namespace) {
+        if (namespace == null) {
+            throw new IllegalArgumentException("namespace must not be null");
+        }
         this.namespace = namespace;
         return this;
     }

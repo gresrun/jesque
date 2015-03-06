@@ -64,6 +64,9 @@ public class Config implements Serializable {
         if (timeout < 0) {
             throw new IllegalArgumentException("timeout must not be negative: " + timeout);
         }
+        if (namespace == null) {
+            throw new IllegalArgumentException("namespace must not be null");
+        }
         if (database < 0) {
             throw new IllegalArgumentException("database must not be negative: " + database);
         }
