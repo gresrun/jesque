@@ -93,7 +93,9 @@ public class ClientImpl extends AbstractClient {
         this.keepAliveService = Executors.newSingleThreadScheduledExecutor();
         this.keepAliveService.scheduleAtFixedRate(new Runnable() {
             public void run() {
-                ensureJedisConnection();
+                if (!JedisUtils.ensureJedisConnection(jedis)) {
+                    authenticateAndSelectDB();
+                }
             }
         }, initialDelay, period, timeUnit);
     }
