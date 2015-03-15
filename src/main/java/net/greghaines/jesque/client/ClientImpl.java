@@ -1,12 +1,12 @@
 /*
  * Copyright 2011 Greg Haines
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,12 +26,12 @@ import redis.clients.jedis.Jedis;
 
 /**
  * Basic implementation of the Client interface.
- * 
+ *
  * @author Greg Haines
  * @author Animesh Kumar
  */
 public class ClientImpl extends AbstractClient {
-    
+
     public static final boolean DEFAULT_CHECK_CONNECTION_BEFORE_USE = false;
 
     private final Config config;
@@ -42,7 +42,7 @@ public class ClientImpl extends AbstractClient {
     /**
      * Create a new ClientImpl, which creates it's own connection to Redis using
      * values from the config. It will not verify the connection before use.
-     * 
+     *
      * @param config
      *            used to create a connection to Redis
      */
@@ -53,7 +53,7 @@ public class ClientImpl extends AbstractClient {
     /**
      * Create a new ClientImpl, which creates it's own connection to Redis using
      * values from the config.
-     * 
+     *
      * @param config
      *            used to create a connection to Redis
      * @param checkConnectionBeforeUse
@@ -74,7 +74,7 @@ public class ClientImpl extends AbstractClient {
      * Create a new ClientImpl, which creates it's own connection to Redis using
      * values from the config and spawns a thread to ensure the connection stays
      * open.
-     * 
+     *
      * @param config
      *            used to create a connection to Redis
      * @param initialDelay
@@ -132,6 +132,7 @@ public class ClientImpl extends AbstractClient {
      */
     @Override
     public void end() {
+        ensureJedisConnection();
         if (this.keepAliveService != null) {
             this.keepAliveService.shutdownNow();
         }
