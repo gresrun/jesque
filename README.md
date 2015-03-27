@@ -51,6 +51,10 @@ final Client client = new ClientImpl(config);
 client.delayedEnqueue("fooDelay", job, future);
 client.end();
 
+// Set up a ClientPool (useful for multi-threaded apps)
+final jesqueClientPool = new ClientPoolImpl(config, PoolUtils.createJedisPool(config));
+jesqueClientPool.enqueue("foo", job);
+
 // Start a worker to run jobs from the queue
 final Worker worker = new WorkerImpl(config,
   Arrays.asList("foo"), new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
