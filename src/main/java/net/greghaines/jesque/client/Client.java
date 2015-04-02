@@ -82,4 +82,16 @@ public interface Client {
      *             timestamp is not in the future
      */
     void delayedEnqueue(String queue, Job job, long future);
+
+    /**
+     * Removes a queued future job.
+     *
+     * @param queue
+     *            the queue to remove the Job from
+     * @param job
+     *            the job to be removed
+     * @throws IllegalArgumentException
+     *             if the queue is null or empty, if the job is null
+     */
+    void removeDelayedEnqueue(String queue, Job job);
 }

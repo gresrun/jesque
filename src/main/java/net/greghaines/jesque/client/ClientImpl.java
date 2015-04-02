@@ -148,6 +148,15 @@ public class ClientImpl extends AbstractClient {
         doDelayedEnqueue(this.jedis, getNamespace(), queue, msg, future);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void doRemoveDelayedEnqueue(final String queue, final String msg) throws Exception {
+        ensureJedisConnection();
+        doRemoveDelayedEnqueue(this.jedis, getNamespace(), queue, msg);
+    }
+
     private void authenticateAndSelectDB() {
         if (this.config.getPassword() != null) {
             this.jedis.auth(this.config.getPassword());

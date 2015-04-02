@@ -121,4 +121,20 @@ public class ClientPoolImpl extends AbstractClient {
             }
         });
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected void doRemoveDelayedEnqueue(final String queue, final String msg) throws Exception {
+        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public Void doWork(final Jedis jedis) {
+                doRemoveDelayedEnqueue(jedis, getNamespace(), queue, msg);
+                return null;
+            }
+        });
+    }
 }
