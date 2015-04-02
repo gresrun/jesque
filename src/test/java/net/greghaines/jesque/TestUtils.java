@@ -113,6 +113,17 @@ public final class TestUtils {
         }
     }
 
+    public static void removeDelayEnqueueJobs(final String queue, final List<Job> jobs, final Config config) {
+        final Client client = new ClientImpl(config);
+        try {
+            for (final Job job : jobs) {
+                client.removeDelayedEnqueue(queue, job);
+            }
+        } finally {
+            client.end();
+        }
+    }
+
     public static void assertFullyEquals(final Object obj1, final Object obj2) {
         Assert.assertEquals(obj1, obj2);
         Assert.assertEquals(obj1.hashCode(), obj2.hashCode());

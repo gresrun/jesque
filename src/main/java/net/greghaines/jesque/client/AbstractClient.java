@@ -294,6 +294,33 @@ public abstract class AbstractClient implements Client {
         }
     }
 
+    public static void doRemoveDelayedEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
+        final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
+        // Add task only if this queue is either delayed or unused
+        if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
+            jedis.zrem(key, jobJson);
+        } else {
+            throw new IllegalArgumentException(queue + " cannot be used as a delayed queue");
+        }
+    }
+
+    protected abstract void doRemoveDelayedEnqueue(String queue, String msg) throws Exception;
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void removeDelayedEnqueue(final String queue, final Job job) {
+        validateArguments(queue, job);
+        try {
+            doRemoveDelayedEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static void validateArguments(final String queue, final Job job) {
         if (queue == null || "".equals(queue)) {
             throw new IllegalArgumentException("queue must not be null or empty: " + queue);
