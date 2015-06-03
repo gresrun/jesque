@@ -15,6 +15,7 @@
  */
 package net.greghaines.jesque.client;
 
+import static net.greghaines.jesque.utils.ResqueConstants.FREQUENCY;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 import net.greghaines.jesque.Config;
@@ -23,6 +24,7 @@ import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 
 /**
  * Common logic for Client implementations.
@@ -296,7 +298,7 @@ public abstract class AbstractClient implements Client {
 
     public static void doRemoveDelayedEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
         final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
-        // Add task only if this queue is either delayed or unused
+        // remove task only if this queue is either delayed or unused
         if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
             jedis.zrem(key, jobJson);
         } else {
@@ -321,6 +323,69 @@ public abstract class AbstractClient implements Client {
         }
     }
 
+    public static void doRecurringEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future, final long frequency){
+        final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
+        final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
+
+        if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
+            Transaction transaction = jedis.multi();
+            transaction.zadd(queueKey, future, jobJson);
+            transaction.hset(hashKey, jobJson, String.valueOf(frequency));
+            if (transaction.exec() == null) {
+                throw new RuntimeException("cannot add " + jobJson + " to recurring queue " + queue);
+            }
+        } else {
+            throw new IllegalArgumentException(queue + " cannot be used as a recurring queue");
+        }
+    }
+
+    protected abstract void doRecurringEnqueue(String queue, String msg, long future, long frequency) throws Exception;
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void recurringEnqueue(String queue, Job job, long future, long frequency) {
+        validateArguments(queue, job, future, frequency);
+        try {
+            doRecurringEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future, frequency);
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void doRemoveRecurringEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
+        final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
+        final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
+
+        if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
+            Transaction transaction = jedis.multi();
+            transaction.hdel(hashKey, jobJson);
+            transaction.zrem(queueKey, jobJson);
+            if (transaction.exec() == null) {
+                throw new RuntimeException("cannot remove " + jobJson + " from recurring queue " + queue);
+            }
+        } else {
+            throw new IllegalArgumentException(queue + " cannot be used as a recurring queue");
+        }
+    }
+
+    protected abstract void doRemoveRecurringEnqueue(String queue, String msg) throws Exception;
+
+    @Override
+    public void removeRecurringEnqueue(String queue, Job job) {
+        validateArguments(queue, job);
+        try {
+            doRemoveRecurringEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static void validateArguments(final String queue, final Job job) {
         if (queue == null || "".equals(queue)) {
             throw new IllegalArgumentException("queue must not be null or empty: " + queue);
@@ -337,6 +402,13 @@ public abstract class AbstractClient implements Client {
         validateArguments(queue, job);
         if (System.currentTimeMillis() > future) {
             throw new IllegalArgumentException("future must be after current time");
+        }
+    }
+
+    private static void validateArguments(final String queue, final Job job, final long future, final long frequency) {
+        validateArguments(queue, job, future);
+        if (frequency < 1) {
+            throw new IllegalArgumentException("frequency must be greater than one second");
         }
     }
 }

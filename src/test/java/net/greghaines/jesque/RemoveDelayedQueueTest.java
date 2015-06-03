@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
 /**
- * Created by vk on 4/2/15.
+ * Created by Karthik (@argvk) on 4/2/15.
  */
 public class RemoveDelayedQueueTest {
 

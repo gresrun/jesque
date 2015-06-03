@@ -125,6 +125,7 @@ public class ClientPoolImpl extends AbstractClient {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected void doRemoveDelayedEnqueue(final String queue, final String msg) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
             /**
@@ -133,6 +134,34 @@ public class ClientPoolImpl extends AbstractClient {
             @Override
             public Void doWork(final Jedis jedis) {
                 doRemoveDelayedEnqueue(jedis, getNamespace(), queue, msg);
+                return null;
+            }
+        });
+    }
+
+    @Override
+    protected void doRecurringEnqueue(final String queue, final String msg, final long future, final long frequency) throws Exception {
+        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public Void doWork(final Jedis jedis) {
+                doRecurringEnqueue(jedis, getNamespace(), queue, msg, future, frequency);
+                return null;
+            }
+        });
+    }
+
+    @Override
+    protected void doRemoveRecurringEnqueue(final String queue, final String msg) throws Exception {
+        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public Void doWork(final Jedis jedis) {
+                doRemoveRecurringEnqueue(jedis, getNamespace(), queue, msg);
                 return null;
             }
         });

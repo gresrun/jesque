@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
+import redis.clients.jedis.Tuple;
 import redis.clients.jedis.exceptions.JedisException;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -460,12 +461,29 @@ public class WorkerImpl implements Worker {
         if (JedisUtils.isDelayedQueue(this.jedis, key)) {
             final long now = System.currentTimeMillis();
             // Peek ==> is there any item scheduled to run between -INF and now?
-            final Set<String> payloadSet = this.jedis.zrangeByScore(key, -1, now, 0, 1);
+            final Set<Tuple> payloadSet = this.jedis.zrangeByScoreWithScores(key, -1, now, 0, 1);
             if (payloadSet != null && !payloadSet.isEmpty()) {
-                final String tmp = payloadSet.iterator().next();
-                // Try to acquire this job
-                if (this.jedis.zrem(key, tmp) == 1) {
-                    payload = tmp;
+                final Tuple tuple = payloadSet.iterator().next();
+                final String tmp = tuple.getElement();
+                final double score = tuple.getScore();
+                // If a recurring job, increment the job score by hash field value
+                String recurringHashKey = JesqueUtils.createRecurringHashKey(key);
+                if (jedis.hexists(recurringHashKey, tmp)) {
+                    // watch the hash to ensure that the job isn't deleted
+                    // TODO use the ZADD XX feature
+                    jedis.watch(recurringHashKey);
+                    Long frequency = Long.valueOf(jedis.hget(recurringHashKey, tmp));
+                    Transaction transaction = jedis.multi();
+                    transaction.zadd(key, score + frequency, tmp);
+                    if (transaction.exec() != null) {
+                        payload = tmp;
+                    }
+                }
+                else {
+                    // Try to acquire this job
+                    if (this.jedis.zrem(key, tmp) == 1) {
+                        payload = tmp;
+                    }
                 }
             }
         } else if (JedisUtils.isRegularQueue(this.jedis, key)) { // If a regular queue, pop from it
