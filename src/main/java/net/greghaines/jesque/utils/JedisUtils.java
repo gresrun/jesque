@@ -34,6 +34,7 @@ public final class JedisUtils {
     private static final Logger LOG = LoggerFactory.getLogger(JedisUtils.class);
     private static final String LIST = "list";
     private static final String ZSET = "zset";
+    private static final String HASH = "hash";
     private static final String NONE = "none";
 
     /**
@@ -133,6 +134,11 @@ public final class JedisUtils {
         return ZSET.equalsIgnoreCase(jedis.type(key));
     }
 
+    public static boolean isRecurringQueue(final Jedis jedis, final String queueKey, final String hashKey) {
+        final String hashType = jedis.type(hashKey);
+        return (isDelayedQueue(jedis, queueKey) && HASH.equalsIgnoreCase(hashType));
+    }
+
     /**
      * Determines if the queue identified by the given key is used.
      * 
@@ -158,6 +164,12 @@ public final class JedisUtils {
     public static boolean canUseAsDelayedQueue(final Jedis jedis, final String key) {
         final String type = jedis.type(key);
         return (ZSET.equalsIgnoreCase(type) || NONE.equalsIgnoreCase(type));
+    }
+
+    public static boolean canUseAsRecurringQueue(final Jedis jedis, final String queueKey, final String hashKey)
+    {
+        final String hashType = jedis.type(hashKey);
+        return (canUseAsDelayedQueue(jedis, queueKey) && (HASH.equalsIgnoreCase(hashType) || NONE.equalsIgnoreCase(hashType)));
     }
 
     private JedisUtils() {

@@ -16,6 +16,7 @@
 package net.greghaines.jesque.utils;
 
 import static net.greghaines.jesque.utils.ResqueConstants.COLON;
+import static net.greghaines.jesque.utils.ResqueConstants.FREQUENCY;
 
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
@@ -92,6 +93,10 @@ public final class JesqueUtils {
      */
     public static String createKey(final String namespace, final String... parts) {
         return createKey(namespace, Arrays.asList(parts));
+    }
+
+    public static String createRecurringHashKey(final String queue) {
+        return createKey(queue, FREQUENCY);
     }
 
     /**

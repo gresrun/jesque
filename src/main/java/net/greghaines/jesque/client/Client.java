@@ -94,4 +94,32 @@ public interface Client {
      *             if the queue is null or empty, if the job is null
      */
     void removeDelayedEnqueue(String queue, Job job);
+
+    /**
+     * Queues a job to be in the future and recur
+     *
+     * @param queue
+     *          the queue to add the Job too
+     * @param job
+     *          the job to be enqueued
+     * @param future
+     *          timestamp when the job will run
+     * @param frequency
+     *          frequency in millis how often the job will run
+     * @throws IllegalArgumentException
+     *          if the queue is null or empty, if the job is null
+     */
+    void recurringEnqueue(String queue, Job job, long future, long frequency);
+
+    /**
+     * Removes a queued recurring job.
+     *
+     * @param queue
+     *            the queue to remove the Job from
+     * @param job
+     *            the job to be removed
+     * @throws IllegalArgumentException
+     *             if the queue is null or empty, if the job is null
+     */
+    void removeRecurringEnqueue(String queue, Job job);
 }
