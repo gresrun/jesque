@@ -182,8 +182,10 @@ public class Config implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + this.database;
-		result = prime * result + ((this.host == null) ? 0 : this.host.hashCode());
-		result = prime * result + ((this.namespace == null) ? 0 : this.namespace.hashCode());
+		result = prime * result + (this.host.hashCode());
+		result = prime * result + (this.namespace.hashCode());
+		result = prime * result + ((this.sentinels == null) ? 0 : this.sentinels.hashCode());
+		result = prime * result + ((this.masterName == null) ? 0 : this.masterName.hashCode());
 		result = prime * result + this.port;
 		result = prime * result + this.timeout;
 		return result;
@@ -200,7 +202,7 @@ public class Config implements Serializable {
 		} else if (obj instanceof Config) {
 			final Config other = (Config) obj;
 			equal = ((this.database == other.database) && (this.port == other.port) && (this.timeout == other.timeout) && JesqueUtils.nullSafeEquals(this.host, other.host)
-					&& JesqueUtils.nullSafeEquals(this.namespace, other.namespace));
+					&& JesqueUtils.nullSafeEquals(this.namespace, other.namespace)) && JesqueUtils.nullSafeEquals(this.sentinels, other.sentinels) && JesqueUtils.nullSafeEquals(this.masterName, other.masterName);
 		}
 		return equal;
 	}
