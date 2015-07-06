@@ -119,12 +119,13 @@ public final class PoolUtils {
         if (poolConfig == null) {
             throw new IllegalArgumentException("poolConfig must not be null");
         }
-        if (jesqueConfig.getMasterName() != null && !"".equals(jesqueConfig.getMasterName()) && jesqueConfig.getSentinels() != null
-                && jesqueConfig.getSentinels().size() > 0) {
-            return new JedisSentinelPool(jesqueConfig.getMasterName(), jesqueConfig.getSentinels(), poolConfig, jesqueConfig.getTimeout(),
-                    jesqueConfig.getPassword());
+        if (jesqueConfig.getMasterName() != null && !"".equals(jesqueConfig.getMasterName()) 
+                && jesqueConfig.getSentinels() != null && jesqueConfig.getSentinels().size() > 0) {
+            return new JedisSentinelPool(jesqueConfig.getMasterName(), jesqueConfig.getSentinels(), poolConfig, 
+                    jesqueConfig.getTimeout(), jesqueConfig.getPassword());
         } else {
-            return new JedisPool(poolConfig, jesqueConfig.getHost(), jesqueConfig.getPort(), jesqueConfig.getTimeout(), jesqueConfig.getPassword());
+            return new JedisPool(poolConfig, jesqueConfig.getHost(), jesqueConfig.getPort(), 
+                    jesqueConfig.getTimeout(), jesqueConfig.getPassword());
         }
     }
 

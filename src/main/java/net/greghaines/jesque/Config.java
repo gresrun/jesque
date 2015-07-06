@@ -15,10 +15,10 @@
  */
 package net.greghaines.jesque;
 
-import net.greghaines.jesque.utils.JesqueUtils;
-
 import java.io.Serializable;
 import java.util.Set;
+
+import net.greghaines.jesque.utils.JesqueUtils;
 
 /**
  * An immutable configuration bean for use with the rest of the project.
@@ -50,7 +50,8 @@ public class Config implements Serializable {
      * @param database  the Redis database to use
      * @see ConfigBuilder
      */
-    public Config(final String host, final int port, final int timeout, final String password, final String namespace, final int database) {
+    public Config(final String host, final int port, final int timeout, final String password, final String namespace, 
+            final int database) {
         if (host == null || "".equals(host)) {
             throw new IllegalArgumentException("host must not be null or empty: " + host);
         }
@@ -87,7 +88,8 @@ public class Config implements Serializable {
      * @param database   the Redis database to use
      * @see ConfigBuilder
      */
-    public Config(final Set<String> sentinels, final String masterName, final int timeout, final String password, final String namespace, final int database) {
+    public Config(final Set<String> sentinels, final String masterName, final int timeout, final String password, 
+            final String namespace, final int database) {
         if (sentinels == null || sentinels.size() < 1) {
             throw new IllegalArgumentException("sentinels must not be null or empty: " + sentinels);
         }
@@ -155,9 +157,19 @@ public class Config implements Serializable {
         return this.database;
     }
 
-    public Set<String> getSentinels() { return this.sentinels; }
+    /**
+     * @return the Redis set of sentinels
+     */
+    public Set<String> getSentinels() {
+        return this.sentinels;
+    }
 
-    public String getMasterName() { return this.masterName; }
+    /**
+     * @return the Redis master name
+     */
+    public String getMasterName() {
+        return this.masterName;
+    }
 
     /**
      * @return the Redis protocol URI this Config will connect to
@@ -201,8 +213,11 @@ public class Config implements Serializable {
             equal = true;
         } else if (obj instanceof Config) {
             final Config other = (Config) obj;
-            equal = ((this.database == other.database) && (this.port == other.port) && (this.timeout == other.timeout) && JesqueUtils.nullSafeEquals(this.host, other.host)
-                    && JesqueUtils.nullSafeEquals(this.namespace, other.namespace)) && JesqueUtils.nullSafeEquals(this.sentinels, other.sentinels) && JesqueUtils.nullSafeEquals(this.masterName, other.masterName);
+            equal = ((this.database == other.database) && (this.port == other.port) && (this.timeout == other.timeout) 
+                    && JesqueUtils.nullSafeEquals(this.host, other.host)
+                    && JesqueUtils.nullSafeEquals(this.namespace, other.namespace)) 
+                    && JesqueUtils.nullSafeEquals(this.sentinels, other.sentinels) 
+                    && JesqueUtils.nullSafeEquals(this.masterName, other.masterName);
         }
         return equal;
     }

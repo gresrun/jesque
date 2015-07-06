@@ -1,18 +1,18 @@
 /*
-* Copyright 2011 Greg Haines
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2011 Greg Haines
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package net.greghaines.jesque;
 
 import java.io.Serializable;
@@ -29,21 +29,21 @@ public class ConfigBuilder implements Serializable {
 
     private static final long serialVersionUID = 730947307298353317L;
 
-    //localhost
+    /** localhost */
     public static final String DEFAULT_HOST = "localhost";
-    // 6379
+    /** 6379 */
     public static final int DEFAULT_PORT = 6379;
-    // 5 seconds
+    /** 5 seconds */
     public static final int DEFAULT_TIMEOUT = 5000;
-    // null
+    /** null */
     public static final String DEFAULT_PASSWORD = null;
-    // All resque clients use "resque" by default
+    /** All Resque clients use "resque" by default */
     public static final String DEFAULT_NAMESPACE = "resque";
-    // 0
+    /** 0 */
     public static final int DEFAULT_DATABASE = 0;
-    // []
+    /** null */
     public static final HashSet<String> DEFAULT_SENTINELS = null;
-    // null
+    /** null */
     public static final String DEFAULT_MASTERNAME = null;
 
     /**
@@ -205,8 +205,10 @@ public class ConfigBuilder implements Serializable {
      * @return a new Config initialized with the current values
      */
     public Config build() {
-        if (this.sentinels != null && this.sentinels.size() > 0 && masterName != null && !"".equals(masterName)) {
-            return new Config(this.sentinels, this.masterName, this.timeout, this.password, this.namespace, this.database);
+        if (this.sentinels != null && this.sentinels.size() > 0 && this.masterName != null 
+                && !"".equals(this.masterName)) {
+            return new Config(this.sentinels, this.masterName, this.timeout, this.password, this.namespace, 
+                    this.database);
         } else {
             return new Config(this.host, this.port, this.timeout, this.password, this.namespace, this.database);
         }

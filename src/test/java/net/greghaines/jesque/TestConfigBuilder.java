@@ -39,7 +39,9 @@ public class TestConfigBuilder {
 
     @Test
     public void testConstructor_Cloning() {
-        final Config orig = new ConfigBuilder().withNamespace("foo").withDatabase(10).withPassword("bar").withPort(123).withHost("abc.com").withTimeout(10000).build();
+        final Config orig = new ConfigBuilder().withNamespace("foo")
+                .withDatabase(10).withPassword("bar").withPort(123)
+                .withHost("abc.com").withTimeout(10000).build();
         final Config copy = new ConfigBuilder(orig).build();
         TestUtils.assertFullyEquals(orig, copy);
     }

@@ -15,9 +15,9 @@
  */
 package net.greghaines.jesque.client;
 
-import static net.greghaines.jesque.utils.ResqueConstants.FREQUENCY;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
+
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
