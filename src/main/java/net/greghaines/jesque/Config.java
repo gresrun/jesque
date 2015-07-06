@@ -15,9 +15,10 @@
  */
 package net.greghaines.jesque;
 
-import java.io.Serializable;
-
 import net.greghaines.jesque.utils.JesqueUtils;
+
+import java.io.Serializable;
+import java.util.Set;
 
 /**
  * An immutable configuration bean for use with the rest of the project.
@@ -35,26 +36,21 @@ public class Config implements Serializable {
     private final String password;
     private final String namespace;
     private final int database;
+    private final Set<String> sentinels;
+    private final String masterName;
 
     /**
      * Using a ConfigBuilder is recommended...
      *
-     * @param host
-     *            the Reds hostname
-     * @param port
-     *            the Redis port number
-     * @param timeout
-     *            the Redis connection timeout
-     * @param password
-     *            the Redis database password
-     * @param namespace
-     *            the Redis namespace to prefix keys with
-     * @param database
-     *            the Redis database to use
+     * @param host      the Reds hostname
+     * @param port      the Redis port number
+     * @param timeout   the Redis connection timeout
+     * @param password  the Redis database password
+     * @param namespace the Redis namespace to prefix keys with
+     * @param database  the Redis database to use
      * @see ConfigBuilder
      */
-    public Config(final String host, final int port, final int timeout, final String password, final String namespace,
-            final int database) {
+    public Config(final String host, final int port, final int timeout, final String password, final String namespace, final int database) {
         if (host == null || "".equals(host)) {
             throw new IllegalArgumentException("host must not be null or empty: " + host);
         }
@@ -76,6 +72,45 @@ public class Config implements Serializable {
         this.password = password;
         this.namespace = namespace;
         this.database = database;
+        this.sentinels = null;
+        this.masterName = null;
+    }
+
+    /**
+     * Using a ConfigBuilder is recommended...
+     *
+     * @param sentinels  the Redis set of sentinels
+     * @param masterName the Redis master name
+     * @param timeout    the Redis connection timeout
+     * @param password   the Redis database password
+     * @param namespace  the Redis namespace to prefix keys with
+     * @param database   the Redis database to use
+     * @see ConfigBuilder
+     */
+    public Config(final Set<String> sentinels, final String masterName, final int timeout, final String password, final String namespace, final int database) {
+        if (sentinels == null || sentinels.size() < 1) {
+            throw new IllegalArgumentException("sentinels must not be null or empty: " + sentinels);
+        }
+        if (masterName == null || "".equals(masterName)) {
+            throw new IllegalArgumentException("master must not be null or empty: " + masterName);
+        }
+        if (timeout < 0) {
+            throw new IllegalArgumentException("timeout must not be negative: " + timeout);
+        }
+        if (namespace == null) {
+            throw new IllegalArgumentException("namespace must not be null");
+        }
+        if (database < 0) {
+            throw new IllegalArgumentException("database must not be negative: " + database);
+        }
+        this.sentinels = sentinels;
+        this.masterName = masterName;
+        this.timeout = timeout;
+        this.password = password;
+        this.namespace = namespace;
+        this.database = database;
+        this.host = ConfigBuilder.DEFAULT_HOST;
+        this.port = ConfigBuilder.DEFAULT_PORT;
     }
 
     /**
@@ -120,6 +155,10 @@ public class Config implements Serializable {
         return this.database;
     }
 
+    public Set<String> getSentinels() { return this.sentinels; }
+
+    public String getMasterName() { return this.masterName; }
+
     /**
      * @return the Redis protocol URI this Config will connect to
      */
@@ -143,8 +182,10 @@ public class Config implements Serializable {
         final int prime = 31;
         int result = 1;
         result = prime * result + this.database;
-        result = prime * result + ((this.host == null) ? 0 : this.host.hashCode());
-        result = prime * result + ((this.namespace == null) ? 0 : this.namespace.hashCode());
+        result = prime * result + (this.host.hashCode());
+        result = prime * result + (this.namespace.hashCode());
+        result = prime * result + ((this.sentinels == null) ? 0 : this.sentinels.hashCode());
+        result = prime * result + ((this.masterName == null) ? 0 : this.masterName.hashCode());
         result = prime * result + this.port;
         result = prime * result + this.timeout;
         return result;
@@ -160,11 +201,8 @@ public class Config implements Serializable {
             equal = true;
         } else if (obj instanceof Config) {
             final Config other = (Config) obj;
-            equal = ((this.database == other.database)
-                    && (this.port == other.port)
-                    && (this.timeout == other.timeout)
-                    && JesqueUtils.nullSafeEquals(this.host, other.host)
-                    && JesqueUtils.nullSafeEquals(this.namespace, other.namespace));
+            equal = ((this.database == other.database) && (this.port == other.port) && (this.timeout == other.timeout) && JesqueUtils.nullSafeEquals(this.host, other.host)
+                    && JesqueUtils.nullSafeEquals(this.namespace, other.namespace)) && JesqueUtils.nullSafeEquals(this.sentinels, other.sentinels) && JesqueUtils.nullSafeEquals(this.masterName, other.masterName);
         }
         return equal;
     }

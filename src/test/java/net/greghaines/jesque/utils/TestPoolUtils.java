@@ -10,9 +10,16 @@ import org.jmock.integration.junit4.JUnit4Mockery;
 import org.jmock.lib.legacy.ClassImposteriser;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.util.Pool;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 
 public class TestPoolUtils {
     
@@ -100,7 +107,28 @@ public class TestPoolUtils {
     @Test
     public void testCreateJedisPool() {
         final Config config = new ConfigBuilder().build();
-        Assert.assertNotNull(PoolUtils.createJedisPool(config));
+        Pool pool = PoolUtils.createJedisPool(config);
+        Assert.assertNotNull(pool);
+        Assert.assertTrue(pool instanceof JedisPool);
+    }
+
+    /**
+     * This will need a sentinel running with the following config
+
+     sentinel monitor mymaster 127.0.0.1 6379 1
+     sentinel down-after-milliseconds mymaster 6000
+     sentinel failover-timeout mymaster 180000
+     sentinel parallel-syncs mymaster 1
+
+     You should also have a redis-server running to act as the master [mymaster]
+     */
+    @Test
+    @Ignore("Will only work with sentinel running and travis-ci sentinel support is sketchy at best")
+    public void testCreateJedisSentinelPool() {
+        final Config config = new ConfigBuilder().withMasterName("mymaster").withSentinels(new HashSet<String>(Collections.singletonList("localhost:26379"))).build();
+        Pool pool = PoolUtils.createJedisPool(config);
+        Assert.assertNotNull(pool);
+        Assert.assertTrue(pool instanceof JedisSentinelPool);
     }
     
     @Test(expected = IllegalArgumentException.class)
