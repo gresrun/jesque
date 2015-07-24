@@ -118,6 +118,7 @@ public class WorkerImpl implements Worker {
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
     private final AtomicReference<ExceptionHandler> exceptionHandlerRef = 
             new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
+    private final AtomicReference<FailQueueStrategy> failQueueStrategyRef;
     private final JobFactory jobFactory;
 
 	/**
@@ -157,6 +158,8 @@ public class WorkerImpl implements Worker {
         this.jobFactory = jobFactory;
         this.namespace = config.getNamespace();
         this.jedis = jedis;
+        this.failQueueStrategyRef = new AtomicReference<FailQueueStrategy>(
+                new DefaultFailQueueStrategy(this.namespace));
         authenticateAndSelectDB();
         setQueues(queues);
         this.name = createName();
@@ -353,6 +356,23 @@ public class WorkerImpl implements Worker {
             throw new IllegalArgumentException("exceptionHandler must not be null");
         }
         this.exceptionHandlerRef.set(exceptionHandler);
+    }
+
+    /**
+     * @return the current FailQueueStrategy
+     */
+    public FailQueueStrategy getFailQueueStrategy() {
+        return this.failQueueStrategyRef.get();
+    }
+
+    /**
+     * @param failQueueStrategy the new FailQueueStrategy to use
+     */
+    public void setFailQueueStrategy(final FailQueueStrategy failQueueStrategy) {
+        if (failQueueStrategy == null) {
+            throw new IllegalArgumentException("failQueueStrategy must not be null");
+        }
+        this.failQueueStrategyRef.set(failQueueStrategy);
     }
 
     /**
@@ -607,13 +627,13 @@ public class WorkerImpl implements Worker {
      * @param curQueue the queue the Job came from
      */
     protected void failure(final Throwable thrwbl, final Job job, final String curQueue) {
-        // The job may have taken a long time; make an effort to ensure the
-        // connection is OK
+        // The job may have taken a long time; make an effort to ensure the connection is OK
         JedisUtils.ensureJedisConnection(this.jedis);
         try {
             this.jedis.incr(key(STAT, FAILED));
             this.jedis.incr(key(STAT, FAILED, this.name));
-            this.jedis.rpush(key(FAILED), failMsg(thrwbl, curQueue, job));
+            this.jedis.rpush(this.failQueueStrategyRef.get().getFailQueueKey(thrwbl, job, curQueue), 
+                    failMsg(thrwbl, curQueue, job));
         } catch (JedisException je) {
             LOG.warn("Error updating failure stats for throwable=" + thrwbl + " job=" + job, je);
         } catch (IOException ioe) {
