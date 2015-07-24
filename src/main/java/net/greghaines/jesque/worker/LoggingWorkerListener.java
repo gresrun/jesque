@@ -19,10 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of WorkerListener that logs every event that it is
- * registered for.
- * 
- * @author Greg Haines
+ * LoggingWorkerListener logs every event that it is registered for.
  */
 public class LoggingWorkerListener implements WorkerListener {
 
@@ -35,8 +32,8 @@ public class LoggingWorkerListener implements WorkerListener {
     }
 
     /**
-     * If there is a Throwable, it is logged as an error, otherwise it is
-     * logged as a debug message.
+     * {@inheritDoc}
+     * If there is a Throwable, it is logged as an error, otherwise it is logged as a debug message.
      */
     @Override
     public void onEvent(final WorkerEvent event, final Worker worker, final String queue,

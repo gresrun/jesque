@@ -16,9 +16,7 @@
 package net.greghaines.jesque.worker;
 
 /**
- * Possible means for a worker to recover from an error.
- * 
- * @author Greg Haines
+ * RecoveryStrategy are the possible means for a worker to recover from an error.
  */
 public enum RecoveryStrategy {
     /**

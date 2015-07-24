@@ -44,44 +44,36 @@ public interface JobExecutor {
     
     /**
      * The job factory.
-     * 
      * @return the job factory
      */
     JobFactory getJobFactory();
 
     /**
      * The current exception handler.
-     * 
      * @return the current exception handler
      */
     ExceptionHandler getExceptionHandler();
 
     /**
      * Set this JobExecutor's exception handler to the given handler.
-     * 
-     * @param exceptionHandler
-     *            the exception handler to use
+     * @param exceptionHandler the exception handler to use
      */
     void setExceptionHandler(ExceptionHandler exceptionHandler);
 
     /**
      * Shutdown this JobExecutor.
-     * 
-     * @param now
-     *            if true, an effort will be made to stop any job in progress
+     * @param now if true, an effort will be made to stop any job in progress
      */
     void end(boolean now);
 
     /**
      * Returns whether this JobExecutor is either shutdown or in the process of shutting down.
-     * 
      * @return true if this JobExecutor is either shutdown or in the process of shutting down
      */
     boolean isShutdown();
 
     /**
      * Returns whether this JobExecutor is currently processing a job.
-     * 
      * @return true if this JobExecutor is currently processing a job
      */
     boolean isProcessingJob();
@@ -89,11 +81,8 @@ public interface JobExecutor {
     /**
      * Wait for this JobExecutor to complete. A timeout of 0 means to wait forever.
      * This method will only return after a thread has called {@link #end(boolean)}.
-     * 
-     * @param millis
-     *            the time to wait in milliseconds
-     * @throws InterruptedException
-     *             if any thread has interrupted the current thread
+     * @param millis the time to wait in milliseconds
+     * @throws InterruptedException if any thread has interrupted the current thread
      */
     void join(long millis) throws InterruptedException;
 }

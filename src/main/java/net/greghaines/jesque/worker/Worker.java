@@ -24,7 +24,6 @@ import java.util.Collections;
  * sequence and notifying WorkerListeners in the process.
  * <p>
  * Workers are designed to be run in a Thread or an ExecutorService. E.g.:
- * 
  * <pre>
  * final Worker worker = new WorkerImpl(config, Worker.ALL_QUEUES, 
  * 		Arrays.asList("TestAction"));
@@ -34,8 +33,7 @@ import java.util.Collections;
  * ...
  * worker.end();
  * t.join();
- * </pre>
- * 
+ * </pre></p>
  * @author Greg Haines
  */
 public interface Worker extends JobExecutor, Runnable {
@@ -47,55 +45,41 @@ public interface Worker extends JobExecutor, Runnable {
 
     /**
      * Returns the name of this Worker.
-     * 
      * @return the name of this Worker
      */
     String getName();
 
     /**
      * Returns whether this worker is paused.
-     * 
-     * @return whether this worker is paused. If true, the worker is not
-     *         processing any new jobs; if false, the worker is processing new
-     *         jobs
+     * @return whether this worker is paused. If true, the worker is not processing any new jobs; 
+     * if false, the worker is processing new jobs
      */
     boolean isPaused();
 
     /**
      * Toggle whether this worker will process any new jobs.
-     * 
-     * @param paused
-     *            if true, the worker will not process any new jobs; if false,
-     *            the worker will process new jobs
+     * @param paused if true, the worker will not process any new jobs; if false, the worker will process new jobs
      */
     void togglePause(boolean paused);
 
     /**
      * The queues that this Worker will poll.
-     * 
      * @return an unmodifiable view of the queues to be polled
      */
     Collection<String> getQueues();
 
     /**
-     * Poll the given queue. If the queue exists multiple times, it will be
-     * checked that many times per loop. This allows for a queue to be given
-     * higher priority by checking it more often.
-     * 
-     * @param queueName
-     *            the name of the queue to poll
+     * Poll the given queue. If the queue exists multiple times, it will be checked that many times per loop. 
+     * This allows for a queue to be given higher priority by checking it more often.
+     * @param queueName the name of the queue to poll
      */
     void addQueue(String queueName);
 
     /**
-     * Stop polling the given queue. If the <code>all</code> argument is true,
-     * all instances of the queue will be removed, otherwise, only one instance
-     * is removed.
-     * 
-     * @param queueName
-     *            the queue to stop polling
-     * @param all
-     *            whether to remove all or only one of the instances
+     * Stop polling the given queue. If the <code>all</code> argument is true, all instances of the queue will be 
+     * removed, otherwise, only one instance is removed.
+     * @param queueName the queue to stop polling
+     * @param all whether to remove all or only one of the instances
      */
     void removeQueue(String queueName, boolean all);
 
@@ -106,9 +90,7 @@ public interface Worker extends JobExecutor, Runnable {
 
     /**
      * Clear any current queues and poll the given queues.
-     * 
-     * @param queues
-     *            the queues to poll
+     * @param queues the queues to poll
      */
     void setQueues(Collection<String> queues);
     

@@ -15,7 +15,17 @@
  */
 package net.greghaines.jesque.worker;
 
+/**
+ * ExceptionHandler allows for customized handling of exceptions received by a {@link Worker}.
+ */
 public interface ExceptionHandler {
-    
+
+    /**
+     * Called when a worker encounters an exception.
+     * @param jobExecutor the worker that encountered the exception
+     * @param exception the exception
+     * @param curQueue the current queue being processed
+     * @return the {@link RecoveryStrategy} to use
+     */
     RecoveryStrategy onException(JobExecutor jobExecutor, Exception exception, String curQueue);
 }

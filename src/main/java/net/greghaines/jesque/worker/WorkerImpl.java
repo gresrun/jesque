@@ -58,11 +58,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
- * Basic implementation of the Worker interface. Obeys the contract of a Resque
- * worker in Redis.
- * 
- * @author Greg Haines
- * @author Animesh Kumar
+ * WorkerImpl is an implementation of the Worker interface. Obeys the contract of a Resque worker in Redis.
  */
 public class WorkerImpl implements Worker {
     
@@ -83,16 +79,11 @@ public class WorkerImpl implements Worker {
     }
 
     /**
-     * Enable/disable worker thread renaming during normal operation. (Disabled
-     * by default)
-     * <p>
-     * <strong>Warning: Enabling this feature is very expensive
-     * CPU-wise!</strong><br>
+     * Enable/disable worker thread renaming during normal operation. (Disabled by default)<p>
+     * <strong>Warning: Enabling this feature is very expensive CPU-wise!</strong><br>
      * This feature is designed to assist in debugging worker state but should
-     * be disabled in production environments for performance reasons.
-     * 
-     * @param enabled
-     *            whether threads' names should change during normal operation
+     * be disabled in production environments for performance reasons.</p>
+     * @param enabled whether threads' names should change during normal operation
      */
     public static void setThreadNameChangingEnabled(final boolean enabled) {
         threadNameChangingEnabled = enabled;
@@ -100,9 +91,7 @@ public class WorkerImpl implements Worker {
 
     /**
      * Verify that the given queues are all valid.
-     * 
-     * @param queues
-     *            the given queues
+     * @param queues the given queues
      */
     protected static void checkQueues(final Iterable<String> queues) {
         if (queues == null) {
@@ -132,45 +121,28 @@ public class WorkerImpl implements Worker {
     private final JobFactory jobFactory;
 
 	/**
-     * Creates a new WorkerImpl, which creates it's own connection to Redis
-     * using values from the config. The worker will only listen to the supplied
-     * queues and execute jobs that are provided by the given job factory.
-     * 
-     * @param config
-     *            used to create a connection to Redis and the package prefix
-     *            for incoming jobs
-     * @param queues
-     *            the list of queues to poll
-     * @param jobFactory
-     *            the job factory that materializes the jobs
-     * @throws IllegalArgumentException
-     *             if either config, queues or jobFactory is null
+     * Creates a new WorkerImpl, which creates it's own connection to Redis using values from the config.<br/>
+     * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
+     * @param config used to create a connection to Redis and the package prefix for incoming jobs
+     * @param queues the list of queues to poll
+     * @param jobFactory the job factory that materializes the jobs
+     * @throws IllegalArgumentException if either config, queues or jobFactory is null
      */
-    public WorkerImpl(final Config config, final Collection<String> queues,
-           final JobFactory jobFactory) {
-        this(config, queues, jobFactory, 
-                new Jedis(config.getHost(), config.getPort(), config.getTimeout()));
+    public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory) {
+        this(config, queues, jobFactory, new Jedis(config.getHost(), config.getPort(), config.getTimeout()));
     }
     
     /**
-     * Creates a new WorkerImpl, with the given connection to Redis. 
-     * The worker will only listen to the supplied queues and execute jobs 
-     * that are provided by the given job factory.
-     * 
-     * @param config
-     *            used to create a connection to Redis and the package prefix
-     *            for incoming jobs
-     * @param queues
-     *            the list of queues to poll
-     * @param jobFactory
-     *            the job factory that materializes the jobs
-     * @param jedis
-     *            the connection to Redis
-     * @throws IllegalArgumentException
-     *             if either config, queues, jobFactory or jedis is null
+     * Creates a new WorkerImpl, with the given connection to Redis.<br/>
+     * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
+     * @param config used to create a connection to Redis and the package prefix for incoming jobs
+     * @param queues the list of queues to poll
+     * @param jobFactory the job factory that materializes the jobs
+     * @param jedis the connection to Redis
+     * @throws IllegalArgumentException if either config, queues, jobFactory or jedis is null
      */
-    public WorkerImpl(final Config config, final Collection<String> queues,
-            final JobFactory jobFactory, final Jedis jedis) {
+    public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory, 
+            final Jedis jedis) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -198,8 +170,8 @@ public class WorkerImpl implements Worker {
     }
 
     /**
-     * Starts this worker. Registers the worker in Redis and begins polling the
-     * queues for jobs. Stop this worker by calling end() on any thread.
+     * Starts this worker. Registers the worker in Redis and begins polling the queues for jobs.<br/>
+     * Stop this worker by calling end() on any thread.
      */
     @Override
     public void run() {
@@ -231,11 +203,8 @@ public class WorkerImpl implements Worker {
 
     /**
      * Shutdown this Worker.<br>
-     * <b>The worker cannot be started again; create a new worker in this
-     * case.</b>
-     * 
-     * @param now
-     *            if true, an effort will be made to stop any job in progress
+     * <b>The worker cannot be started again; create a new worker in this case.</b>
+     * @param now if true, an effort will be made to stop any job in progress
      */
     @Override
     public void end(final boolean now) {
@@ -398,8 +367,7 @@ public class WorkerImpl implements Worker {
     }
 
     /**
-     * @return the number of times this Worker will attempt to reconnect to
-     *         Redis before giving up
+     * @return the number of times this Worker will attempt to reconnect to Redis before giving up
      */
     protected int getReconnectAttempts() {
         return RECONNECT_ATTEMPTS;
@@ -468,18 +436,17 @@ public class WorkerImpl implements Worker {
                 final double score = tuple.getScore();
                 // If a recurring job, increment the job score by hash field value
                 String recurringHashKey = JesqueUtils.createRecurringHashKey(key);
-                if (jedis.hexists(recurringHashKey, tmp)) {
-                    // watch the hash to ensure that the job isn't deleted
-                    // TODO use the ZADD XX feature
-                    jedis.watch(recurringHashKey);
-                    Long frequency = Long.valueOf(jedis.hget(recurringHashKey, tmp));
-                    Transaction transaction = jedis.multi();
+                if (this.jedis.hexists(recurringHashKey, tmp)) {
+                    // Watch the hash to ensure that the job isn't deleted
+                    // TODO: Use the ZADD XX feature
+                    this.jedis.watch(recurringHashKey);
+                    final Long frequency = Long.valueOf(this.jedis.hget(recurringHashKey, tmp));
+                    final Transaction transaction = this.jedis.multi();
                     transaction.zadd(key, score + frequency, tmp);
                     if (transaction.exec() != null) {
                         payload = tmp;
                     }
-                }
-                else {
+                } else {
                     // Try to acquire this job
                     if (this.jedis.zrem(key, tmp) == 1) {
                         payload = tmp;
@@ -493,22 +460,18 @@ public class WorkerImpl implements Worker {
     }
 
     /**
-     * Handle an exception that was thrown from inside {@link #poll()}
-     * 
-     * @param curQueue
-     *            the name of the queue that was being processed when the
-     *            exception was thrown
-     * @param e
-     *            the exception that was thrown
+     * Handle an exception that was thrown from inside {@link #poll()}.
+     * @param curQueue the name of the queue that was being processed when the exception was thrown
+     * @param ex the exception that was thrown
      */
-    protected void recoverFromException(final String curQueue, final Exception e) {
-        final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, e, curQueue);
+    protected void recoverFromException(final String curQueue, final Exception ex) {
+        final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, ex, curQueue);
         switch (recoveryStrategy) {
         case RECONNECT:
-            LOG.info("Reconnecting to Redis in response to exception", e);
+            LOG.info("Reconnecting to Redis in response to exception", ex);
             final int reconAttempts = getReconnectAttempts();
             if (!JedisUtils.reconnect(this.jedis, reconAttempts, RECONNECT_SLEEP_TIME)) {
-                LOG.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
+                LOG.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", ex);
                 end(false);
             } else {
                 authenticateAndSelectDB();
@@ -516,15 +479,15 @@ public class WorkerImpl implements Worker {
             }
             break;
         case TERMINATE:
-            LOG.warn("Terminating in response to exception", e);
+            LOG.warn("Terminating in response to exception", ex);
             end(false);
             break;
         case PROCEED:
-            this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, e);
+            this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, ex);
             break;
         default:
             LOG.error("Unknown RecoveryStrategy: " + recoveryStrategy
-                    + " while attempting to recover from the following exception; worker proceeding...", e);
+                    + " while attempting to recover from the following exception; worker proceeding...", ex);
             break;
         }
     }
@@ -538,9 +501,7 @@ public class WorkerImpl implements Worker {
 
     /**
      * Checks to see if worker is paused. If so, wait until unpaused.
-     * 
-     * @throws IOException
-     *             if there was an error creating the pause message
+     * @throws IOException if there was an error creating the pause message
      */
     protected void checkPaused() throws IOException {
         if (this.paused.get()) {
@@ -562,11 +523,8 @@ public class WorkerImpl implements Worker {
 
     /**
      * Materializes and executes the given job.
-     * 
-     * @param job
-     *            the Job to process
-     * @param curQueue
-     *            the queue the payload came from
+     * @param job the Job to process
+     * @param curQueue the queue the payload came from
      */
     protected void process(final Job job, final String curQueue) {
         try {
@@ -579,8 +537,8 @@ public class WorkerImpl implements Worker {
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
-        } catch (Throwable t) {
-            failure(t, job, curQueue);
+        } catch (Throwable thrwbl) {
+            failure(thrwbl, job, curQueue);
         } finally {
             removeInFlight(curQueue);
             this.jedis.del(key(WORKER, this.name));
@@ -588,26 +546,20 @@ public class WorkerImpl implements Worker {
         }
     }
 
-    private void removeInFlight(String curQueue) {
+    private void removeInFlight(final String curQueue) {
         if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
             lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
-        }
-        else {
+        } else {
             this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
         }
     }
 
     /**
      * Executes the given job.
-     * 
-     * @param job
-     *            the job to execute
-     * @param curQueue
-     *            the queue the job came from
-     * @param instance
-     *            the materialized job
-     * @throws Exception
-     *             if the instance is a {@link Callable} and throws an exception
+     * @param job the job to execute
+     * @param curQueue the queue the job came from
+     * @param instance the materialized job
+     * @throws Exception if the instance is a {@link Callable} and throws an exception
      * @return result of the execution
      */
     protected Object execute(final Job job, final String curQueue, final Object instance) throws Exception {
@@ -630,15 +582,10 @@ public class WorkerImpl implements Worker {
 
     /**
      * Update the status in Redis on success.
-     * 
-     * @param job
-     *            the Job that succeeded
-     * @param runner
-     *            the materialized Job
-     * @param result
-     *            the result of the successful execution of the Job
-     * @param curQueue
-     *            the queue the Job came from
+     * @param job the Job that succeeded
+     * @param runner the materialized Job
+     * @param result the result of the successful execution of the Job
+     * @param curQueue the queue the Job came from
      */
     protected void success(final Job job, final Object runner, final Object result, final String curQueue) {
         // The job may have taken a long time; make an effort to ensure the
@@ -654,64 +601,51 @@ public class WorkerImpl implements Worker {
     }
 
     /**
-     * Update the status in Redis on failure
-     * 
-     * @param t
-     *            the Throwable that occurred
-     * @param job
-     *            the Job that failed
-     * @param curQueue
-     *            the queue the Job came from
+     * Update the status in Redis on failure.
+     * @param thrwbl the Throwable that occurred
+     * @param job the Job that failed
+     * @param curQueue the queue the Job came from
      */
-    protected void failure(final Throwable t, final Job job, final String curQueue) {
+    protected void failure(final Throwable thrwbl, final Job job, final String curQueue) {
         // The job may have taken a long time; make an effort to ensure the
         // connection is OK
         JedisUtils.ensureJedisConnection(this.jedis);
         try {
             this.jedis.incr(key(STAT, FAILED));
             this.jedis.incr(key(STAT, FAILED, this.name));
-            this.jedis.rpush(key(FAILED), failMsg(t, curQueue, job));
+            this.jedis.rpush(key(FAILED), failMsg(thrwbl, curQueue, job));
         } catch (JedisException je) {
-            LOG.warn("Error updating failure stats for throwable=" + t + " job=" + job, je);
+            LOG.warn("Error updating failure stats for throwable=" + thrwbl + " job=" + job, je);
         } catch (IOException ioe) {
-            LOG.warn("Error serializing failure payload for throwable=" + t + " job=" + job, ioe);
+            LOG.warn("Error serializing failure payload for throwable=" + thrwbl + " job=" + job, ioe);
         }
-        this.listenerDelegate.fireEvent(JOB_FAILURE, this, curQueue, job, null, null, t);
+        this.listenerDelegate.fireEvent(JOB_FAILURE, this, curQueue, job, null, null, thrwbl);
     }
 
     /**
      * Create and serialize a JobFailure.
-     * 
-     * @param t
-     *            the Throwable that occurred
-     * @param queue
-     *            the queue the job came from
-     * @param job
-     *            the Job that failed
+     * @param thrwbl the Throwable that occurred
+     * @param queue the queue the job came from
+     * @param job the Job that failed
      * @return the JSON representation of a new JobFailure
-     * @throws IOException
-     *             if there was an error serializing the JobFailure
+     * @throws IOException if there was an error serializing the JobFailure
      */
-    protected String failMsg(final Throwable t, final String queue, final Job job) throws IOException {
+    protected String failMsg(final Throwable thrwbl, final String queue, final Job job) throws IOException {
         final JobFailure failure = new JobFailure();
         failure.setFailedAt(new Date());
         failure.setWorker(this.name);
         failure.setQueue(queue);
         failure.setPayload(job);
-        failure.setThrowable(t);
+        failure.setThrowable(thrwbl);
         return ObjectMapperFactory.get().writeValueAsString(failure);
     }
 
     /**
      * Create and serialize a WorkerStatus.
-     * 
-     * @param queue
-     *            the queue the Job came from
-     * @param job
-     *            the Job currently being processed
+     * @param queuethe queue the Job came from
+     * @param job the Job currently being processed
      * @return the JSON representation of a new WorkerStatus
-     * @throws IOException
-     *             if there was an error serializing the WorkerStatus
+     * @throws IOExceptionif there was an error serializing the WorkerStatus
      */
     protected String statusMsg(final String queue, final Job job) throws IOException {
         final WorkerStatus status = new WorkerStatus();
@@ -723,10 +657,8 @@ public class WorkerImpl implements Worker {
 
     /**
      * Create and serialize a WorkerStatus for a pause event.
-     * 
      * @return the JSON representation of a new WorkerStatus
-     * @throws IOException
-     *             if there was an error serializing the WorkerStatus
+     * @throws IOException if there was an error serializing the WorkerStatus
      */
     protected String pauseMsg() throws IOException {
         final WorkerStatus status = new WorkerStatus();
@@ -737,7 +669,6 @@ public class WorkerImpl implements Worker {
 
     /**
      * Creates a unique name, suitable for use with Resque.
-     * 
      * @return a unique name for this worker
      */
     protected String createName() {
@@ -757,9 +688,7 @@ public class WorkerImpl implements Worker {
 
     /**
      * Builds a namespaced Redis key with the given arguments.
-     * 
-     * @param parts
-     *            the key parts to be joined
+     * @param parts the key parts to be joined
      * @return an assembled String key
      */
     protected String key(final String... parts) {
@@ -768,9 +697,7 @@ public class WorkerImpl implements Worker {
 
     /**
      * Rename the current thread with the given message.
-     * 
-     * @param msg
-     *            the message to add to the thread name
+     * @param msg the message to add to the thread name
      */
     protected void renameThread(final String msg) {
         Thread.currentThread().setName(this.threadNameBase + msg);

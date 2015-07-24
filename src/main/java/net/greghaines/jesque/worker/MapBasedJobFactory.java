@@ -51,7 +51,6 @@ public class MapBasedJobFactory implements JobFactory {
 
     /**
      * The allowed job names and types that this JobExecutor will execute.
-     * 
      * @return an unmodifiable view of the allowed job names and types
      */
     public Map<String, Class<?>> getJobTypes() {
@@ -60,11 +59,8 @@ public class MapBasedJobFactory implements JobFactory {
 
     /**
      * Allow the given job type to be executed.
-     * 
-     * @param jobName
-     *            the job name as seen
-     * @param jobType
-     *            the job type to allow
+     * @param jobName the job name as seen
+     * @param jobType the job type to allow
      */
     public void addJobType(final String jobName, final Class<?> jobType) {
         checkJobType(jobName, jobType);
@@ -73,9 +69,7 @@ public class MapBasedJobFactory implements JobFactory {
 
     /**
      * Disallow the job type from being executed.
-     * 
-     * @param jobType
-     *            the job type to disallow
+     * @param jobType the job type to disallow
      */
     public void removeJobType(final Class<?> jobType) {
         if (jobType == null) {
@@ -86,9 +80,7 @@ public class MapBasedJobFactory implements JobFactory {
 
     /**
      * Disallow the job name from being executed.
-     * 
-     * @param jobName
-     *            the job name to disallow
+     * @param jobName the job name to disallow
      */
     public void removeJobName(final String jobName) {
         if (jobName == null) {
@@ -99,9 +91,7 @@ public class MapBasedJobFactory implements JobFactory {
 
     /**
      * Clear any current allowed job types and use the given set.
-     * 
-     * @param jobTypes
-     *            the job types to allow
+     * @param jobTypes the job types to allow
      */
     public void setJobTypes(final Map<String, ? extends Class<?>> jobTypes) {
         checkJobTypes(jobTypes);
@@ -112,10 +102,8 @@ public class MapBasedJobFactory implements JobFactory {
     /**
      * Verify the given job types are all valid.
      * 
-     * @param jobTypes
-     *            the given job types
-     * @throws IllegalArgumentException
-     *             if any of the job types are invalid
+     * @param jobTypes the given job types
+     * @throws IllegalArgumentException if any of the job types are invalid
      * @see #checkJobType(String, Class)
      */
     protected void checkJobTypes(final Map<String, ? extends Class<?>> jobTypes) {
@@ -133,13 +121,9 @@ public class MapBasedJobFactory implements JobFactory {
 
     /**
      * Determine if a job name and job type are valid.
-     * 
-     * @param jobName
-     *            the name of the job
-     * @param jobType
-     *            the class of the job
-     * @throws IllegalArgumentException
-     *             if the name or type are invalid
+     * @param jobName the name of the job
+     * @param jobType the class of the job
+     * @throws IllegalArgumentException if the name or type are invalid
      */
     protected void checkJobType(final String jobName, final Class<?> jobType) {
         if (jobName == null) {

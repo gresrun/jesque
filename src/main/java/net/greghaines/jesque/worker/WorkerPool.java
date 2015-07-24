@@ -23,10 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Creates a fixed number of identical <code>Workers</code>, each on a separate
- * <code>Thread</code>.
- * 
- * @author Greg Haines
+ * WorkerPool creates a fixed number of identical <code>Workers</code>, each on a separate <code>Thread</code>.
  */
 public class WorkerPool implements Worker {
     
@@ -35,28 +32,19 @@ public class WorkerPool implements Worker {
     private final WorkerEventEmitter eventEmitter;
 
     /**
-     * Create a WorkerPool with the given number of Workers and the default
-     * <code>ThreadFactory</code>.
-     * 
-     * @param workerFactory
-     *            a Callable that returns an implementation of Worker
-     * @param numWorkers
-     *            the number of Workers to create
+     * Create a WorkerPool with the given number of Workers and the default <code>ThreadFactory</code>.
+     * @param workerFactory a Callable that returns an implementation of Worker
+     * @param numWorkers the number of Workers to create
      */
     public WorkerPool(final Callable<? extends Worker> workerFactory, final int numWorkers) {
         this(workerFactory, numWorkers, Executors.defaultThreadFactory());
     }
 
     /**
-     * Create a WorkerPool with the given number of Workers and the given
-     * <code>ThreadFactory</code>.
-     * 
-     * @param workerFactory
-     *            a Callable that returns an implementation of Worker
-     * @param numWorkers
-     *            the number of Workers to create
-     * @param threadFactory
-     *            the factory to create pre-configured Threads
+     * Create a WorkerPool with the given number of Workers and the given <code>ThreadFactory</code>.
+     * @param workerFactory a Callable that returns an implementation of Worker
+     * @param numWorkers the number of Workers to create
+     * @param threadFactory the factory to create pre-configured Threads
      */
     public WorkerPool(final Callable<? extends Worker> workerFactory, final int numWorkers,
             final ThreadFactory threadFactory) {
@@ -77,18 +65,11 @@ public class WorkerPool implements Worker {
     }
 
     /**
-     * Shutdown this pool and wait millis time per thread or until all threads
-     * are finished if millis is 0.
-     * 
-     * @param now
-     *            if true, an effort will be made to stop any jobs in progress
-     * @param millis
-     *            the time to wait in milliseconds for the threads to join; a
-     *            timeout of 0 means to wait forever.
-     * @throws InterruptedException
-     *             if any thread has interrupted the current thread. The
-     *             interrupted status of the current thread is cleared when this
-     *             exception is thrown.
+     * Shutdown this pool and wait millis time per thread or until all threads are finished if millis is 0.
+     * @param now if true, an effort will be made to stop any jobs in progress
+     * @param millis the time to wait in milliseconds for the threads to join; a timeout of 0 means to wait forever.
+     * @throws InterruptedException if any thread has interrupted the current thread. 
+     * The interrupted status of the current thread is cleared when this exception is thrown.
      */
     public void endAndJoin(final boolean now, final long millis) throws InterruptedException {
         end(now);
@@ -99,13 +80,9 @@ public class WorkerPool implements Worker {
      * Join to internal threads and wait millis time per thread or until all
      * threads are finished if millis is 0.
      * 
-     * @param millis
-     *            the time to wait in milliseconds for the threads to join; a
-     *            timeout of 0 means to wait forever.
-     * @throws InterruptedException
-     *             if any thread has interrupted the current thread. The
-     *             interrupted status of the current thread is cleared when this
-     *             exception is thrown.
+     * @param millis the time to wait in milliseconds for the threads to join; a timeout of 0 means to wait forever.
+     * @throws InterruptedException if any thread has interrupted the current thread. 
+     * The interrupted status of the current thread is cleared when this exception is thrown.
      */
     @Override
     public void join(final long millis) throws InterruptedException {

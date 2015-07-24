@@ -16,10 +16,7 @@
 package net.greghaines.jesque.worker;
 
 /**
- * WorkerAware indicates that a materialized Job should have 
- * the Worker executing the job injected before execution.
- * 
- * @author Greg Haines
+ * WorkerAware indicates that a materialized Job should have the Worker executing the job injected before execution.
  */
 public interface WorkerAware {
     

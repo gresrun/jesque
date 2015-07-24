@@ -17,8 +17,6 @@ package net.greghaines.jesque.worker;
 
 /**
  * The possible WorkerEvents that a WorkerListener may register for.
- * 
- * @author Greg Haines
  */
 public enum WorkerEvent {
     
@@ -43,8 +41,7 @@ public enum WorkerEvent {
      */
     JOB_SUCCESS,
     /**
-     * The Worker caught an Exception during the execution of a materialized
-     * Job.
+     * The Worker caught an Exception during the execution of a materialized Job.
      */
     JOB_FAILURE,
     /**

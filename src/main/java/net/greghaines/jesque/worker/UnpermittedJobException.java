@@ -17,8 +17,6 @@ package net.greghaines.jesque.worker;
 
 /**
  * Thrown by a Worker when it receives a Job that it is not allowed to run.
- * 
- * @author Greg Haines
  */
 public class UnpermittedJobException extends Exception {
     
@@ -28,9 +26,7 @@ public class UnpermittedJobException extends Exception {
 
     /**
      * Create a new UnpermittedJobException with only a message.
-     * 
-     * @param msg
-     *            the detail message to show
+     * @param msg the detail message to show
      */
     public UnpermittedJobException(final String msg) {
         super(msg);
@@ -39,9 +35,7 @@ public class UnpermittedJobException extends Exception {
 
     /**
      * Create a new UnpermittedJobException with the type.
-     * 
-     * @param type
-     *            the type of job that is not permitted
+     * @param type the type of job that is not permitted
      */
     public UnpermittedJobException(final Class<?> type) {
         super(type.getName());
