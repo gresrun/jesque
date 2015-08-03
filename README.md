@@ -27,7 +27,7 @@ Or, to use it in your Maven project, add it as a dependency:
 </dependency>
 ```
 
-Example usage (from IntegrationTest):
+## Quickstart:
 
 ```java
 // Configuration
@@ -40,45 +40,76 @@ final Client client = new ClientImpl(config);
 client.enqueue("foo", job);
 client.end();
 
-// Add a job to the delayed queue
-final Job job = new Job("TestAction",
-  new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
-
-final long delay = 10; // in seconds
-final long future = System.currentTimeMillis() + (delay * 1000); // timestamp
-
-final Client client = new ClientImpl(config);
-client.delayedEnqueue("fooDelay", job, future);
-client.end();
-
-// Set up a ClientPool (useful for multi-threaded apps)
-final jesqueClientPool = new ClientPoolImpl(config, PoolUtils.createJedisPool(config));
-jesqueClientPool.enqueue("foo", job);
-
 // Start a worker to run jobs from the queue
 final Worker worker = new WorkerImpl(config,
   Arrays.asList("foo"), new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
+  
+final Thread workerThread = new Thread(worker);
+workerThread.start();
 
-// Optionally add a listener to listen to JOB_EXECUTE events and inject required code
+worker.end(true);
+try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
+```
+
+### Delayed jobs
+Delayed jobs can be executed at sometime in the future.
+```java
+final long delay = 10; // in seconds
+final long future = System.currentTimeMillis() + (delay * 1000); // timestamp
+
+client.delayedEnqueue("fooDelay", job, future);
+```
+
+### Recurring Jobs
+Recurring jobs can start at a specific time and exeucte at specified intervals. 
+```java
+final long delay = 10; // in seconds
+final long future = System.currentTimeMillis() + (delay * 1000); // timestamp
+final long frequency = 60; // in seconds
+
+client.recurringEnqueue("fooRecur", job, future, (frequency * 1000));
+```
+
+### Cancelling jobs
+Delayed and recurring jobs can be cancelled.
+```java
+client.removeDelayedEnqueue("fooDelay", job);
+client.removeRecurringEnqueue("fooRecur", job);
+```
+
+### Using a ClientPool
+`ClientPool` is useful in multi threaded apps, 
+```java
+final Client jesqueClientPool = new ClientPoolImpl(config, PoolUtils.createJedisPool(config));
+jesqueClientPool.enqueue("foo", job);
+```
+
+### Listeners
+You can execute custom callbacks during specific Worker events.
+```java
 int myVar = 0;
 worker.getWorkerEventEmitter().addListener(new WorkerListener(){
-   public void onEvent(WorkerEvent event, Worker worker, String queue, Job job, Object runner, Object result, Throwable t) {
+   public void onEvent(WorkerEvent event, Worker worker, String queue, Job job, 
+					   Object runner, Object result, Throwable t) {
     if (runner instanceof TestAction) {
         ((TestAction) runner).setSomeVariable(myVar);
     }
   }
 }, WorkerEvent.JOB_EXECUTE);
-
-final Thread workerThread = new Thread(worker);
-workerThread.start();
-
-// Wait a few secs then shutdown
-try { Thread.sleep((delay * 1000) + 5000); } catch (Exception e){} // Give ourselves time to process
-worker.end(true);
-try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 ```
 
-For more usage examples check the tests. The tests require that Redis is running on localhost:6379.
+#### Available Worker Events
+
+* `WORKER_START` Finished starting up and is about to start running.
+* `WORKER_POLL` Polling the queue.
+* `JOB_PROCESS` Processing a Job.
+* `JOB_EXECUTE` About to execute a materialized Job.
+* `JOB_SUCCESS` Successfully executed a materialized Job.
+* `JOB_FAILURE` Caught an Exception during the execution of a materialized Job.
+* `WORKER_ERROR` Caught an Exception during normal operation.
+* `WORKER_STOP` Finished running and is about to shutdown.
+
+For more usage examples check the tests. The tests require that Redis is running on `localhost:6379`.
 
 Use the resque-web application to see the status of your jobs and workers or, if you prefer Java, try [Jesque-Web](https://github.com/gresrun/jesque-web).
 
@@ -137,7 +168,6 @@ If you are on Mac OS X, I highly recommend using the fantasic [Homebrew package 
 brew install redis
 brew install git
 brew install maven
-gem install resque
 ```
 
 Boom! Ready to go!
