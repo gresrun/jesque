@@ -24,10 +24,12 @@ public interface FailQueueStrategy {
 
     /**
      * Determine the key for the failure queue.
+     * A null return value is an indication that no failure queue is needed.
+     * Note that the default implementation (@see DefaultFailQueueStrategy) will never return null.
      * @param thrwbl the Throwable that occurred
      * @param job the Job that failed
      * @param curQueue the queue the Job came from
-     * @return the key of the failure queue to put the job into
+     * @return the key of the failure queue to put the job into or null
      */
     String getFailQueueKey(Throwable thrwbl, Job job, String curQueue);
 }

@@ -632,8 +632,10 @@ public class WorkerImpl implements Worker {
         try {
             this.jedis.incr(key(STAT, FAILED));
             this.jedis.incr(key(STAT, FAILED, this.name));
-            this.jedis.rpush(this.failQueueStrategyRef.get().getFailQueueKey(thrwbl, job, curQueue), 
-                    failMsg(thrwbl, curQueue, job));
+            final String failQueueKey = this.failQueueStrategyRef.get().getFailQueueKey(thrwbl, job, curQueue);
+            if (failQueueKey != null) {
+                this.jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+            }
         } catch (JedisException je) {
             LOG.warn("Error updating failure stats for throwable=" + thrwbl + " job=" + job, je);
         } catch (IOException ioe) {
