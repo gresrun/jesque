@@ -122,7 +122,7 @@ public class WorkerImpl implements Worker {
     private final JobFactory jobFactory;
 
 	/**
-     * Creates a new WorkerImpl, which creates it's own connection to Redis using values from the config.<br/>
+     * Creates a new WorkerImpl, which creates it's own connection to Redis using values from the config.<br>
      * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
      * @param config used to create a connection to Redis and the package prefix for incoming jobs
      * @param queues the list of queues to poll
@@ -134,7 +134,7 @@ public class WorkerImpl implements Worker {
     }
     
     /**
-     * Creates a new WorkerImpl, with the given connection to Redis.<br/>
+     * Creates a new WorkerImpl, with the given connection to Redis.<br>
      * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
      * @param config used to create a connection to Redis and the package prefix for incoming jobs
      * @param queues the list of queues to poll
@@ -173,7 +173,7 @@ public class WorkerImpl implements Worker {
     }
 
     /**
-     * Starts this worker. Registers the worker in Redis and begins polling the queues for jobs.<br/>
+     * Starts this worker. Registers the worker in Redis and begins polling the queues for jobs.<br>
      * Stop this worker by calling end() on any thread.
      */
     @Override
@@ -664,10 +664,10 @@ public class WorkerImpl implements Worker {
 
     /**
      * Create and serialize a WorkerStatus.
-     * @param queuethe queue the Job came from
+     * @param queue the queue the Job came from
      * @param job the Job currently being processed
      * @return the JSON representation of a new WorkerStatus
-     * @throws IOExceptionif there was an error serializing the WorkerStatus
+     * @throws IOException if there was an error serializing the WorkerStatus
      */
     protected String statusMsg(final String queue, final Job job) throws IOException {
         final WorkerStatus status = new WorkerStatus();

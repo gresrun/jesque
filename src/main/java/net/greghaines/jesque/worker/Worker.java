@@ -33,7 +33,7 @@ import java.util.Collections;
  * ...
  * worker.end();
  * t.join();
- * </pre></p>
+ * </pre>
  * @author Greg Haines
  */
 public interface Worker extends JobExecutor, Runnable {
