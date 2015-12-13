@@ -23,7 +23,7 @@ Or, to use it in your Maven project, add it as a dependency:
 <dependency>
   <groupId>net.greghaines</groupId>
   <artifactId>jesque</artifactId>
-  <version>2.0.2</version>
+  <version>2.1.0</version>
 </dependency>
 ```
 
