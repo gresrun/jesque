@@ -28,7 +28,6 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Set;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -44,14 +43,13 @@ import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
+import net.greghaines.jesque.utils.ScriptUtils;
 import net.greghaines.jesque.utils.VersionUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.Transaction;
-import redis.clients.jedis.Tuple;
 import redis.clients.jedis.exceptions.JedisException;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -113,6 +111,8 @@ public class WorkerImpl implements Worker {
     protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
     private final AtomicBoolean paused = new AtomicBoolean(false);
     private final AtomicBoolean processingJob = new AtomicBoolean(false);
+    private final AtomicReference<String> popScriptHash = new AtomicReference<>(null);
+    private final AtomicReference<String> lpoplpushScriptHash = new AtomicReference<>(null);
     private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
@@ -185,7 +185,13 @@ public class WorkerImpl implements Worker {
                 this.jedis.sadd(key(WORKERS), this.name);
                 this.jedis.set(key(WORKER, this.name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
                 this.listenerDelegate.fireEvent(WORKER_START, this, null, null, null, null, null);
+                this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript("/workerScripts/jesque_pop.lua")));
+                this.lpoplpushScriptHash.set(this.jedis.scriptLoad(
+                        ScriptUtils.readScript("/workerScripts/jesque_lpoplpush.lua")));
                 poll();
+            } catch (Exception ex) {
+                LOG.error("Uncaught exception in worker run-loop!", ex);
+                this.listenerDelegate.fireEvent(WORKER_ERROR, this, null, null, null, null, ex);
             } finally {
                 renameThread("STOPPING");
                 this.listenerDelegate.fireEvent(WORKER_STOP, this, null, null, null, null, null);
@@ -195,12 +201,10 @@ public class WorkerImpl implements Worker {
                 this.jedis.quit();
                 this.threadRef.set(null);
             }
+        } else if (RUNNING.equals(this.state.get())) {
+            throw new IllegalStateException("This WorkerImpl is already running");
         } else {
-            if (RUNNING.equals(this.state.get())) {
-                throw new IllegalStateException("This WorkerImpl is already running");
-            } else {
-                throw new IllegalStateException("This WorkerImpl is shutdown");
-            }
+            throw new IllegalStateException("This WorkerImpl is shutdown");
         }
     }
 
@@ -444,39 +448,9 @@ public class WorkerImpl implements Worker {
      */
     protected String pop(final String curQueue) {
         final String key = key(QUEUE, curQueue);
-        String payload = null;
-        // If a delayed queue, peek and remove from ZSET
-        if (JedisUtils.isDelayedQueue(this.jedis, key)) {
-            final long now = System.currentTimeMillis();
-            // Peek ==> is there any item scheduled to run between -INF and now?
-            final Set<Tuple> payloadSet = this.jedis.zrangeByScoreWithScores(key, -1, now, 0, 1);
-            if (payloadSet != null && !payloadSet.isEmpty()) {
-                final Tuple tuple = payloadSet.iterator().next();
-                final String tmp = tuple.getElement();
-                final double score = tuple.getScore();
-                // If a recurring job, increment the job score by hash field value
-                String recurringHashKey = JesqueUtils.createRecurringHashKey(key);
-                if (this.jedis.hexists(recurringHashKey, tmp)) {
-                    // Watch the hash to ensure that the job isn't deleted
-                    // TODO: Use the ZADD XX feature
-                    this.jedis.watch(recurringHashKey);
-                    final Long frequency = Long.valueOf(this.jedis.hget(recurringHashKey, tmp));
-                    final Transaction transaction = this.jedis.multi();
-                    transaction.zadd(key, score + frequency, tmp);
-                    if (transaction.exec() != null) {
-                        payload = tmp;
-                    }
-                } else {
-                    // Try to acquire this job
-                    if (this.jedis.zrem(key, tmp) == 1) {
-                        payload = tmp;
-                    }
-                }
-            }
-        } else if (JedisUtils.isRegularQueue(this.jedis, key)) { // If a regular queue, pop from it
-            payload = lpoplpush(key, key(INFLIGHT, this.name, curQueue));
-        }
-        return payload;
+        final String recurringHashKey = JesqueUtils.createRecurringHashKey(key);
+        return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue), 
+                recurringHashKey, Long.toString(System.currentTimeMillis()));
     }
 
     /**
@@ -726,31 +700,7 @@ public class WorkerImpl implements Worker {
     }
 
     protected String lpoplpush(final String from, final String to) {
-        String result = null;
-        while (JedisUtils.isRegularQueue(this.jedis, from)) {
-            this.jedis.watch(from);
-            // Get the leftmost value of the 'from' list. If it does not exist, there is nothing to pop.
-            String val = null;
-            if (JedisUtils.isRegularQueue(this.jedis, from)) {
-                val = this.jedis.lindex(from, 0);
-            }
-            if (val == null) {
-                this.jedis.unwatch();
-                result = val;
-                break;
-            }
-            final Transaction tx = this.jedis.multi();
-            tx.lpop(from);
-            tx.lpush(to, val);
-            if (tx.exec() != null) {
-                result = val;
-                break;
-            }
-            // If execution of the transaction failed, this means that 'from'
-            // was modified while we were watching it and the transaction was
-            // not executed. We simply retry the operation.
-        }
-        return result;
+        return (String) this.jedis.evalsha(this.lpoplpushScriptHash.get(), 2, from, to);
     }
 
     /**
