@@ -417,8 +417,7 @@ public class WorkerImpl implements Worker {
                         this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
                         final String payload = pop(curQueue);
                         if (payload != null) {
-                            final Job job = ObjectMapperFactory.get().readValue(payload, Job.class);
-                            process(job, curQueue);
+                            process(ObjectMapperFactory.get().readValue(payload, Job.class), curQueue);
                             missCount = 0;
                         } else if (++missCount >= this.queueNames.size() && RUNNING.equals(this.state.get())) {
                             // Keeps worker from busy-spinning on empty queues
@@ -448,9 +447,8 @@ public class WorkerImpl implements Worker {
      */
     protected String pop(final String curQueue) {
         final String key = key(QUEUE, curQueue);
-        final String recurringHashKey = JesqueUtils.createRecurringHashKey(key);
         return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue), 
-                recurringHashKey, Long.toString(System.currentTimeMillis()));
+                JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
     }
 
     /**
