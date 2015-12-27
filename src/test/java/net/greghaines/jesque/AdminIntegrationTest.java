@@ -1,9 +1,8 @@
 package net.greghaines.jesque;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
-import static net.greghaines.jesque.utils.JesqueUtils.set;
+import static net.greghaines.jesque.utils.JesqueUtils.*;
 
+import java.util.Random;
 import java.util.concurrent.Callable;
 
 import net.greghaines.jesque.admin.Admin;
@@ -17,15 +16,23 @@ import net.greghaines.jesque.worker.WorkerPool;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AdminIntegrationTest {
     
-    private static final Logger log = LoggerFactory.getLogger(AdminIntegrationTest.class);
-    private static final Config config = new ConfigBuilder().build();
+    private static final Logger LOG = LoggerFactory.getLogger(AdminIntegrationTest.class);
+    private static Config config;
+
     private static final String testQueue = "foo";
+
+    @BeforeClass
+    public static void initConfig() {
+        config = new ConfigBuilder().withNamespace(ConfigBuilder.DEFAULT_NAMESPACE + new Random().nextInt(10000))
+                .build();
+    }
 
     @Before
     public void resetRedis() {
@@ -56,7 +63,7 @@ public class AdminIntegrationTest {
             try {
                 workerPool.endAndJoin(false, 1000);
             } catch (Exception e) {
-                log.warn("Exception while waiting for workerThread to join", e);
+                LOG.warn("Exception while waiting for workerThread to join", e);
             }
         }
     }
