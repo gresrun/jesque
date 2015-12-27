@@ -87,7 +87,7 @@ public class AdminIntegrationTest {
             try {
                 adminClient.togglePausedWorkers(true);
                 try {
-                    Thread.sleep(1000L);
+                    Thread.sleep(2000L);
                 } catch (InterruptedException ie) {
                 }
                 Assert.assertTrue(worker.isPaused());
