@@ -17,6 +17,7 @@ import net.greghaines.jesque.worker.WorkerPool;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +69,7 @@ public class AdminIntegrationTest {
         }
     }
 
+    @Ignore
     @Test
     public void testPauseAndShutdownCommands() {
         final Worker worker = new WorkerImpl(config, set(testQueue), 
