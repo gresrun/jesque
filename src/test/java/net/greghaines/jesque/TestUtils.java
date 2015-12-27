@@ -89,7 +89,7 @@ public final class TestUtils {
 
     public static void stopWorker(final JobExecutor worker, final Thread workerThread, boolean now) {
         try {
-            Thread.sleep(1500);
+            Thread.sleep(2000);
         } catch (Exception e) {
         } // Give worker time to process
         worker.end(now);
