@@ -24,8 +24,9 @@ import redis.clients.util.Pool;
 public class TestPoolUtils {
     
     private Mockery mockCtx;
-    private Pool<String> pool;
-    private PoolWork<String,String> work;
+    private Jedis resource;
+    private Pool<Jedis> pool;
+    private PoolWork<Jedis, String> work;
     
     @SuppressWarnings("unchecked")
     @Before
@@ -34,6 +35,7 @@ public class TestPoolUtils {
         this.mockCtx.setImposteriser(ClassImposteriser.INSTANCE);
         this.pool = this.mockCtx.mock(Pool.class);
         this.work = this.mockCtx.mock(PoolWork.class);
+        this.resource = this.mockCtx.mock(Jedis.class);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -48,48 +50,44 @@ public class TestPoolUtils {
 
     @Test
     public void testDoWorkInPool() throws Exception {
-        final String resource = "foo";
         final String result = "bar";
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(resource));
             oneOf(work).doWork(resource); will(returnValue(result));
-            oneOf(pool).returnResource(resource);
+            oneOf(resource).close();
         }});
         Assert.assertEquals(result, PoolUtils.doWorkInPool(this.pool, this.work));
     }
 
     @Test
     public void testDoWorkInPoolNicely() throws Exception {
-        final String resource = "foo";
         final String result = "bar";
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(resource));
             oneOf(work).doWork(resource); will(returnValue(result));
-            oneOf(pool).returnResource(resource);
+            oneOf(resource).close();
         }});
         Assert.assertEquals(result, PoolUtils.doWorkInPoolNicely(this.pool, this.work));
     }
 
     @Test(expected = RuntimeException.class)
     public void testDoWorkInPoolNicely_ThrowRuntimeEx() throws Exception {
-        final String resource = "foo";
         final RuntimeException rte = new RuntimeException("foo");
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(resource));
             oneOf(work).doWork(resource); will(throwException(rte));
-            oneOf(pool).returnResource(resource);
+            oneOf(resource).close();
         }});
         PoolUtils.doWorkInPoolNicely(this.pool, this.work);
     }
 
     @Test(expected = RuntimeException.class)
     public void testDoWorkInPoolNicely_ThrowEx() throws Exception {
-        final String resource = "foo";
         final Exception ex = new Exception("foo");
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(resource));
             oneOf(work).doWork(resource); will(throwException(ex));
-            oneOf(pool).returnResource(resource);
+            oneOf(resource).close();
         }});
         PoolUtils.doWorkInPoolNicely(this.pool, this.work);
     }

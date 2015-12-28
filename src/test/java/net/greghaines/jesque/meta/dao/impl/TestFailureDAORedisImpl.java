@@ -75,7 +75,7 @@ public class TestFailureDAORedisImpl {
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).llen(FAILED_KEY); will(returnValue(failCount));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final long count = this.failureDAO.getCount();
         Assert.assertEquals(failCount, count);
@@ -86,7 +86,7 @@ public class TestFailureDAORedisImpl {
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).del(FAILED_KEY);
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         this.failureDAO.clear();
     }
@@ -111,7 +111,7 @@ public class TestFailureDAORedisImpl {
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).lrange(FAILED_KEY, offset, offset + count - 1);
             will(returnValue(origJsons));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final List<JobFailure> fails = this.failureDAO.getFailures(offset, count);
         Assert.assertNotNull(fails);
@@ -126,7 +126,7 @@ public class TestFailureDAORedisImpl {
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).lset(with(equal(FAILED_KEY)), with(equal(index)), with(any(String.class)));
             oneOf(jedis).lrem(with(equal(FAILED_KEY)), with(equal(1L)), with(any(String.class)));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         this.failureDAO.remove(index);
     }
@@ -187,7 +187,7 @@ public class TestFailureDAORedisImpl {
             oneOf(jedis).lset(with(equal(FAILED_KEY)), with(equal(index)), with(any(String.class)));
             oneOf(jedis).sadd(QUEUES_KEY, queue);
             oneOf(jedis).rpush("resque:queue:" + queue, jobJson);
-            exactly(2).of(pool).returnResource(jedis);
+            exactly(2).of(jedis).close();
         }});
         final Date requeuedAt = this.failureDAO.requeue(index);
         Assert.assertNotNull(requeuedAt);

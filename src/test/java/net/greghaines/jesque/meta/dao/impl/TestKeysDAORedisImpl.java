@@ -65,7 +65,7 @@ public class TestKeysDAORedisImpl {
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).info(); will(returnValue(infoString));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final Map<String,String> redisInfo = this.keysDAO.getRedisInfo();
         Assert.assertNotNull(redisInfo);
@@ -91,7 +91,7 @@ public class TestKeysDAORedisImpl {
                 oneOf(jedis).type(key); will(returnValue(KeyType.STRING.toString()));
                 oneOf(jedis).strlen(key); will(returnValue((long)values.get(i++).length()));
             }
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final List<KeyInfo> keyInfos = this.keysDAO.getKeyInfos();
         Assert.assertNotNull(keyInfos);
@@ -116,7 +116,7 @@ public class TestKeysDAORedisImpl {
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).type(key); will(returnValue(KeyType.STRING.toString()));
             oneOf(jedis).strlen(key); will(returnValue(size));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final KeyInfo keyInfo = this.keysDAO.getKeyInfo(key);
         Assert.assertNotNull(keyInfo);
@@ -137,7 +137,7 @@ public class TestKeysDAORedisImpl {
             oneOf(jedis).type(key); will(returnValue(KeyType.STRING.toString()));
             oneOf(jedis).strlen(key); will(returnValue(size));
             oneOf(jedis).get(key); will(returnValue(value));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final KeyInfo keyInfo = this.keysDAO.getKeyInfo(key, 0, 1);
         Assert.assertNotNull(keyInfo);

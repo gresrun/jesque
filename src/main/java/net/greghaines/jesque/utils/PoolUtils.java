@@ -16,6 +16,7 @@
 package net.greghaines.jesque.utils;
 
 import net.greghaines.jesque.Config;
+
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -23,23 +24,22 @@ import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.util.Pool;
 
 /**
- * Convenience methods for doing work with pooled resources.
+ * Convenience methods for doing work with pooled Jedis connections.
  *
  * @author Greg Haines
  */
 public final class PoolUtils {
 
     /**
-     * Perform the given work with a resource from the given pool.
-     *
+     * Perform the given work with a Jedis connection from the given pool.
+     * 
      * @param pool the resource pool
      * @param work the work to perform
-     * @param <T>  the resource type
      * @param <V>  the result type
      * @return the result of the given work
      * @throws Exception if something went wrong
      */
-    public static <T, V> V doWorkInPool(final Pool<T> pool, final PoolWork<T, V> work) throws Exception {
+    public static <V> V doWorkInPool(final Pool<Jedis> pool, final PoolWork<Jedis, V> work) throws Exception {
         if (pool == null) {
             throw new IllegalArgumentException("pool must not be null");
         }
@@ -47,26 +47,25 @@ public final class PoolUtils {
             throw new IllegalArgumentException("work must not be null");
         }
         final V result;
-        final T poolResource = pool.getResource();
+        final Jedis poolResource = pool.getResource();
         try {
             result = work.doWork(poolResource);
         } finally {
-            pool.returnResource(poolResource);
+            poolResource.close();
         }
         return result;
     }
 
     /**
-     * Perform the given work with a resource from the given pool. Wraps any
-     * thrown checked exceptions in a RuntimeException.
-     *
+     * Perform the given work with a Jedis connection from the given pool. 
+     * Wraps any thrown checked exceptions in a RuntimeException.
+     * 
      * @param pool the resource pool
      * @param work the work to perform
-     * @param <T>  the resource type
      * @param <V>  the result type
      * @return the result of the given work
      */
-    public static <T, V> V doWorkInPoolNicely(final Pool<T> pool, final PoolWork<T, V> work) {
+    public static <V> V doWorkInPoolNicely(final Pool<Jedis> pool, final PoolWork<Jedis, V> work) {
         final V result;
         try {
             result = doWorkInPool(pool, work);

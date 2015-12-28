@@ -69,7 +69,7 @@ public class TestWorkerInfoDAORedisImpl {
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).scard(WORKERS_KEY); will(returnValue(workerCount));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final long count = this.workerInfoDAO.getWorkerCount();
         Assert.assertEquals(workerCount, count);
@@ -83,7 +83,7 @@ public class TestWorkerInfoDAORedisImpl {
             oneOf(jedis).srem(WORKERS_KEY, workerName); will(returnValue(1L));
             oneOf(jedis).del("resque:worker:foo", "resque:worker:foo:started", 
                     "resque:stat:failed:foo", "resque:stat:processed:foo");
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         this.workerInfoDAO.removeWorker(workerName);
     }

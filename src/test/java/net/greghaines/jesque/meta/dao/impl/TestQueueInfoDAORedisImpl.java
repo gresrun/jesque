@@ -81,7 +81,7 @@ public class TestQueueInfoDAORedisImpl {
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).smembers(QUEUES_KEY); will(returnValue(queueSet));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final List<String> queueNames = this.qInfoDAO.getQueueNames();
         Assert.assertNotNull(queueNames);
@@ -110,7 +110,7 @@ public class TestQueueInfoDAORedisImpl {
                     oneOf(jedis).llen(queueKey); will(returnValue(queueCountMap.get(e.getKey())));
                 }
             }
-            exactly(2).of(pool).returnResource(jedis);
+            exactly(2).of(jedis).close();
         }});
         final long pendingCount = this.qInfoDAO.getPendingCount();
         Assert.assertEquals(8, pendingCount);
@@ -122,7 +122,7 @@ public class TestQueueInfoDAORedisImpl {
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).get("resque:stat:processed"); will(returnValue(Long.toString(count)));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final long processedCount = this.qInfoDAO.getProcessedCount();
         Assert.assertEquals(count, (Long)processedCount);
@@ -133,7 +133,7 @@ public class TestQueueInfoDAORedisImpl {
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).get("resque:stat:processed"); will(returnValue(null));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final long processedCount = this.qInfoDAO.getProcessedCount();
         Assert.assertEquals(0L, processedCount);
@@ -146,7 +146,7 @@ public class TestQueueInfoDAORedisImpl {
             oneOf(pool).getResource(); will(returnValue(jedis));
             oneOf(jedis).srem(QUEUES_KEY, queue);
             oneOf(jedis).del("resque:queue:" + queue);
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         this.qInfoDAO.removeQueue(queue);
     }
@@ -171,7 +171,7 @@ public class TestQueueInfoDAORedisImpl {
                     oneOf(jedis).llen(queueKey); will(returnValue(queueCountMap.get(e.getKey())));
                 }
             }
-            exactly(2).of(pool).returnResource(jedis);
+            exactly(2).of(jedis).close();
         }});
         final List<QueueInfo> queueInfos = this.qInfoDAO.getQueueInfos();
         Assert.assertNotNull(queueInfos);
@@ -197,7 +197,7 @@ public class TestQueueInfoDAORedisImpl {
             exactly(2).of(jedis).type(queueKey); will(returnValue(KeyType.LIST.toString()));
             oneOf(jedis).llen(queueKey); will(returnValue(size));
             oneOf(jedis).lrange(queueKey, jobOffset, jobOffset + jobCount - 1); will(returnValue(payloads));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final QueueInfo queueInfo = this.qInfoDAO.getQueueInfo(name, jobOffset, jobCount);
         Assert.assertNotNull(queueInfo);
@@ -223,7 +223,7 @@ public class TestQueueInfoDAORedisImpl {
             exactly(2).of(jedis).type(queueKey); will(returnValue(KeyType.ZSET.toString()));
             oneOf(jedis).zcard(queueKey); will(returnValue(size));
             oneOf(jedis).zrange(queueKey, jobOffset, jobOffset + jobCount - 1); will(returnValue(payloads));
-            oneOf(pool).returnResource(jedis);
+            oneOf(jedis).close();
         }});
         final QueueInfo queueInfo = this.qInfoDAO.getQueueInfo(name, jobOffset, jobCount);
         Assert.assertNotNull(queueInfo);
