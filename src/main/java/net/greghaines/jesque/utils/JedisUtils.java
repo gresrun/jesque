@@ -21,27 +21,26 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
+import static net.greghaines.jesque.utils.ResqueConstants.*;
+
 /**
  * A collection of utilities for Redis connections.
- * 
+ *
  * @author Greg Haines
  * @author Animesh Kumar
  */
 public final class JedisUtils {
-    
+
     public static final String PONG = "PONG";
 
     private static final Logger LOG = LoggerFactory.getLogger(JedisUtils.class);
-    private static final String LIST = "list";
-    private static final String ZSET = "zset";
     private static final String HASH = "hash";
     private static final String NONE = "none";
 
     /**
      * Ensure that the given connection is established.
-     * 
-     * @param jedis
-     *            a connection to Redis
+     *
+     * @param jedis a connection to Redis
      * @return true if the supplied connection was already connected
      */
     public static boolean ensureJedisConnection(final Jedis jedis) {
@@ -62,9 +61,8 @@ public final class JedisUtils {
 
     /**
      * Test if a connection is valid.
-     * 
-     * @param jedis
-     *            a connection to Redis
+     *
+     * @param jedis a connection to Redis
      * @return true if the supplied connection is connected
      */
     public static boolean testJedisConnection(final Jedis jedis) {
@@ -79,13 +77,10 @@ public final class JedisUtils {
 
     /**
      * Attempt to reconnect to Redis.
-     * 
-     * @param jedis
-     *            the connection to Redis
-     * @param reconAttempts
-     *            number of times to attempt to reconnect before giving up
-     * @param reconnectSleepTime
-     *            time in milliseconds to wait between attempts
+     *
+     * @param jedis              the connection to Redis
+     * @param reconAttempts      number of times to attempt to reconnect before giving up
+     * @param reconnectSleepTime time in milliseconds to wait between attempts
      * @return true if reconnection was successful
      */
     public static boolean reconnect(final Jedis jedis, final int reconAttempts, final long reconnectSleepTime) {
@@ -110,28 +105,29 @@ public final class JedisUtils {
 
     /**
      * Determines if the queue identified by the given key is a regular queue.
-     * 
-     * @param jedis
-     *            connection to Redis
-     * @param key
-     *            the key that identifies a queue
+     *
+     * @param jedis connection to Redis
+     * @param key   the key that identifies a queue
      * @return true if the key identifies a regular queue, false otherwise
      */
     public static boolean isRegularQueue(final Jedis jedis, final String key) {
-        return LIST.equalsIgnoreCase(jedis.type(key));
+        return isQueueOfType(jedis, key, REGULAR_QUEUE);
     }
 
     /**
      * Determines if the queue identified by the given key is a delayed queue.
-     * 
-     * @param jedis
-     *            connection to Redis
-     * @param key
-     *            the key that identifies a queue
+     *
+     * @param jedis connection to Redis
+     * @param key   the key that identifies a queue
      * @return true if the key identifies a delayed queue, false otherwise
      */
     public static boolean isDelayedQueue(final Jedis jedis, final String key) {
-        return ZSET.equalsIgnoreCase(jedis.type(key));
+        return isQueueOfType(jedis, key, DELAYED_QUEUE);
+    }
+
+    private static boolean isQueueOfType(final Jedis jedis, final String key, final String queueType) {
+        final String existingType = jedis.hget(QUEUE_TYPES, key);
+        return queueType.equalsIgnoreCase(existingType);
     }
 
     public static boolean isRecurringQueue(final Jedis jedis, final String queueKey, final String hashKey) {
@@ -140,12 +136,20 @@ public final class JedisUtils {
     }
 
     /**
+     * Determines if the queue identified by the given key is a priority queue.
+     *
+     * @param jedis connection to Redis
+     * @param key   the key that identifies a queue  @return true if the key identifies a delayed queue, false otherwise
+     */
+    public static boolean isPriorityQueue(final Jedis jedis, final String key) {
+        return isQueueOfType(jedis, key, PRIORITY_QUEUE);
+    }
+
+    /**
      * Determines if the queue identified by the given key is used.
-     * 
-     * @param jedis
-     *            connection to Redis
-     * @param key
-     *            the key that identifies a queue
+     *
+     * @param jedis connection to Redis
+     * @param key   the key that identifies a queue
      * @return true if the key is used, false otherwise
      */
     public static boolean isKeyUsed(final Jedis jedis, final String key) {
@@ -154,20 +158,16 @@ public final class JedisUtils {
 
     /**
      * Determines if the queue identified by the given key can be used as a delayed queue.
-     * 
-     * @param jedis
-     *            connection to Redis
-     * @param key
-     *            the key that identifies a queue
+     *
+     * @param jedis connection to Redis
+     * @param key   the key that identifies a queue
      * @return true if the key already is a delayed queue or is not currently used, false otherwise
      */
     public static boolean canUseAsDelayedQueue(final Jedis jedis, final String key) {
-        final String type = jedis.type(key);
-        return (ZSET.equalsIgnoreCase(type) || NONE.equalsIgnoreCase(type));
+        return canUseAsQueueOfType(jedis, key, DELAYED_QUEUE);
     }
 
-    public static boolean canUseAsRecurringQueue(final Jedis jedis, final String queueKey, final String hashKey)
-    {
+    public static boolean canUseAsRecurringQueue(final Jedis jedis, final String queueKey, final String hashKey) {
         final String hashType = jedis.type(hashKey);
         return (canUseAsDelayedQueue(jedis, queueKey) && (HASH.equalsIgnoreCase(hashType) || NONE.equalsIgnoreCase(hashType)));
     }
@@ -175,4 +175,32 @@ public final class JedisUtils {
     private JedisUtils() {
         // Utility class
     }
+
+    /**
+     * Determines if the queue identified by the given key can be used as a priority queue.
+     *
+     * @param jedis connection to Redis
+     * @param key   the key that identifies a queue  @return true if the key already is a delayed queue or is not currently used, false otherwise
+     */
+    public static boolean canUseAsPriorityQueue(final Jedis jedis, final String key) {
+        return canUseAsQueueOfType(jedis, key, PRIORITY_QUEUE);
+    }
+
+    private static boolean canUseAsQueueOfType(final Jedis jedis, final String key, final String queueType) {
+        final String existingType = jedis.hget(QUEUE_TYPES, key);
+        if (queueType.equals(existingType)) {
+            return true;
+        } else if (existingType == null || NONE.equalsIgnoreCase(jedis.type(key))) {
+            jedis.hset(QUEUE_TYPES, key, queueType);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean canUseAsRegularQueue(final Jedis jedis, final String key) {
+        return canUseAsQueueOfType(jedis, key, REGULAR_QUEUE);
+    }
+
+
 }

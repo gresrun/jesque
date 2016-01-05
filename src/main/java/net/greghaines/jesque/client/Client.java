@@ -38,6 +38,20 @@ public interface Client {
     void enqueue(String queue, Job job);
 
     /**
+     * Queues a job in a given queue to be run.
+     *
+     * @param queue
+     *            the queue to add the Job to
+     * @param job
+     *            the job to be enqueued
+     * @param priority
+     *            the job's priority in the queue
+     * @throws IllegalArgumentException
+     *             if the queue is null or empty or if the job is null
+     */
+    void enqueue(String queue, Job job, double priority);
+
+    /**
      * Queues a job with high priority in a given queue to be run.
      * 
      * @param queue

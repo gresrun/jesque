@@ -28,7 +28,7 @@ import redis.clients.jedis.Transaction;
 
 /**
  * Common logic for Client implementations.
- * 
+ *
  * @author Greg Haines
  * @author Animesh Kumar
  */
@@ -38,7 +38,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Constructor.
-     * 
+     *
      * @param config
      *            used to get the namespace for key creation
      */
@@ -58,7 +58,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Builds a namespaced Redis key with the given arguments.
-     * 
+     *
      * @param parts
      *            the key parts to be joined
      * @return an assembled String key
@@ -75,6 +75,21 @@ public abstract class AbstractClient implements Client {
         validateArguments(queue, job);
         try {
             doEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void enqueue(final String queue, final Job job, final double priority) {
+        validateArguments(queue, job, priority);
+        try {
+            doEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), priority);
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -122,7 +137,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Actually enqueue the serialized job.
-     * 
+     *
      * @param queue
      *            the queue to add the Job to
      * @param msg
@@ -133,8 +148,18 @@ public abstract class AbstractClient implements Client {
     protected abstract void doEnqueue(String queue, String msg) throws Exception;
 
     /**
+     * Actually enqueue the serialized job.
+     *
+     * @param queue the queue to add the Job to
+     * @param msg   the serialized Job
+     * @param msg   the Job priority
+     * @throws Exception in case something goes wrong
+     */
+    protected abstract void doEnqueue(String queue, String msg, double priority) throws Exception;
+
+    /**
      * Actually enqueue the serialized job with high priority.
-     * 
+     *
      * @param queue
      *            the queue to add the Job to
      * @param msg
@@ -146,7 +171,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Actually acquire the lock based upon the client acquisition model.
-     * 
+     *
      * @param lockName
      *            the name of the lock to acquire
      * @param timeout
@@ -157,13 +182,13 @@ public abstract class AbstractClient implements Client {
      * @throws Exception
      *             in case something goes wrong
      */
-    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder, 
+    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder,
             final int timeout) throws Exception;
 
     /**
      * Helper method that encapsulates the minimum logic for adding a job to a
      * queue.
-     * 
+     *
      * @param jedis
      *            the connection to Redis
      * @param namespace
@@ -174,14 +199,19 @@ public abstract class AbstractClient implements Client {
      *            the job serialized as JSON
      */
     public static void doEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
-        jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-        jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+        final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
+        if (JedisUtils.canUseAsRegularQueue(jedis, key)) {
+            jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+            jedis.rpush(key, jobJson);
+        } else {
+            throw new IllegalArgumentException(queue + " cannot be used as a regular queue");
+        }
     }
 
     /**
      * Helper method that encapsulates the minimum logic for adding a high
      * priority job to a queue.
-     * 
+     *
      * @param jedis
      *            the connection to Redis
      * @param namespace
@@ -192,13 +222,18 @@ public abstract class AbstractClient implements Client {
      *            the job serialized as JSON
      */
     public static void doPriorityEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
-        jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-        jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+        final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
+        if (JedisUtils.canUseAsRegularQueue(jedis, key)) {
+            jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+            jedis.lpush(key, jobJson);
+        } else {
+            throw new IllegalArgumentException(queue + " cannot be used as a regular queue");
+        }
     }
 
     /**
      * Helper method that encapsulates the logic to acquire a lock.
-     * 
+     *
      * @param jedis
      *            the connection to Redis
      * @param namespace
@@ -281,6 +316,19 @@ public abstract class AbstractClient implements Client {
 
     protected abstract void doDelayedEnqueue(String queue, String msg, long future) throws Exception;
 
+
+    public static void doEnqueue(Jedis jedis, String namespace, String queue, String jobJson, double priority) {
+        final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
+        // Add task only if this queue is either delayed or unused
+        if (JedisUtils.canUseAsPriorityQueue(jedis, key)) {
+            jedis.zadd(key, priority, jobJson);
+            jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+        } else {
+            throw new IllegalArgumentException(queue + " cannot be used as a priority queue");
+        }
+    }
+
+
     /**
      * {@inheritDoc}
      */
@@ -323,7 +371,7 @@ public abstract class AbstractClient implements Client {
         }
     }
 
-    public static void doRecurringEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future, final long frequency){
+    public static void doRecurringEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future, final long frequency) {
         final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
         final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
@@ -409,6 +457,13 @@ public abstract class AbstractClient implements Client {
         validateArguments(queue, job, future);
         if (frequency < 1) {
             throw new IllegalArgumentException("frequency must be greater than one second");
+        }
+    }
+
+    private static void validateArguments(final String queue, final Job job, final double priority) {
+        validateArguments(queue, job);
+        if (Double.NaN == priority || Double.POSITIVE_INFINITY == priority || Double.NEGATIVE_INFINITY == priority) {
+            throw new IllegalArgumentException("priority has to be a valid double");
         }
     }
 }
