@@ -447,7 +447,7 @@ public class WorkerImpl implements Worker {
      */
     protected String pop(final String curQueue) {
         final String key = key(QUEUE, curQueue);
-        return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue), 
+        return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue),
                 JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
     }
 

@@ -61,7 +61,10 @@ public interface ResqueConstants {
     String CHANNEL = "channel";
     String INFLIGHT = "inflight";
     String FREQUENCY = "frequency";
-
+    String QUEUE_TYPES = "queueTypes";
+    String PRIORITY_QUEUE = "priority";
+    String REGULAR_QUEUE = "regular";
+    String DELAYED_QUEUE = "delayed";
     /**
      * Default channel for admin jobs
      */

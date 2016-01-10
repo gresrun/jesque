@@ -9,8 +9,8 @@ local not_empty = function(x)
   return (type(x) == 'table') and (not x.err) and (#x ~= 0)
 end
 
-local ok, queueType = next(redis.call('TYPE', queueKey))
-if queueType == 'zset' then
+local queueType = redis.call('HGET', 'queueTypes', queueKey)
+if queueType == 'delayed' then
 	local i, lPayload = next(redis.call('ZRANGEBYSCORE', queueKey, '-inf', now, 'WITHSCORES'))
 	if lPayload then
 		payload = lPayload
@@ -21,10 +21,16 @@ if queueType == 'zset' then
 			redis.call('ZREM', queueKey, payload)
 		end
 	end
-elseif queueType == 'list' then
+elseif queueType == 'regular' then
 	payload = redis.call('LPOP', queueKey)
 	if payload then
 		redis.call('LPUSH', inFlightKey, payload)
+	end
+elseif queueType == 'priority' then
+	local i, lPayload = next(redis.call('ZREVRANGE', queueKey, 0, 0))
+	if lPayload then
+		payload = lPayload
+		redis.call('ZREM', queueKey, payload)
 	end
 end
 

@@ -83,6 +83,17 @@ public final class TestUtils {
         }
     }
 
+    public static void enqueueJobsWithPriority(final String queue, final List<Job> jobs, final Config config) {
+        final Client client = new ClientImpl(config);
+        try {
+            for (final Job job : jobs) {
+                client.enqueue(queue, job, (Double) job.getArgs()[1]);
+            }
+        } finally {
+            client.end();
+        }
+    }
+
     public static void stopWorker(final JobExecutor worker, final Thread workerThread) {
         stopWorker(worker, workerThread, false);
     }

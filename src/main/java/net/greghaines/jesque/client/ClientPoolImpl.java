@@ -69,6 +69,23 @@ public class ClientPoolImpl extends AbstractClient {
      * {@inheritDoc}
      */
     @Override
+    protected void doEnqueue(final String queue, final String jobJson, final double priority) throws Exception {
+        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public Void doWork(final Jedis jedis) {
+                doEnqueue(jedis, getNamespace(), queue, jobJson, priority);
+                return null;
+            }
+        });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void doPriorityEnqueue(final String queue, final String jobJson) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
             /**
