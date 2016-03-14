@@ -15,6 +15,7 @@
  */
 package net.greghaines.jesque.worker;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -22,32 +23,73 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * WorkerPool creates a fixed number of identical <code>Workers</code>, each on a separate <code>Thread</code>.
  */
-public class WorkerPool implements Worker {
-    
+public class WorkerPool implements Worker, WorkerPoolMXBean {
+    private static final Logger LOG = LoggerFactory.getLogger(WorkerPool.class);
+    private static final String JMX_WORKER_POOL_NAME = "net.greghaines.jesque:type=WorkerPool";
+
     private final List<Worker> workers;
     private final List<Thread> threads;
     private final WorkerEventEmitter eventEmitter;
 
+    private boolean isRegisterMbeans;
+
     /**
-     * Create a WorkerPool with the given number of Workers and the default <code>ThreadFactory</code>.
+     * Create a WorkerPool with the given number of Workers, the default <code>ThreadFactory</code>
+     * and disable JMX monitoring.
+     *
      * @param workerFactory a Callable that returns an implementation of Worker
      * @param numWorkers the number of Workers to create
      */
     public WorkerPool(final Callable<? extends Worker> workerFactory, final int numWorkers) {
-        this(workerFactory, numWorkers, Executors.defaultThreadFactory());
+        this(workerFactory, numWorkers, false);
     }
 
     /**
-     * Create a WorkerPool with the given number of Workers and the given <code>ThreadFactory</code>.
+     * Create a WorkerPool with the given number of Workers, the default <code>ThreadFactory</code>
+     * and whether to monitor by JMX or not.
+     *
+     * @param workerFactory a Callable that returns an implementation of Worker
+     * @param numWorkers the number of Workers to create
+     * @param isRegisterMbeans whether to monitor by JMX or not.
+     */
+    public WorkerPool(final Callable<? extends Worker> workerFactory, final int numWorkers,
+            final boolean isRegisterMbeans) {
+        this(workerFactory, numWorkers, Executors.defaultThreadFactory(), isRegisterMbeans);
+    }
+
+    /**
+     * Create a WorkerPool with the given number of Workers, the given <code>ThreadFactory</code>
+     * and disable JMX monitoring.
+     *
      * @param workerFactory a Callable that returns an implementation of Worker
      * @param numWorkers the number of Workers to create
      * @param threadFactory the factory to create pre-configured Threads
      */
     public WorkerPool(final Callable<? extends Worker> workerFactory, final int numWorkers,
             final ThreadFactory threadFactory) {
+        this(workerFactory, numWorkers, threadFactory, false);
+    }
+
+    /**
+     * Create a WorkerPool with the given number of Workers, the given <code>ThreadFactory</code>
+     * and whether to monitor by JMX or not.
+     *
+     * @param workerFactory a Callable that returns an implementation of Worker
+     * @param numWorkers the number of Workers to create
+     * @param threadFactory the factory to create pre-configured Threads
+     * @param isRegisterMbeans whether to monitor by JMX or not.
+     */
+    public WorkerPool(final Callable<? extends Worker> workerFactory, final int numWorkers,
+            final ThreadFactory threadFactory, final boolean isRegisterMbeans) {
         this.workers = new ArrayList<Worker>(numWorkers);
         this.threads = new ArrayList<Thread>(numWorkers);
         this.eventEmitter = new WorkerPoolEventEmitter(this.workers);
@@ -62,13 +104,16 @@ public class WorkerPool implements Worker {
                 throw new RuntimeException(e);
             }
         }
+
+        this.isRegisterMbeans = isRegisterMbeans;
+        registerMBeans();
     }
 
     /**
      * Shutdown this pool and wait millis time per thread or until all threads are finished if millis is 0.
      * @param now if true, an effort will be made to stop any jobs in progress
      * @param millis the time to wait in milliseconds for the threads to join; a timeout of 0 means to wait forever.
-     * @throws InterruptedException if any thread has interrupted the current thread. 
+     * @throws InterruptedException if any thread has interrupted the current thread.
      * The interrupted status of the current thread is cleared when this exception is thrown.
      */
     public void endAndJoin(final boolean now, final long millis) throws InterruptedException {
@@ -248,7 +293,95 @@ public class WorkerPool implements Worker {
             worker.setExceptionHandler(exceptionHandler);
         }
     }
-    
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getTotalWorkers() {
+        return this.workers.size();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getActiveWorkers() {
+        int activeWorkers = 0;
+        for (final Worker worker : this.workers) {
+            if (worker.isProcessingJob()) {
+                activeWorkers++;
+            }
+        }
+        return activeWorkers;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getIdleWorkers() {
+        return getTotalWorkers() - getActiveWorkers();
+    }
+
+    /**
+     * Enable JMX monitoring.
+     */
+    public void registerMBeans() {
+        if (!this.isRegisterMbeans) {
+            return;
+        }
+
+        final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+
+        final ObjectName beanWorkerPoolName;
+        try {
+            beanWorkerPoolName = new ObjectName(JMX_WORKER_POOL_NAME);
+            if (!mBeanServer.isRegistered(beanWorkerPoolName)) {
+                mBeanServer.registerMBean(this, beanWorkerPoolName);
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to register management beans.", e);
+        }
+    }
+
+    /**
+     * Disable JMX monitoring.
+     */
+    public void unregisterMBeans() {
+        if (!this.isRegisterMbeans) {
+            return;
+        }
+
+        final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+
+        final ObjectName beanWorkerPoolName;
+        try {
+            beanWorkerPoolName = new ObjectName(JMX_WORKER_POOL_NAME);
+            if (mBeanServer.isRegistered(beanWorkerPoolName)) {
+                mBeanServer.unregisterMBean(beanWorkerPoolName);
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to unregister management beans.", e);
+        }
+    }
+
+    /**
+     * @return whether to monitor by JMX or not
+     */
+    public boolean isRegisterMbeans() {
+        return this.isRegisterMbeans;
+    }
+
+    /**
+     * Set whether to monitor by JMX or not
+     *
+     * @param isRegisterMbeans whether to monitor by JMX or not
+     */
+    public void setRegisterMbeans(final boolean isRegisterMbeans) {
+        this.isRegisterMbeans = isRegisterMbeans;
+    }
+
     private static class WorkerPoolEventEmitter implements WorkerEventEmitter {
         
         private final List<Worker> workers;
