@@ -22,9 +22,10 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.queue.JedisQueueDao;
+import net.greghaines.jesque.queue.QueueDao;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.utils.ScriptUtils;
 import net.greghaines.jesque.utils.VersionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,6 +100,7 @@ public class WorkerImpl implements Worker {
     }
 
     protected final Config config;
+    protected final QueueDao queueDao;
     protected final Jedis jedis;
     protected final String namespace;
     protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<String>();
@@ -107,8 +109,6 @@ public class WorkerImpl implements Worker {
     protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
     private final AtomicBoolean paused = new AtomicBoolean(false);
     private final AtomicBoolean processingJob = new AtomicBoolean(false);
-    private final AtomicReference<String> popScriptHash = new AtomicReference<>(null);
-    private final AtomicReference<String> lpoplpushScriptHash = new AtomicReference<>(null);
     private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
@@ -159,6 +159,7 @@ public class WorkerImpl implements Worker {
         authenticateAndSelectDB();
         setQueues(queues);
         this.name = createName();
+        this.queueDao = new JedisQueueDao(config, false, jedis);
     }
 
     /**
@@ -181,9 +182,6 @@ public class WorkerImpl implements Worker {
                 this.jedis.sadd(key(WORKERS), this.name);
                 this.jedis.set(key(WORKER, this.name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
                 this.listenerDelegate.fireEvent(WORKER_START, this, null, null, null, null, null);
-                this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript("/workerScripts/jesque_pop.lua")));
-                this.lpoplpushScriptHash.set(this.jedis.scriptLoad(
-                        ScriptUtils.readScript("/workerScripts/jesque_lpoplpush.lua")));
                 poll();
             } catch (Exception ex) {
                 LOG.error("Uncaught exception in worker run-loop!", ex);
@@ -411,7 +409,7 @@ public class WorkerImpl implements Worker {
                     // Might have been waiting in poll()/checkPaused() for a while
                     if (RUNNING.equals(this.state.get())) {
                         this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
-                        final String payload = pop(curQueue);
+                        final String payload = queueDao.dequeue(this.name, curQueue);
                         if (payload != null) {
                             process(ObjectMapperFactory.get().readValue(payload, Job.class), curQueue);
                             missCount = 0;
@@ -434,17 +432,6 @@ public class WorkerImpl implements Worker {
                 recoverFromException(curQueue, e);
             }
         }
-    }
-
-    /**
-     * Remove a job from the given queue.
-     * @param curQueue the queue to remove a job from
-     * @return a JSON string of a job or null if there was nothing to de-queue
-     */
-    protected String pop(final String curQueue) {
-        final String key = key(QUEUE, curQueue);
-        return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue),
-                JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
     }
 
     /**
@@ -535,10 +522,14 @@ public class WorkerImpl implements Worker {
     }
 
     private void removeInFlight(final String curQueue) {
-        if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
-            lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
-        } else {
-            this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
+        try {
+            if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
+                queueDao.restoreInflight(this.name, curQueue);
+            } else {
+                queueDao.removeInflight(this.name, curQueue);
+            }
+        } catch (Exception e) {
+            // ignore
         }
     }
 
@@ -691,10 +682,6 @@ public class WorkerImpl implements Worker {
      */
     protected void renameThread(final String msg) {
         Thread.currentThread().setName(this.threadNameBase + msg);
-    }
-
-    protected String lpoplpush(final String from, final String to) {
-        return (String) this.jedis.evalsha(this.lpoplpushScriptHash.get(), 2, from, to);
     }
 
     /**

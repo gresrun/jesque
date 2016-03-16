@@ -46,4 +46,16 @@ public interface QueueDao {
     * @return Whether or not the lock was acquired.
     */
    boolean acquireLock(final String lockName, final String lockHolder, final int timeout) throws Exception;
+
+   /**
+    * Remove a job from the given queue.
+    *
+    * @param queue the queue to remove a job from
+    * @return a JSON string of a job or null if there was nothing to de-queue
+    */
+   String dequeue(final String name, final String queue) throws Exception;
+
+   void removeInflight(final String name, final String queue) throws Exception;
+
+   void restoreInflight(final String name, final String queue) throws Exception;
 }

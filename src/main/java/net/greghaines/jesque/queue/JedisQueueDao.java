@@ -27,9 +27,18 @@ public class JedisQueueDao extends AbstractQueueDao implements Closeable {
      * @param config Config.
      */
     public JedisQueueDao(Config config, boolean checkConnectionBeforeUse) {
+        this(config, checkConnectionBeforeUse, new Jedis(config.getHost(), config.getPort(), config.getTimeout()));
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param config Config.
+     */
+    public JedisQueueDao(Config config, boolean checkConnectionBeforeUse, Jedis jedis) {
         super(config);
         this.checkConnectionBeforeUse = checkConnectionBeforeUse;
-        this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+        this.jedis = jedis;
         authenticateAndSelectDB();
     }
 
