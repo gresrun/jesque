@@ -16,7 +16,8 @@
 package net.greghaines.jesque.client;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.queue.JedisPoolQueueDao;
+import net.greghaines.jesque.queue.impl.JedisPoolLockDao;
+import net.greghaines.jesque.queue.impl.JedisPoolQueueDao;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
@@ -37,6 +38,6 @@ public class ClientPoolImpl extends AbstractClient {
      *            the connection pool
      */
     public ClientPoolImpl(final Config config, final Pool<Jedis> jedisPool) {
-        super(config, new JedisPoolQueueDao(config, jedisPool));
+        super(config, new JedisPoolQueueDao(config, jedisPool), new JedisPoolLockDao(config, jedisPool));
     }
 }

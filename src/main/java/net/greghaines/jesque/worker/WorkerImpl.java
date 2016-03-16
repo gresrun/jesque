@@ -22,7 +22,7 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
-import net.greghaines.jesque.queue.JedisQueueDao;
+import net.greghaines.jesque.queue.impl.JedisQueueDao;
 import net.greghaines.jesque.queue.QueueDao;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;

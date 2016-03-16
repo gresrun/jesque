@@ -16,7 +16,8 @@
 package net.greghaines.jesque.client;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.queue.JedisQueueDao;
+import net.greghaines.jesque.queue.impl.JedisLockDao;
+import net.greghaines.jesque.queue.impl.JedisQueueDao;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -57,7 +58,7 @@ public class ClientImpl extends AbstractClient {
      *             if the config is null
      */
     public ClientImpl(final Config config, final boolean checkConnectionBeforeUse) {
-        super(config, new JedisQueueDao(config, checkConnectionBeforeUse));
+        super(config, new JedisQueueDao(config, checkConnectionBeforeUse), new JedisLockDao(config, checkConnectionBeforeUse));
         this.keepAliveService = null;
     }
 
@@ -76,7 +77,7 @@ public class ClientImpl extends AbstractClient {
      *            the time unit of the initialDelay and period parameters
      */
     public ClientImpl(final Config config, final long initialDelay, final long period, final TimeUnit timeUnit) {
-        super(config, new JedisQueueDao(config, false));
+        super(config, new JedisQueueDao(config, false), new JedisLockDao(config, false));
         this.keepAliveService = Executors.newSingleThreadScheduledExecutor();
         this.keepAliveService.scheduleAtFixedRate(new Runnable() {
             public void run() {

@@ -18,6 +18,7 @@ package net.greghaines.jesque.client;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.queue.LockDao;
 import net.greghaines.jesque.queue.QueueDao;
 import net.greghaines.jesque.utils.JesqueUtils;
 
@@ -31,6 +32,7 @@ public abstract class AbstractClient implements Client {
 
     protected final Config config;
     protected final QueueDao queueDao;
+    protected final LockDao lockDao;
 
     /**
      * Constructor.
@@ -38,15 +40,19 @@ public abstract class AbstractClient implements Client {
      * @param config
      *            used to get the namespace for key creation
      */
-    protected AbstractClient(final Config config, final QueueDao queueDao) {
+    protected AbstractClient(final Config config, final QueueDao queueDao, final LockDao lockDao) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
         if (queueDao == null) {
             throw new IllegalArgumentException("queueDao must not be null");
         }
+        if (lockDao == null) {
+            throw new IllegalArgumentException("lockDao must not be null");
+        }
         this.config = config;
         this.queueDao = queueDao;
+        this.lockDao = lockDao;
     }
 
     /**
@@ -112,7 +118,7 @@ public abstract class AbstractClient implements Client {
             throw new IllegalArgumentException("timeout must be a positive number");
         }
         try {
-            return queueDao.acquireLock(lockName, lockHolder, timeout);
+            return lockDao.acquireLock(lockName, lockHolder, timeout);
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {

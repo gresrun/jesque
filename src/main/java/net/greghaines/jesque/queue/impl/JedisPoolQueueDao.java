@@ -1,6 +1,7 @@
-package net.greghaines.jesque.queue;
+package net.greghaines.jesque.queue.impl;
 
 import net.greghaines.jesque.Config;
+import net.greghaines.jesque.queue.QueueDao;
 import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import redis.clients.jedis.Jedis;
