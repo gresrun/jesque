@@ -53,9 +53,9 @@ public interface QueueDao {
     * @param queue the queue to remove a job from
     * @return a JSON string of a job or null if there was nothing to de-queue
     */
-   String dequeue(final String name, final String queue) throws Exception;
+   String dequeue(final String workerName, final String queue) throws Exception;
 
-   void removeInflight(final String name, final String queue) throws Exception;
+   void removeInflight(final String workerName, final String queue) throws Exception;
 
-   void restoreInflight(final String name, final String queue) throws Exception;
+   void restoreInflight(final String workerName, final String queue) throws Exception;
 }

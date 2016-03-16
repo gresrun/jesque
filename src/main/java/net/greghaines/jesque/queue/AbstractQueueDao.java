@@ -34,8 +34,8 @@ public abstract class AbstractQueueDao implements QueueDao {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
-                jedis.sadd(createKey(config.getNamespace(), QUEUES), queue);
-                jedis.rpush(createKey(config.getNamespace(), QUEUE, queue), jobJson);
+                jedis.sadd(queues(), queue);
+                jedis.rpush(queue(queue), jobJson);
                 return null;
             }
         });
@@ -46,8 +46,8 @@ public abstract class AbstractQueueDao implements QueueDao {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
-                jedis.sadd(createKey(config.getNamespace(), QUEUES), queue);
-                jedis.lpush(createKey(config.getNamespace(), QUEUE, queue), jobJson);
+                jedis.sadd(queues(), queue);
+                jedis.lpush(queue(queue), jobJson);
                 return null;
             }
         });
@@ -58,11 +58,11 @@ public abstract class AbstractQueueDao implements QueueDao {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
-                final String key = createKey(config.getNamespace(), QUEUE, queue);
+                final String key = queue(queue);
                 // Add task only if this queue is either delayed or unused
                 if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
                     jedis.zadd(key, future, jobJson);
-                    jedis.sadd(createKey(config.getNamespace(), QUEUES), queue);
+                    jedis.sadd(queues(), queue);
                 } else {
                     throw new IllegalArgumentException(queue + " cannot be used as a delayed queue");
                 }
@@ -76,7 +76,7 @@ public abstract class AbstractQueueDao implements QueueDao {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
-                final String key = createKey(config.getNamespace(), QUEUE, queue);
+                final String key = queue(queue);
                 // remove task only if this queue is either delayed or unused
                 if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
                     jedis.zrem(key, jobJson);
@@ -93,7 +93,7 @@ public abstract class AbstractQueueDao implements QueueDao {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
-                final String queueKey = createKey(config.getNamespace(), QUEUE, queue);
+                final String queueKey = queue(queue);
                 final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
                 if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
@@ -116,7 +116,7 @@ public abstract class AbstractQueueDao implements QueueDao {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
-                final String queueKey = createKey(config.getNamespace(), QUEUE, queue);
+                final String queueKey = queue(queue);
                 final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
                 if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
@@ -196,13 +196,13 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public String dequeue(final String name, final String queue) throws Exception {
+    public String dequeue(final String workerName, final String queue) throws Exception {
         return doWithJedis(new PoolWork<Jedis, String>() {
             @Override
             public String doWork(Jedis jedis) throws Exception {
                 String popScriptHash = jedis.scriptLoad(readScript("/workerScripts/jesque_pop.lua"));
-                String popKey = createKey(config.getNamespace(), QUEUE, queue);
-                String pushInflight = createKey(config.getNamespace(), INFLIGHT, name, queue);
+                String popKey = queue(queue);
+                String pushInflight = inflight(workerName, queue);
                 return (String) jedis.evalsha(popScriptHash, 3, popKey, pushInflight,
                         JesqueUtils.createRecurringHashKey(popKey), Long.toString(System.currentTimeMillis()));
             }
@@ -210,11 +210,11 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void removeInflight(final String name, final String queue) throws Exception {
+    public void removeInflight(final String workerName, final String queue) throws Exception {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
-                String popInflight = createKey(config.getNamespace(), INFLIGHT, name, queue);
+                String popInflight = inflight(workerName, queue);
                 jedis.lpop(popInflight);
                 return null;
             }
@@ -222,16 +222,37 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void restoreInflight(final String name, final String queue) throws Exception {
+    public void restoreInflight(final String workerName, final String queue) throws Exception {
         doWithJedis(new PoolWork<Jedis, String>() {
             @Override
             public String doWork(Jedis jedis) throws Exception {
                 String lpoplpushScriptHash = jedis.scriptLoad(readScript("/workerScripts/jesque_lpoplpush.lua"));
-                String popInflight = createKey(config.getNamespace(), INFLIGHT, name, queue);
-                String pushKey = createKey(config.getNamespace(), QUEUE, queue);
+                String popInflight = inflight(workerName, queue);
+                String pushKey = queue(queue);
                 return (String) jedis.evalsha(lpoplpushScriptHash, 2, popInflight, pushKey);
             }
         });
+    }
+
+    /**
+     * Key of queues.
+     */
+    private String queues() {
+        return createKey(config.getNamespace(), QUEUES);
+    }
+
+    /**
+     * Key of queue.
+     */
+    private String queue(String queue) {
+        return createKey(config.getNamespace(), QUEUE, queue);
+    }
+
+    /**
+     * Key of inflight queue.
+     */
+    private String inflight(String workerName, String queue) {
+        return createKey(config.getNamespace(), INFLIGHT, workerName, queue);
     }
 
     protected abstract <V> V doWithJedis(PoolWork<Jedis, V> work) throws Exception;
