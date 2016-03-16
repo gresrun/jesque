@@ -19,7 +19,6 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.queue.LockDao;
 import net.greghaines.jesque.queue.QueueDao;
-import net.greghaines.jesque.utils.JesqueUtils;
 
 /**
  * Common logic for Client implementations.
@@ -52,24 +51,6 @@ public abstract class AbstractClient implements Client {
         this.config = config;
         this.queueDao = queueDao;
         this.lockDao = lockDao;
-    }
-
-    /**
-     * @return the namespace this client will use
-     */
-    protected String getNamespace() {
-        return this.config.getNamespace();
-    }
-
-    /**
-     * Builds a namespaced Redis key with the given arguments.
-     * 
-     * @param parts
-     *            the key parts to be joined
-     * @return an assembled String key
-     */
-    protected String key(final String... parts) {
-        return JesqueUtils.createKey(getNamespace(), parts);
     }
 
     /**

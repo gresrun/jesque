@@ -22,8 +22,8 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
-import net.greghaines.jesque.queue.impl.JedisQueueDao;
 import net.greghaines.jesque.queue.QueueDao;
+import net.greghaines.jesque.queue.impl.JedisQueueDao;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.VersionUtils;
@@ -409,9 +409,9 @@ public class WorkerImpl implements Worker {
                     // Might have been waiting in poll()/checkPaused() for a while
                     if (RUNNING.equals(this.state.get())) {
                         this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
-                        final String payload = queueDao.dequeue(this.name, curQueue);
-                        if (payload != null) {
-                            process(ObjectMapperFactory.get().readValue(payload, Job.class), curQueue);
+                        final Job job = queueDao.dequeue(this.name, curQueue);
+                        if (job != null) {
+                            process(job, curQueue);
                             missCount = 0;
                         } else if (++missCount >= this.queueNames.size() && RUNNING.equals(this.state.get())) {
                             // Keeps worker from busy-spinning on empty queues
