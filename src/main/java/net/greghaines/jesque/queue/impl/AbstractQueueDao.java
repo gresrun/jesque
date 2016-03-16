@@ -1,6 +1,8 @@
 package net.greghaines.jesque.queue.impl;
 
 import net.greghaines.jesque.Config;
+import net.greghaines.jesque.Job;
+import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.queue.QueueDao;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
@@ -31,38 +33,38 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void enqueue(final String queue, final String jobJson) throws Exception {
+    public void enqueue(final String queue, final Job job) throws Exception {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
                 jedis.sadd(queues(), queue);
-                jedis.rpush(queue(queue), jobJson);
+                jedis.rpush(queue(queue), ObjectMapperFactory.get().writeValueAsString(job));
                 return null;
             }
         });
     }
 
     @Override
-    public void priorityEnqueue(final String queue, final String jobJson) throws Exception {
+    public void priorityEnqueue(final String queue, final Job job) throws Exception {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
                 jedis.sadd(queues(), queue);
-                jedis.lpush(queue(queue), jobJson);
+                jedis.lpush(queue(queue), ObjectMapperFactory.get().writeValueAsString(job));
                 return null;
             }
         });
     }
 
     @Override
-    public void delayedEnqueue(final String queue, final String jobJson, final long future) throws Exception {
+    public void delayedEnqueue(final String queue, final Job job, final long future) throws Exception {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
                 final String key = queue(queue);
                 // Add task only if this queue is either delayed or unused
                 if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
-                    jedis.zadd(key, future, jobJson);
+                    jedis.zadd(key, future, ObjectMapperFactory.get().writeValueAsString(job));
                     jedis.sadd(queues(), queue);
                 } else {
                     throw new IllegalArgumentException(queue + " cannot be used as a delayed queue");
@@ -73,14 +75,14 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void removeDelayedEnqueue(final String queue, final String jobJson) throws Exception {
+    public void removeDelayedEnqueue(final String queue, final Job job) throws Exception {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
                 final String key = queue(queue);
                 // remove task only if this queue is either delayed or unused
                 if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
-                    jedis.zrem(key, jobJson);
+                    jedis.zrem(key, ObjectMapperFactory.get().writeValueAsString(job));
                 } else {
                     throw new IllegalArgumentException(queue + " cannot be used as a delayed queue");
                 }
@@ -90,7 +92,7 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void recurringEnqueue(final String queue, final String jobJson, final long future, final long frequency) throws Exception {
+    public void recurringEnqueue(final String queue, final Job job, final long future, final long frequency) throws Exception {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
@@ -98,6 +100,7 @@ public abstract class AbstractQueueDao implements QueueDao {
                 final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
                 if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
+                    String jobJson = ObjectMapperFactory.get().writeValueAsString(job);
                     Transaction transaction = jedis.multi();
                     transaction.zadd(queueKey, future, jobJson);
                     transaction.hset(hashKey, jobJson, String.valueOf(frequency));
@@ -113,7 +116,7 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void removeRecurringEnqueue(final String queue, final String jobJson) throws Exception {
+    public void removeRecurringEnqueue(final String queue, final Job job) throws Exception {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
@@ -122,8 +125,9 @@ public abstract class AbstractQueueDao implements QueueDao {
 
                 if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
                     Transaction transaction = jedis.multi();
+                    String jobJson = ObjectMapperFactory.get().writeValueAsString(job);
                     transaction.hdel(hashKey, jobJson);
-                    transaction.zrem(queueKey, jobJson);
+                    transaction.zrem(queueKey, ObjectMapperFactory.get().writeValueAsString(job));
                     if (transaction.exec() == null) {
                         throw new RuntimeException("cannot remove " + jobJson + " from recurring queue " + queue);
                     }
@@ -136,15 +140,16 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public String dequeue(final String workerName, final String queue) throws Exception {
-        return doWithJedis(new PoolWork<Jedis, String>() {
+    public Job dequeue(final String workerName, final String queue) throws Exception {
+        return doWithJedis(new PoolWork<Jedis, Job>() {
             @Override
-            public String doWork(Jedis jedis) throws Exception {
+            public Job doWork(Jedis jedis) throws Exception {
                 String pop = jedis.scriptLoad(readScript("/workerScripts/jesque_pop.lua"));
                 String popKey = queue(queue);
                 String pushInflight = inflight(workerName, queue);
-                return (String) jedis.evalsha(pop, 3, popKey, pushInflight,
+                String jobJson = (String) jedis.evalsha(pop, 3, popKey, pushInflight,
                         JesqueUtils.createRecurringHashKey(popKey), Long.toString(System.currentTimeMillis()));
+                return jobJson != null? ObjectMapperFactory.get().readValue(jobJson, Job.class) : null;
             }
         });
     }

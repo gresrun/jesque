@@ -17,7 +17,6 @@ package net.greghaines.jesque.client;
 
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
-import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.queue.LockDao;
 import net.greghaines.jesque.queue.QueueDao;
 import net.greghaines.jesque.utils.JesqueUtils;
@@ -80,7 +79,7 @@ public abstract class AbstractClient implements Client {
     public void enqueue(final String queue, final Job job) {
         validateArguments(queue, job);
         try {
-            queueDao.enqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+            queueDao.enqueue(queue, job);
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -95,7 +94,7 @@ public abstract class AbstractClient implements Client {
     public void priorityEnqueue(final String queue, final Job job) {
         validateArguments(queue, job);
         try {
-            queueDao.priorityEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+            queueDao.priorityEnqueue(queue, job);
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -133,7 +132,7 @@ public abstract class AbstractClient implements Client {
     public void delayedEnqueue(final String queue, final Job job, final long future) {
         validateArguments(queue, job, future);
         try {
-            queueDao.delayedEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future);
+            queueDao.delayedEnqueue(queue, job, future);
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -148,7 +147,7 @@ public abstract class AbstractClient implements Client {
     public void removeDelayedEnqueue(final String queue, final Job job) {
         validateArguments(queue, job);
         try {
-            queueDao.removeDelayedEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+            queueDao.removeDelayedEnqueue(queue, job);
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -163,7 +162,7 @@ public abstract class AbstractClient implements Client {
     public void recurringEnqueue(String queue, Job job, long future, long frequency) {
         validateArguments(queue, job, future, frequency);
         try {
-            queueDao.recurringEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future, frequency);
+            queueDao.recurringEnqueue(queue, job, future, frequency);
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -175,7 +174,7 @@ public abstract class AbstractClient implements Client {
     public void removeRecurringEnqueue(String queue, Job job) {
         validateArguments(queue, job);
         try {
-            queueDao.removeRecurringEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+            queueDao.removeRecurringEnqueue(queue, job);
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
