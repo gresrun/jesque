@@ -15,12 +15,23 @@
  */
 package net.greghaines.jesque.worker;
 
-import static net.greghaines.jesque.utils.ResqueConstants.*;
-import static net.greghaines.jesque.worker.JobExecutor.State.*;
-import static net.greghaines.jesque.worker.WorkerEvent.*;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import net.greghaines.jesque.Config;
+import net.greghaines.jesque.Job;
+import net.greghaines.jesque.JobFailure;
+import net.greghaines.jesque.WorkerStatus;
+import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.utils.JedisUtils;
+import net.greghaines.jesque.utils.JesqueUtils;
+import net.greghaines.jesque.utils.ScriptUtils;
+import net.greghaines.jesque.utils.VersionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.exceptions.JedisException;
 
 import java.io.IOException;
-import java.lang.Throwable;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -36,24 +47,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import net.greghaines.jesque.Config;
-import net.greghaines.jesque.Job;
-import net.greghaines.jesque.JobFailure;
-import net.greghaines.jesque.WorkerStatus;
-import net.greghaines.jesque.json.ObjectMapperFactory;
-import net.greghaines.jesque.utils.JedisUtils;
-import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.utils.ScriptUtils;
-import net.greghaines.jesque.utils.VersionUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.exceptions.JedisException;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import static net.greghaines.jesque.utils.ResqueConstants.*;
+import static net.greghaines.jesque.worker.JobExecutor.State.*;
+import static net.greghaines.jesque.worker.WorkerEvent.*;
 
 /**
  * WorkerImpl is an implementation of the Worker interface. Obeys the contract of a Resque worker in Redis.
@@ -447,7 +443,7 @@ public class WorkerImpl implements Worker {
      */
     protected String pop(final String curQueue) {
         final String key = key(QUEUE, curQueue);
-        return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue), 
+        return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue),
                 JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
     }
 
