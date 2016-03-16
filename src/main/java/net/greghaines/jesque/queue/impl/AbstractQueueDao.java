@@ -140,10 +140,10 @@ public abstract class AbstractQueueDao implements QueueDao {
         return doWithJedis(new PoolWork<Jedis, String>() {
             @Override
             public String doWork(Jedis jedis) throws Exception {
-                String popScriptHash = jedis.scriptLoad(readScript("/workerScripts/jesque_pop.lua"));
+                String pop = jedis.scriptLoad(readScript("/workerScripts/jesque_pop.lua"));
                 String popKey = queue(queue);
                 String pushInflight = inflight(workerName, queue);
-                return (String) jedis.evalsha(popScriptHash, 3, popKey, pushInflight,
+                return (String) jedis.evalsha(pop, 3, popKey, pushInflight,
                         JesqueUtils.createRecurringHashKey(popKey), Long.toString(System.currentTimeMillis()));
             }
         });
@@ -166,10 +166,10 @@ public abstract class AbstractQueueDao implements QueueDao {
         doWithJedis(new PoolWork<Jedis, String>() {
             @Override
             public String doWork(Jedis jedis) throws Exception {
-                String lpoplpushScriptHash = jedis.scriptLoad(readScript("/workerScripts/jesque_lpoplpush.lua"));
+                String lpoplpush = jedis.scriptLoad(readScript("/workerScripts/jesque_lpoplpush.lua"));
                 String popInflight = inflight(workerName, queue);
                 String pushKey = queue(queue);
-                return (String) jedis.evalsha(lpoplpushScriptHash, 2, popInflight, pushKey);
+                return (String) jedis.evalsha(lpoplpush, 2, popInflight, pushKey);
             }
         });
     }
