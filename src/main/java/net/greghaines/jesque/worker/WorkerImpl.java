@@ -22,7 +22,9 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.queue.LockDao;
 import net.greghaines.jesque.queue.QueueDao;
+import net.greghaines.jesque.queue.impl.JedisLockDao;
 import net.greghaines.jesque.queue.impl.JedisQueueDao;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
@@ -101,6 +103,7 @@ public class WorkerImpl implements Worker {
 
     protected final Config config;
     protected final QueueDao queueDao;
+    protected final LockDao lockDao;
     protected final Jedis jedis;
     protected final String namespace;
     protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<String>();
@@ -160,6 +163,7 @@ public class WorkerImpl implements Worker {
         setQueues(queues);
         this.name = createName();
         this.queueDao = new JedisQueueDao(config, false, jedis);
+        this.lockDao = new JedisLockDao(config, false, jedis);
     }
 
     /**
