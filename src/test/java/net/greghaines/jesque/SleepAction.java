@@ -1,13 +1,13 @@
 package net.greghaines.jesque;
 
-import net.greghaines.jesque.utils.Sleep;
+import java.util.concurrent.Callable;
 
 /**
  * An action that sleeps for the given number of milliseconds.
  *
  * @author Daniël de Kok
  */
-public class SleepAction implements Runnable {
+public class SleepAction implements Callable<Void> {
     private final int millis;
 
     /**
@@ -18,9 +18,9 @@ public class SleepAction implements Runnable {
     public SleepAction(int millis) {
         this.millis = millis;
     }
-
     @Override
-    public void run() {
-        Sleep.sleep(millis);
+    public Void call() throws Exception {
+        Thread.sleep(millis);
+        return null;
     }
 }
