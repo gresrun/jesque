@@ -400,7 +400,7 @@ public class WorkerImpl implements Worker {
     /**
      * Polls the queues for jobs and executes them.
      */
-    protected void poll() {
+    protected void poll() throws Exception {
         int missCount = 0;
         String curQueue = null;
         while (RUNNING.equals(this.state.get())) {
@@ -507,7 +507,7 @@ public class WorkerImpl implements Worker {
      * @param job the Job to process
      * @param curQueue the queue the payload came from
      */
-    protected void process(final Job job, final String curQueue) {
+    protected void process(final Job job, final String curQueue) throws Exception {
         try {
             this.processingJob.set(true);
             if (threadNameChangingEnabled) {
@@ -527,7 +527,11 @@ public class WorkerImpl implements Worker {
                 queueDao.restoreInflight(this.name, curQueue);
             }
         } finally {
-            queueDao.removeInflight(this.name, curQueue);
+            if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
+                queueDao.restoreInflight(this.name, curQueue);
+            } else {
+                queueDao.removeInflight(this.name, curQueue);
+            }
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
         }
