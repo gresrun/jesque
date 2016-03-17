@@ -28,6 +28,7 @@ import net.greghaines.jesque.queue.impl.JedisLockDao;
 import net.greghaines.jesque.queue.impl.JedisQueueDao;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
+import net.greghaines.jesque.utils.Sleep;
 import net.greghaines.jesque.utils.VersionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,7 @@ public class WorkerImpl implements Worker {
     private static final Logger LOG = LoggerFactory.getLogger(WorkerImpl.class);
     private static final AtomicLong WORKER_COUNTER = new AtomicLong(0);
     protected static final long EMPTY_QUEUE_SLEEP_TIME = 500; // 500 ms
+    protected static final long DONT_PERFORM_SLEEP_TIME = 2000; // 2 sec
     protected static final long RECONNECT_SLEEP_TIME = 5000; // 5 sec
     protected static final int RECONNECT_ATTEMPTS = 120; // Total time: 10 min
     
@@ -420,7 +422,7 @@ public class WorkerImpl implements Worker {
                         } else if (++missCount >= this.queueNames.size() && RUNNING.equals(this.state.get())) {
                             // Keeps worker from busy-spinning on empty queues
                             missCount = 0;
-                            Thread.sleep(EMPTY_QUEUE_SLEEP_TIME);
+                            Sleep.sleep(EMPTY_QUEUE_SLEEP_TIME);
                         }
                     }
                 }
@@ -430,7 +432,7 @@ public class WorkerImpl implements Worker {
                 }
             } catch (JsonParseException | JsonMappingException e) {
                 // If the job JSON is not deserializable, we never want to submit it again...
-                removeInFlight(curQueue);
+                queueDao.removeInflight(name, curQueue);
                 recoverFromException(curQueue, e);
             } catch (Exception e) {
                 recoverFromException(curQueue, e);
@@ -516,24 +518,18 @@ public class WorkerImpl implements Worker {
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
+        } catch (DontPerformException e) {
+            queueDao.restoreInflight(name, curQueue);
+            Sleep.sleep(DONT_PERFORM_SLEEP_TIME);
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
+            if (SHUTDOWN_IMMEDIATE.equals(this.state.get()) && thrwbl instanceof InterruptedException) {
+                queueDao.restoreInflight(this.name, curQueue);
+            }
         } finally {
-            removeInFlight(curQueue);
+            queueDao.removeInflight(this.name, curQueue);
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
-        }
-    }
-
-    private void removeInFlight(final String curQueue) {
-        try {
-            if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
-                queueDao.restoreInflight(this.name, curQueue);
-            } else {
-                queueDao.removeInflight(this.name, curQueue);
-            }
-        } catch (Exception e) {
-            // ignore
         }
     }
 
