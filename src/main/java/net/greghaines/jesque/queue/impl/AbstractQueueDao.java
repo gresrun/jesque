@@ -33,7 +33,7 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void enqueue(final String queue, final Job job) throws Exception {
+    public void enqueue(final String queue, final Job job) {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
@@ -45,7 +45,7 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void priorityEnqueue(final String queue, final Job job) throws Exception {
+    public void priorityEnqueue(final String queue, final Job job) {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
@@ -57,7 +57,7 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void delayedEnqueue(final String queue, final Job job, final long future) throws Exception {
+    public void delayedEnqueue(final String queue, final Job job, final long future) {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
@@ -75,7 +75,7 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void removeDelayedEnqueue(final String queue, final Job job) throws Exception {
+    public void removeDelayedEnqueue(final String queue, final Job job) {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
@@ -92,7 +92,7 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void recurringEnqueue(final String queue, final Job job, final long future, final long frequency) throws Exception {
+    public void recurringEnqueue(final String queue, final Job job, final long future, final long frequency) {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
@@ -116,7 +116,7 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void removeRecurringEnqueue(final String queue, final Job job) throws Exception {
+    public void removeRecurringEnqueue(final String queue, final Job job) {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
             public Void doWork(Jedis jedis) throws Exception {
@@ -140,7 +140,7 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public Job dequeue(final String workerName, final String queue) throws Exception {
+    public Job dequeue(final String workerName, final String queue) {
         return doWithJedis(new PoolWork<Jedis, Job>() {
             @Override
             public Job doWork(Jedis jedis) throws Exception {
@@ -155,10 +155,10 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void removeInflight(final String workerName, final String queue) throws Exception {
+    public void removeInflight(final String workerName, final String queue) {
         doWithJedis(new PoolWork<Jedis, Void>() {
             @Override
-            public Void doWork(Jedis jedis) throws Exception {
+            public Void doWork(Jedis jedis) {
                 String popInflight = inflight(workerName, queue);
                 jedis.lpop(popInflight);
                 return null;
@@ -167,7 +167,7 @@ public abstract class AbstractQueueDao implements QueueDao {
     }
 
     @Override
-    public void restoreInflight(final String workerName, final String queue) throws Exception {
+    public void restoreInflight(final String workerName, final String queue) {
         doWithJedis(new PoolWork<Jedis, String>() {
             @Override
             public String doWork(Jedis jedis) throws Exception {
@@ -200,5 +200,5 @@ public abstract class AbstractQueueDao implements QueueDao {
         return createKey(config.getNamespace(), INFLIGHT, workerName, queue);
     }
 
-    protected abstract <V> V doWithJedis(PoolWork<Jedis, V> work) throws Exception;
+    protected abstract <V> V doWithJedis(PoolWork<Jedis, V> work);
 }
