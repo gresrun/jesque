@@ -1,5 +1,7 @@
 package net.greghaines.jesque;
 
+import net.greghaines.jesque.utils.Sleep;
+
 /**
  * An action that sleeps for the given number of milliseconds.
  *
@@ -19,9 +21,6 @@ public class SleepAction implements Runnable {
 
     @Override
     public void run() {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-        }
+        Sleep.sleep(millis);
     }
 }

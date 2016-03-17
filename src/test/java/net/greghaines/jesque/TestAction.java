@@ -15,10 +15,11 @@
  */
 package net.greghaines.jesque;
 
-import java.util.List;
-
+import net.greghaines.jesque.utils.Sleep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * Complicated constructor to test JSON serialization.
@@ -45,9 +46,6 @@ public class TestAction implements Runnable {
 
     public void run() {
         log.info("TestAction.run() {} {} {} {} {}", new Object[] { this.i, this.d, this.b, this.s, this.l });
-        try {
-            Thread.sleep(100);
-        } catch (Exception e) {
-        }
+        Sleep.sleep(100);
     }
 }

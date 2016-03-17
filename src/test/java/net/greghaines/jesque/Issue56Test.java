@@ -1,22 +1,21 @@
 package net.greghaines.jesque;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
+import net.greghaines.jesque.client.Client;
+import net.greghaines.jesque.client.ClientPoolImpl;
+import net.greghaines.jesque.utils.Sleep;
+import net.greghaines.jesque.worker.MapBasedJobFactory;
+import net.greghaines.jesque.worker.WorkerImplFactory;
+import net.greghaines.jesque.worker.WorkerPool;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.JedisPool;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.greghaines.jesque.client.Client;
-import net.greghaines.jesque.client.ClientPoolImpl;
-import net.greghaines.jesque.worker.MapBasedJobFactory;
-import net.greghaines.jesque.worker.WorkerImplFactory;
-import net.greghaines.jesque.worker.WorkerPool;
-
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import redis.clients.jedis.JedisPool;
+import static net.greghaines.jesque.utils.JesqueUtils.entry;
+import static net.greghaines.jesque.utils.JesqueUtils.map;
 
 public class Issue56Test {
 
@@ -37,7 +36,7 @@ public class Issue56Test {
         enqueue();
 
         // Wait a few seconds then shutdown
-        try { Thread.sleep(15000); } catch (Exception e){} // Give ourselves time to process
+        Sleep.sleep(15000); // Give ourselves time to process
         CLIENT.end();
         try { workerPool.endAndJoin(true, 100); } catch (Exception e){ e.printStackTrace(); }
     }

@@ -4,6 +4,7 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.queue.LockDao;
 import net.greghaines.jesque.queue.QueueDao;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
+import net.greghaines.jesque.utils.Sleep;
 import redis.clients.jedis.Jedis;
 
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
@@ -46,10 +47,7 @@ public abstract class AbstractLockDao implements LockDao {
                 if (jedis.exists(key) && (jedis.ttl(key) < 0)) {
                     // It is expired, but it may be in the process of being created, so
                     // sleep and check again
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException ie) {
-                    } // Ignore interruptions
+                    Sleep.sleep(2000);
                     if (jedis.ttl(key) < 0) {
                         existingLockHolder = jedis.get(key);
                         // If it is our lock mark the time to live
