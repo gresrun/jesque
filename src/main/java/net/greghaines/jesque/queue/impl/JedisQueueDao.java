@@ -44,17 +44,11 @@ public class JedisQueueDao extends AbstractQueueDao implements Closeable {
     }
 
     @Override
-    protected <V> V doWithJedis(PoolWork<Jedis, V> work) {
-        try {
-            if (this.checkConnectionBeforeUse) {
-                ensureJedisConnection();
-            }
-            return work.doWork(jedis);
-        } catch (RuntimeException e){
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    protected <V> V doWithJedis(PoolWork<Jedis, V> work) throws Exception {
+        if (this.checkConnectionBeforeUse) {
+            ensureJedisConnection();
         }
+        return work.doWork(jedis);
     }
 
     /**

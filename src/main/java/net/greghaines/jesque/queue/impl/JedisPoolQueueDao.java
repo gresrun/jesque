@@ -28,7 +28,7 @@ public class JedisPoolQueueDao extends AbstractQueueDao {
     }
 
     @Override
-    protected <V> V doWithJedis(PoolWork<Jedis, V> work) {
-        return PoolUtils.doWorkInPoolNicely(jedisPool, work);
+    protected <V> V doWithJedis(PoolWork<Jedis, V> work) throws Exception {
+        return PoolUtils.doWorkInPool(jedisPool, work);
     }
 }
