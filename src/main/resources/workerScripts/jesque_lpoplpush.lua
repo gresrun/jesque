@@ -1,11 +1,11 @@
-local queueKey = KEYS[1]
-local inFlightKey = KEYS[2]
+local fromKey = KEYS[1]
+local toFlightKey = KEYS[2]
 local payload = nil
-local ok, queueType = next(redis.call('TYPE', queueKey))
+local ok, queueType = next(redis.call('TYPE', fromKey))
 if queueType == 'list' then
-    payload = redis.call('LPOP', queueKey)
+    payload = redis.call('LPOP', fromKey)
     if payload then
-        redis.call('LPUSH', inFlightKey, payload)
+        redis.call('LPUSH', toKey, payload)
     end
 end
 return payload
