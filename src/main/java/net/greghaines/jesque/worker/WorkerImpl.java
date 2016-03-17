@@ -527,11 +527,7 @@ public class WorkerImpl implements Worker {
                 queueDao.restoreInflight(this.name, curQueue);
             }
         } finally {
-            if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
-                queueDao.restoreInflight(this.name, curQueue);
-            } else {
-                queueDao.removeInflight(this.name, curQueue);
-            }
+            queueDao.removeInflight(this.name, curQueue);
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
         }
