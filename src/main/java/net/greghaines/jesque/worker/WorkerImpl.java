@@ -523,7 +523,7 @@ public class WorkerImpl implements Worker {
             Sleep.sleep(DONT_PERFORM_SLEEP_TIME);
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
-            if (SHUTDOWN_IMMEDIATE.equals(this.state.get()) && thrwbl instanceof InterruptedException) {
+            if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
                 queueDao.restoreInflight(this.name, curQueue);
             }
         } finally {
