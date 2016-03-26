@@ -20,7 +20,6 @@ import static net.greghaines.jesque.worker.JobExecutor.State.*;
 import static net.greghaines.jesque.worker.WorkerEvent.*;
 
 import java.io.IOException;
-import java.lang.Throwable;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -59,13 +58,13 @@ import com.fasterxml.jackson.databind.JsonMappingException;
  * WorkerImpl is an implementation of the Worker interface. Obeys the contract of a Resque worker in Redis.
  */
 public class WorkerImpl implements Worker {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(WorkerImpl.class);
     private static final AtomicLong WORKER_COUNTER = new AtomicLong(0);
     protected static final long EMPTY_QUEUE_SLEEP_TIME = 500; // 500 ms
     protected static final long RECONNECT_SLEEP_TIME = 5000; // 5 sec
     protected static final int RECONNECT_ATTEMPTS = 120; // Total time: 10 min
-    
+
     // Set the thread name to the message for debugging
     private static volatile boolean threadNameChangingEnabled = false;
 
@@ -116,10 +115,15 @@ public class WorkerImpl implements Worker {
     private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
-    private final AtomicReference<ExceptionHandler> exceptionHandlerRef = 
+    private final AtomicReference<ExceptionHandler> exceptionHandlerRef =
             new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
     private final AtomicReference<FailQueueStrategy> failQueueStrategyRef;
     private final JobFactory jobFactory;
+
+    /**
+     * Time to sleep before a job gets re-enqueued. Defaults to 1 second.
+     */
+    private long dontPerformSleepTime = 1000;
 
 	/**
      * Creates a new WorkerImpl, which creates it's own connection to Redis using values from the config.<br>
@@ -132,7 +136,7 @@ public class WorkerImpl implements Worker {
     public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory) {
         this(config, queues, jobFactory, new Jedis(config.getHost(), config.getPort(), config.getTimeout()));
     }
-    
+
     /**
      * Creates a new WorkerImpl, with the given connection to Redis.<br>
      * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
@@ -142,7 +146,7 @@ public class WorkerImpl implements Worker {
      * @param jedis the connection to Redis
      * @throws IllegalArgumentException if either config, queues, jobFactory or jedis is null
      */
-    public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory, 
+    public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory,
             final Jedis jedis) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
@@ -411,7 +415,7 @@ public class WorkerImpl implements Worker {
                 curQueue = this.queueNames.poll(EMPTY_QUEUE_SLEEP_TIME, TimeUnit.MILLISECONDS);
                 if (curQueue != null) {
                     this.queueNames.add(curQueue); // Rotate the queues
-                    checkPaused(); 
+                    checkPaused();
                     // Might have been waiting in poll()/checkPaused() for a while
                     if (RUNNING.equals(this.state.get())) {
                         this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
@@ -447,7 +451,7 @@ public class WorkerImpl implements Worker {
      */
     protected String pop(final String curQueue) {
         final String key = key(QUEUE, curQueue);
-        return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue), 
+        return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue),
                 JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
     }
 
@@ -529,21 +533,40 @@ public class WorkerImpl implements Worker {
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
+        } catch (DontPerformException e) {
+            try {
+                Thread.sleep(dontPerformSleepTime);
+            } catch (InterruptedException interrupt) {
+                // ignore
+            } finally {
+                restoreInFlight(curQueue);
+            }
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
         } finally {
-            removeInFlight(curQueue);
+            if (this.state.get().equals(SHUTDOWN_IMMEDIATE)) {
+                // Job execution has been cancelled due to immediate shutdown -> Re-enqueue job.
+                restoreInFlight(curQueue);
+            } else {
+                removeInFlight(curQueue);
+            }
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
         }
     }
 
+    /**
+     * Remove job in flight.
+     */
     private void removeInFlight(final String curQueue) {
-        if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
-            lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
-        } else {
-            this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
-        }
+        this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
+    }
+
+    /**
+     * Restore job in flight. Put job in flight back into the queue.
+     */
+    private void restoreInFlight(final String curQueue) {
+        lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
     }
 
     /**
@@ -707,5 +730,28 @@ public class WorkerImpl implements Worker {
     @Override
     public String toString() {
         return this.namespace + COLON + WORKER + COLON + this.name;
+    }
+
+    //
+    // Worker config
+    //
+
+    /**
+     * Time to sleep before a job gets re-enqueued.
+     *
+     * @return sleep time in milli seconds.
+     */
+    public long getDontPerformSleepTime() {
+        return dontPerformSleepTime;
+    }
+
+    /**
+     * Set time to sleep before a job gets re-enqueued.
+     *
+     * @param dontPerformSleepTime
+     *           Sleep time in milli seconds.
+     */
+    public void setDontPerformSleepTime(long dontPerformSleepTime) {
+        this.dontPerformSleepTime = dontPerformSleepTime;
     }
 }
