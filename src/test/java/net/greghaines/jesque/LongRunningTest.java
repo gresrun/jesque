@@ -1,38 +1,25 @@
 package net.greghaines.jesque;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
-
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import net.greghaines.jesque.worker.MapBasedJobFactory;
-import net.greghaines.jesque.worker.Worker;
-import net.greghaines.jesque.worker.WorkerEvent;
-import net.greghaines.jesque.worker.WorkerImpl;
-import net.greghaines.jesque.worker.WorkerListener;
-
+import net.greghaines.jesque.utils.Sleep;
+import net.greghaines.jesque.worker.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import redis.clients.jedis.Jedis;
+
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static net.greghaines.jesque.utils.JesqueUtils.entry;
+import static net.greghaines.jesque.utils.JesqueUtils.map;
 
 public class LongRunningTest {
     
     private static final Logger log = LoggerFactory.getLogger(LongRunningTest.class);
     private static final Config config = new ConfigBuilder().build();
-
-    private static void sleepTight(final long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 
     private static void changeRedisTimeout(final long seconds) {
         final Jedis jedis = TestUtils.createJedis(config);
@@ -63,7 +50,7 @@ public class LongRunningTest {
         }, WorkerEvent.JOB_SUCCESS);
         final Thread workerThread2 = new Thread(worker2);
         workerThread2.start();
-        sleepTight(1000);
+        Sleep.sleep(1000);
         worker2.end(false);
         workerThread2.join();
 
@@ -80,7 +67,7 @@ public class LongRunningTest {
         }
 
         public void run() {
-            sleepTight(this.millis);
+            Sleep.sleep(this.millis);
         }
     }
 }

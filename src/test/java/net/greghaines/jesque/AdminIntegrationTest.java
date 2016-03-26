@@ -1,26 +1,22 @@
 package net.greghaines.jesque;
 
-import static net.greghaines.jesque.utils.JesqueUtils.*;
-
-import java.util.Random;
-import java.util.concurrent.Callable;
-
 import net.greghaines.jesque.admin.Admin;
 import net.greghaines.jesque.admin.AdminClient;
 import net.greghaines.jesque.admin.AdminClientImpl;
 import net.greghaines.jesque.admin.AdminImpl;
+import net.greghaines.jesque.utils.Sleep;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 import net.greghaines.jesque.worker.WorkerPool;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Random;
+import java.util.concurrent.Callable;
+
+import static net.greghaines.jesque.utils.JesqueUtils.*;
 
 public class AdminIntegrationTest {
     
@@ -88,18 +84,12 @@ public class AdminIntegrationTest {
             final AdminClient adminClient = new AdminClientImpl(config);
             try {
                 adminClient.togglePausedWorkers(true);
-                try {
-                    Thread.sleep(2000L);
-                } catch (InterruptedException ie) {
-                }
+                Sleep.sleep(2000L);
                 Assert.assertTrue(worker.isPaused());
 
                 Assert.assertFalse(worker.isShutdown());
                 adminClient.shutdownWorkers(true);
-                try {
-                    Thread.sleep(1000L);
-                } catch (InterruptedException ie) {
-                }
+                Sleep.sleep(1000L);
                 Assert.assertTrue(worker.isShutdown());
             } finally {
                 adminClient.end();

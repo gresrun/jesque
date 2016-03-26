@@ -15,17 +15,16 @@
  */
 package net.greghaines.jesque;
 
-import java.util.List;
-
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientImpl;
+import net.greghaines.jesque.utils.Sleep;
 import net.greghaines.jesque.worker.JobExecutor;
-
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import redis.clients.jedis.Jedis;
+
+import java.util.List;
 
 /**
  * Test helpers.
@@ -88,10 +87,8 @@ public final class TestUtils {
     }
 
     public static void stopWorker(final JobExecutor worker, final Thread workerThread, boolean now) {
-        try {
-            Thread.sleep(2000);
-        } catch (Exception e) {
-        } // Give worker time to process
+        // Give worker time to process
+        Sleep.sleep(2000);
         worker.end(now);
         try {
             workerThread.join();

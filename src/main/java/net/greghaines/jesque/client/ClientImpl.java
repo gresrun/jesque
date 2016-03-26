@@ -15,14 +15,13 @@
  */
 package net.greghaines.jesque.client;
 
+import net.greghaines.jesque.Config;
+import net.greghaines.jesque.queue.impl.JedisLockDao;
+import net.greghaines.jesque.queue.impl.JedisQueueDao;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import net.greghaines.jesque.Config;
-import net.greghaines.jesque.utils.JedisUtils;
-
-import redis.clients.jedis.Jedis;
 
 /**
  * Basic implementation of the Client interface.
@@ -34,9 +33,6 @@ public class ClientImpl extends AbstractClient {
 
     public static final boolean DEFAULT_CHECK_CONNECTION_BEFORE_USE = false;
 
-    private final Config config;
-    private final Jedis jedis;
-    private final boolean checkConnectionBeforeUse;
     private final ScheduledExecutorService keepAliveService;
 
     /**
@@ -62,11 +58,7 @@ public class ClientImpl extends AbstractClient {
      *             if the config is null
      */
     public ClientImpl(final Config config, final boolean checkConnectionBeforeUse) {
-        super(config);
-        this.config = config;
-        this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-        authenticateAndSelectDB();
-        this.checkConnectionBeforeUse = checkConnectionBeforeUse;
+        super(config, new JedisQueueDao(config, checkConnectionBeforeUse), new JedisLockDao(config, checkConnectionBeforeUse));
         this.keepAliveService = null;
     }
 
@@ -85,106 +77,20 @@ public class ClientImpl extends AbstractClient {
      *            the time unit of the initialDelay and period parameters
      */
     public ClientImpl(final Config config, final long initialDelay, final long period, final TimeUnit timeUnit) {
-        super(config);
-        this.config = config;
-        this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-        authenticateAndSelectDB();
-        this.checkConnectionBeforeUse = false;
+        super(config, new JedisQueueDao(config, false), new JedisLockDao(config, false));
         this.keepAliveService = Executors.newSingleThreadScheduledExecutor();
         this.keepAliveService.scheduleAtFixedRate(new Runnable() {
             public void run() {
-                if (!JedisUtils.ensureJedisConnection(jedis)) {
-                    authenticateAndSelectDB();
-                }
+                ((JedisQueueDao) queueDao).ensureJedisConnection();
             }
         }, initialDelay, period, timeUnit);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void doEnqueue(final String queue, final String jobJson) {
-        ensureJedisConnection();
-        doEnqueue(this.jedis, getNamespace(), queue, jobJson);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void doPriorityEnqueue(final String queue, final String jobJson) {
-        ensureJedisConnection();
-        doPriorityEnqueue(this.jedis, getNamespace(), queue, jobJson);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout) throws Exception {
-        ensureJedisConnection();
-        return doAcquireLock(this.jedis, getNamespace(), lockName, lockHolder, timeout);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void end() {
-        ensureJedisConnection();
         if (this.keepAliveService != null) {
             this.keepAliveService.shutdownNow();
         }
-        this.jedis.quit();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void doDelayedEnqueue(final String queue, final String msg, final long future) throws Exception {
-        ensureJedisConnection();
-        doDelayedEnqueue(this.jedis, getNamespace(), queue, msg, future);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void doRemoveDelayedEnqueue(final String queue, final String msg) throws Exception {
-        ensureJedisConnection();
-        doRemoveDelayedEnqueue(this.jedis, getNamespace(), queue, msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void doRecurringEnqueue(final String queue, final String msg, final long future, final long frequency) throws Exception{
-        ensureJedisConnection();
-        doRecurringEnqueue(this.jedis, getNamespace(), queue, msg, future, frequency);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void doRemoveRecurringEnqueue(final String queue, final String msg) throws Exception{
-        ensureJedisConnection();
-        doRemoveRecurringEnqueue(this.jedis, getNamespace(), queue, msg);
-    }
-
-    private void authenticateAndSelectDB() {
-        if (this.config.getPassword() != null) {
-            this.jedis.auth(this.config.getPassword());
-        }
-        this.jedis.select(this.config.getDatabase());
-    }
-
-    private void ensureJedisConnection() {
-        if (this.checkConnectionBeforeUse && !JedisUtils.ensureJedisConnection(this.jedis)) {
-            authenticateAndSelectDB();
-        }
+        ((JedisQueueDao) this.queueDao).close();
     }
 }

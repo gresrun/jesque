@@ -15,12 +15,27 @@
  */
 package net.greghaines.jesque.worker;
 
-import static net.greghaines.jesque.utils.ResqueConstants.*;
-import static net.greghaines.jesque.worker.JobExecutor.State.*;
-import static net.greghaines.jesque.worker.WorkerEvent.*;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import net.greghaines.jesque.Config;
+import net.greghaines.jesque.Job;
+import net.greghaines.jesque.JobFailure;
+import net.greghaines.jesque.WorkerStatus;
+import net.greghaines.jesque.json.ObjectMapperFactory;
+import net.greghaines.jesque.queue.LockDao;
+import net.greghaines.jesque.queue.QueueDao;
+import net.greghaines.jesque.queue.impl.JedisLockDao;
+import net.greghaines.jesque.queue.impl.JedisQueueDao;
+import net.greghaines.jesque.utils.JedisUtils;
+import net.greghaines.jesque.utils.JesqueUtils;
+import net.greghaines.jesque.utils.Sleep;
+import net.greghaines.jesque.utils.VersionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.exceptions.JedisException;
 
 import java.io.IOException;
-import java.lang.Throwable;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -36,24 +51,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import net.greghaines.jesque.Config;
-import net.greghaines.jesque.Job;
-import net.greghaines.jesque.JobFailure;
-import net.greghaines.jesque.WorkerStatus;
-import net.greghaines.jesque.json.ObjectMapperFactory;
-import net.greghaines.jesque.utils.JedisUtils;
-import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.utils.ScriptUtils;
-import net.greghaines.jesque.utils.VersionUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.exceptions.JedisException;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import static net.greghaines.jesque.utils.ResqueConstants.*;
+import static net.greghaines.jesque.worker.JobExecutor.State.*;
+import static net.greghaines.jesque.worker.WorkerEvent.*;
 
 /**
  * WorkerImpl is an implementation of the Worker interface. Obeys the contract of a Resque worker in Redis.
@@ -63,6 +63,7 @@ public class WorkerImpl implements Worker {
     private static final Logger LOG = LoggerFactory.getLogger(WorkerImpl.class);
     private static final AtomicLong WORKER_COUNTER = new AtomicLong(0);
     protected static final long EMPTY_QUEUE_SLEEP_TIME = 500; // 500 ms
+    protected static final long DONT_PERFORM_SLEEP_TIME = 2000; // 2 sec
     protected static final long RECONNECT_SLEEP_TIME = 5000; // 5 sec
     protected static final int RECONNECT_ATTEMPTS = 120; // Total time: 10 min
     
@@ -103,6 +104,8 @@ public class WorkerImpl implements Worker {
     }
 
     protected final Config config;
+    protected final QueueDao queueDao;
+    protected final LockDao lockDao;
     protected final Jedis jedis;
     protected final String namespace;
     protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<String>();
@@ -111,8 +114,6 @@ public class WorkerImpl implements Worker {
     protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
     private final AtomicBoolean paused = new AtomicBoolean(false);
     private final AtomicBoolean processingJob = new AtomicBoolean(false);
-    private final AtomicReference<String> popScriptHash = new AtomicReference<>(null);
-    private final AtomicReference<String> lpoplpushScriptHash = new AtomicReference<>(null);
     private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
@@ -163,6 +164,8 @@ public class WorkerImpl implements Worker {
         authenticateAndSelectDB();
         setQueues(queues);
         this.name = createName();
+        this.queueDao = new JedisQueueDao(config, false, jedis);
+        this.lockDao = new JedisLockDao(config, false, jedis);
     }
 
     /**
@@ -185,9 +188,6 @@ public class WorkerImpl implements Worker {
                 this.jedis.sadd(key(WORKERS), this.name);
                 this.jedis.set(key(WORKER, this.name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
                 this.listenerDelegate.fireEvent(WORKER_START, this, null, null, null, null, null);
-                this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript("/workerScripts/jesque_pop.lua")));
-                this.lpoplpushScriptHash.set(this.jedis.scriptLoad(
-                        ScriptUtils.readScript("/workerScripts/jesque_lpoplpush.lua")));
                 poll();
             } catch (Exception ex) {
                 LOG.error("Uncaught exception in worker run-loop!", ex);
@@ -400,7 +400,7 @@ public class WorkerImpl implements Worker {
     /**
      * Polls the queues for jobs and executes them.
      */
-    protected void poll() {
+    protected void poll() throws Exception {
         int missCount = 0;
         String curQueue = null;
         while (RUNNING.equals(this.state.get())) {
@@ -415,14 +415,14 @@ public class WorkerImpl implements Worker {
                     // Might have been waiting in poll()/checkPaused() for a while
                     if (RUNNING.equals(this.state.get())) {
                         this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
-                        final String payload = pop(curQueue);
-                        if (payload != null) {
-                            process(ObjectMapperFactory.get().readValue(payload, Job.class), curQueue);
+                        final Job job = queueDao.dequeue(this.name, curQueue);
+                        if (job != null) {
+                            process(job, curQueue);
                             missCount = 0;
                         } else if (++missCount >= this.queueNames.size() && RUNNING.equals(this.state.get())) {
                             // Keeps worker from busy-spinning on empty queues
                             missCount = 0;
-                            Thread.sleep(EMPTY_QUEUE_SLEEP_TIME);
+                            Sleep.sleep(EMPTY_QUEUE_SLEEP_TIME);
                         }
                     }
                 }
@@ -432,23 +432,12 @@ public class WorkerImpl implements Worker {
                 }
             } catch (JsonParseException | JsonMappingException e) {
                 // If the job JSON is not deserializable, we never want to submit it again...
-                removeInFlight(curQueue);
+                queueDao.removeInflight(name, curQueue);
                 recoverFromException(curQueue, e);
             } catch (Exception e) {
                 recoverFromException(curQueue, e);
             }
         }
-    }
-
-    /**
-     * Remove a job from the given queue.
-     * @param curQueue the queue to remove a job from
-     * @return a JSON string of a job or null if there was nothing to de-queue
-     */
-    protected String pop(final String curQueue) {
-        final String key = key(QUEUE, curQueue);
-        return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue), 
-                JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
     }
 
     /**
@@ -518,7 +507,7 @@ public class WorkerImpl implements Worker {
      * @param job the Job to process
      * @param curQueue the queue the payload came from
      */
-    protected void process(final Job job, final String curQueue) {
+    protected void process(final Job job, final String curQueue) throws Exception {
         try {
             this.processingJob.set(true);
             if (threadNameChangingEnabled) {
@@ -529,20 +518,18 @@ public class WorkerImpl implements Worker {
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
+        } catch (DontPerformException e) {
+            queueDao.restoreInflight(name, curQueue);
+            Sleep.sleep(DONT_PERFORM_SLEEP_TIME);
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
+            if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
+                queueDao.restoreInflight(this.name, curQueue);
+            }
         } finally {
-            removeInFlight(curQueue);
+            queueDao.removeInflight(this.name, curQueue);
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
-        }
-    }
-
-    private void removeInFlight(final String curQueue) {
-        if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
-            lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
-        } else {
-            this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
         }
     }
 
@@ -695,10 +682,6 @@ public class WorkerImpl implements Worker {
      */
     protected void renameThread(final String msg) {
         Thread.currentThread().setName(this.threadNameBase + msg);
-    }
-
-    protected String lpoplpush(final String from, final String to) {
-        return (String) this.jedis.evalsha(this.lpoplpushScriptHash.get(), 2, from, to);
     }
 
     /**

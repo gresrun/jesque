@@ -17,7 +17,6 @@ package net.greghaines.jesque.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
@@ -94,10 +93,7 @@ public final class JedisUtils {
             try {
                 jedis.disconnect();
                 jedis.getClient().resetPipelinedCount();
-                try {
-                    Thread.sleep(reconnectSleepTime);
-                } catch (Exception e2) {
-                }
+                Sleep.sleep(reconnectSleepTime);
                 jedis.connect();
             } catch (JedisConnectionException jce) {
             } // Ignore bad connection attempts
