@@ -48,8 +48,8 @@ public class WorkerPool implements Worker {
      */
     public WorkerPool(final Callable<? extends Worker> workerFactory, final int numWorkers,
             final ThreadFactory threadFactory) {
-        this.workers = new ArrayList<Worker>(numWorkers);
-        this.threads = new ArrayList<Thread>(numWorkers);
+        this.workers = new ArrayList<>(numWorkers);
+        this.threads = new ArrayList<>(numWorkers);
         this.eventEmitter = new WorkerPoolEventEmitter(this.workers);
         for (int i = 0; i < numWorkers; i++) {
             try {
@@ -74,6 +74,33 @@ public class WorkerPool implements Worker {
     public void endAndJoin(final boolean now, final long millis) throws InterruptedException {
         end(now);
         join(millis);
+    }
+
+    /**
+     * @return the number of total workers
+     */
+    public int getWorkerCount() {
+        return this.workers.size();
+    }
+
+    /**
+     * @return the number of workers processing jobs
+     */
+    public int getActiveWorkerCount() {
+        int activeWorkers = 0;
+        for (final Worker worker : this.workers) {
+            if (worker.isProcessingJob()) {
+                activeWorkers++;
+            }
+        }
+        return activeWorkers;
+    }
+
+    /**
+     * @return the number of workers not processing jobs
+     */
+    public int getIdleWorkerCount() {
+        return getWorkerCount() - getActiveWorkerCount();
     }
 
     /**

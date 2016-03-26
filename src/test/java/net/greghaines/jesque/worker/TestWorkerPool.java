@@ -23,9 +23,8 @@ public class TestWorkerPool {
     
     private Mockery mockCtx;
     private Callable<? extends Worker> workerFactory;
-    private final List<Worker> workers = new ArrayList<Worker>(NUM_WORKERS);
-    private final List<WorkerEventEmitter> eventEmitters = 
-            new ArrayList<WorkerEventEmitter>(NUM_WORKERS);
+    private final List<Worker> workers = new ArrayList<>(NUM_WORKERS);
+    private final List<WorkerEventEmitter> eventEmitters = new ArrayList<>(NUM_WORKERS);
     private WorkerPool pool;
     
     @SuppressWarnings("unchecked")
@@ -250,5 +249,28 @@ public class TestWorkerPool {
             oneOf(workers.get(1)).setExceptionHandler(exceptionHandler);
         }});
         this.pool.setExceptionHandler(exceptionHandler);
+    }
+
+    @Test
+    public void testWorkerCounts() {
+        this.mockCtx.checking(new Expectations(){{
+            allowing(workers.get(0)).isProcessingJob();
+            will(onConsecutiveCalls(returnValue(false), returnValue(false),
+                    returnValue(false), returnValue(false),
+                    returnValue(true), returnValue(true)));
+            allowing(workers.get(1)).isProcessingJob();
+            will(onConsecutiveCalls(returnValue(false), returnValue(false),
+                    returnValue(true), returnValue(true),
+                    returnValue(true), returnValue(true)));
+        }});
+        Assert.assertEquals(NUM_WORKERS, this.pool.getWorkerCount());
+        Assert.assertEquals(0, this.pool.getActiveWorkerCount());
+        Assert.assertEquals(NUM_WORKERS, this.pool.getIdleWorkerCount());
+        Assert.assertEquals(NUM_WORKERS, this.pool.getWorkerCount());
+        Assert.assertEquals(1, this.pool.getActiveWorkerCount());
+        Assert.assertEquals(1, this.pool.getIdleWorkerCount());
+        Assert.assertEquals(NUM_WORKERS, this.pool.getWorkerCount());
+        Assert.assertEquals(NUM_WORKERS, this.pool.getActiveWorkerCount());
+        Assert.assertEquals(0, this.pool.getIdleWorkerCount());
     }
 }
