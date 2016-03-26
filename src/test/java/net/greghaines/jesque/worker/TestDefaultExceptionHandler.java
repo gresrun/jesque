@@ -6,9 +6,10 @@ import org.jmock.integration.junit4.JUnit4Mockery;
 import org.junit.Assert;
 import org.junit.Test;
 
-import redis.clients.jedis.exceptions.JedisConnectionException;
-
 import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonGenerator;
+
+import redis.clients.jedis.exceptions.JedisConnectionException;
 
 /**
  * Tests DefaultExceptionHandler.
@@ -25,7 +26,8 @@ public class TestDefaultExceptionHandler {
     @Test
     public void testOnException_JsonEx() {
         Assert.assertEquals(RecoveryStrategy.PROCEED, 
-            new DefaultExceptionHandler().onException(null, new JsonGenerationException("foo"), null));
+            new DefaultExceptionHandler().onException(null,
+                    new JsonGenerationException("foo", (JsonGenerator) null), null));
     }
 
     @Test
