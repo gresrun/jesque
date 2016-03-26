@@ -7,15 +7,18 @@ import net.greghaines.jesque.utils.ResqueConstants;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
 
 import java.util.Arrays;
 
+import static net.greghaines.jesque.utils.JesqueUtils.entry;
+import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test job durability:
@@ -38,29 +41,64 @@ public class DurabilityTest {
     }
 
     @Test
+    public void testDontPerform() throws Exception {
+        Job job = new Job("DontPerformAction");
+
+        final String queue = "foo";
+        TestUtils.enqueueJobs(queue, Arrays.asList(job), config);
+
+        final WorkerImpl worker = new WorkerImpl(config, Arrays.asList(queue), new MapBasedJobFactory(map(
+                entry("DontPerformAction", DontPerformAction.class))));
+        final Thread workerThread = new Thread(worker);
+        workerThread.start();
+        DontPerformAction.waitForExecution();
+
+        final Jedis jedis = TestUtils.createJedis(config);
+
+        assertEquals("In-flight list should have length one when running the job",
+                1, (long) jedis.llen(inFlightKey(worker, queue)));
+        assertEquals("Object on the in-flight list should be the first job",
+                ObjectMapperFactory.get().writeValueAsString(job),
+                jedis.lindex(inFlightKey(worker, queue), 0));
+
+        worker.end(false);
+
+        // Wait for dontPerformSleepTime to pass
+        Thread.sleep(1000);
+
+        assertEquals("Job should be requeued",
+                1, (long) jedis.llen(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue)));
+        assertEquals("Incorrect job was requeued",
+                ObjectMapperFactory.get().writeValueAsString(job),
+                jedis.lindex(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue), 0));
+        assertEquals("In-flight list should be empty when finishing a job",
+                0, (long) jedis.llen(inFlightKey(worker, queue)));
+    }
+
+    @Test
     public void testNotInterrupted() throws InterruptedException, JsonProcessingException {
         final String queue = "foo";
         TestUtils.enqueueJobs(queue, Arrays.asList(sleepJob), config);
 
         final Worker worker = new WorkerImpl(config, Arrays.asList(queue),
-                new MapBasedJobFactory(JesqueUtils.map(JesqueUtils.entry("SleepAction", SleepAction.class))));
+                new MapBasedJobFactory(map(entry("SleepAction", SleepAction.class))));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
         Thread.sleep(1000);
 
         final Jedis jedis = TestUtils.createJedis(config);
-        Assert.assertEquals("In-flight list should have length one when running the job",
+        assertEquals("In-flight list should have length one when running the job",
                 jedis.llen(inFlightKey(worker, queue)), (Long)1L);
-        Assert.assertEquals("Object on the in-flight list should be the first job",
-                ObjectMapperFactory.get().writeValueAsString(sleepJob), 
+        assertEquals("Object on the in-flight list should be the first job",
+                ObjectMapperFactory.get().writeValueAsString(sleepJob),
                 jedis.lindex(inFlightKey(worker, queue), 0));
 
         TestUtils.stopWorker(worker, workerThread, false);
 
-        Assert.assertTrue("The job should not be requeued after succesful processing",
+        assertTrue("The job should not be requeued after succesful processing",
                 jedis.llen(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue)) == 0L);
-        Assert.assertEquals("In-flight list should be empty when finishing a job", 
+        assertEquals("In-flight list should be empty when finishing a job",
                 jedis.llen(inFlightKey(worker, queue)), (Long)0L);
     }
 
@@ -70,17 +108,17 @@ public class DurabilityTest {
         TestUtils.enqueueJobs(queue, Arrays.asList(sleepJob), config);
 
         final Worker worker = new WorkerImpl(config, Arrays.asList(queue),
-                new MapBasedJobFactory(JesqueUtils.map(JesqueUtils.entry("SleepAction", SleepAction.class))));
+                new MapBasedJobFactory(map(entry("SleepAction", SleepAction.class))));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
         TestUtils.stopWorker(worker, workerThread, true);
 
         final Jedis jedis = TestUtils.createJedis(config);
-        Assert.assertTrue("Job should be requeued", jedis.llen(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue)) == 1L);
-        Assert.assertEquals("Incorrect job was requeued", ObjectMapperFactory.get().writeValueAsString(sleepJob),
+        assertTrue("Job should be requeued", jedis.llen(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue)) == 1L);
+        assertEquals("Incorrect job was requeued", ObjectMapperFactory.get().writeValueAsString(sleepJob),
                 jedis.lindex(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue), 0));
-        Assert.assertTrue("In-flight list should be empty when finishing a job", jedis.llen(inFlightKey(worker, queue)) == 0L);
+        assertTrue("In-flight list should be empty when finishing a job", jedis.llen(inFlightKey(worker, queue)) == 0L);
     }
 
     @Test
@@ -95,7 +133,7 @@ public class DurabilityTest {
         jedis.rpush(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue), incorrectJson);
 
         final Worker worker = new WorkerImpl(config, Arrays.asList(queue),
-                new MapBasedJobFactory(JesqueUtils.map(JesqueUtils.entry("SleepAction", SleepAction.class))));
+                new MapBasedJobFactory(map(entry("SleepAction", SleepAction.class))));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
@@ -103,7 +141,7 @@ public class DurabilityTest {
 
         TestUtils.stopWorker(worker, workerThread, false);
 
-        Assert.assertEquals("In-flight list should have length zero if the worker failed during JSON deserialization",
+        assertEquals("In-flight list should have length zero if the worker failed during JSON deserialization",
                 jedis.llen(inFlightKey(worker, queue)), (Long) 0L);
     }
 
