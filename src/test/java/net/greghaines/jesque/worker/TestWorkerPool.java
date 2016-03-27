@@ -1,13 +1,5 @@
 package net.greghaines.jesque.worker;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JUnit4Mockery;
@@ -16,6 +8,15 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
 
 public class TestWorkerPool {
 
@@ -214,14 +215,27 @@ public class TestWorkerPool {
     
     @Test
     public void testSetQueues() {
-        final Collection<String> queues = Arrays.asList("queue1", "queue2");
+        final List<String> queues = Arrays.asList("queue1", "queue2");
         this.mockCtx.checking(new Expectations(){{
             oneOf(workers.get(0)).setQueues(queues);
             oneOf(workers.get(1)).setQueues(queues);
         }});
         this.pool.setQueues(queues);
     }
-    
+
+    @Test
+    public void testSetCollectionQueues() {
+        final Collection<String> queues = new HashSet<>();
+        queues.add("queue1");
+        queues.add("queue2");
+        final List<String> queuesAsList = Arrays.asList("queue1", "queue2");
+        this.mockCtx.checking(new Expectations(){{
+            oneOf(workers.get(0)).setQueues(queuesAsList);
+            oneOf(workers.get(1)).setQueues(queuesAsList);
+        }});
+        this.pool.setQueues(queues);
+    }
+
     @Test
     public void testGetJobFactory() {
         final Map<String, Class<?>> jobTypes = new LinkedHashMap<String, Class<?>>();

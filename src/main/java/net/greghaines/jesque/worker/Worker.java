@@ -18,6 +18,7 @@ package net.greghaines.jesque.worker;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * A Worker polls for Jobs from a specified list of queues, executing them in
@@ -93,6 +94,12 @@ public interface Worker extends JobExecutor, Runnable {
      * @param queues the queues to poll
      */
     void setQueues(Collection<String> queues);
+
+    /**
+     * Clear any current queues and poll the given queues <b>in the specified order</b>.
+     * @param queues the queues to poll
+     */
+    void setQueues(List<String> queues);
     
     /**
      * @return the worker event emitter for this worker
