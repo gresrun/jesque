@@ -99,7 +99,7 @@ public interface Worker extends JobExecutor, Runnable {
      * Clear any current queues and poll the given queues <b>in the specified order</b>.
      * @param queues the queues to poll
      */
-    void setQueues(List<String> queues);
+    void setOrderedPriorityQueues(List<String> queues);
     
     /**
      * @return the worker event emitter for this worker

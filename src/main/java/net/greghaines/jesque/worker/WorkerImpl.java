@@ -15,8 +15,26 @@
  */
 package net.greghaines.jesque.worker;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import static net.greghaines.jesque.utils.ResqueConstants.*;
+import static net.greghaines.jesque.worker.JobExecutor.State.*;
+import static net.greghaines.jesque.worker.WorkerEvent.*;
+import static net.greghaines.jesque.worker.WorkerImpl.NextQueueStrategy.RESET_TO_HIGHEST_PRIORITY;
+
+import java.io.IOException;
+import java.lang.Throwable;
+import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.Callable;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
@@ -26,55 +44,15 @@ import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.ScriptUtils;
 import net.greghaines.jesque.utils.VersionUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisException;
 
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.Callable;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static net.greghaines.jesque.utils.ResqueConstants.COLON;
-import static net.greghaines.jesque.utils.ResqueConstants.DATE_FORMAT;
-import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
-import static net.greghaines.jesque.utils.ResqueConstants.INFLIGHT;
-import static net.greghaines.jesque.utils.ResqueConstants.JAVA_DYNAMIC_QUEUES;
-import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
-import static net.greghaines.jesque.utils.ResqueConstants.STARTED;
-import static net.greghaines.jesque.utils.ResqueConstants.STAT;
-import static net.greghaines.jesque.utils.ResqueConstants.WORKER;
-import static net.greghaines.jesque.utils.ResqueConstants.WORKERS;
-import static net.greghaines.jesque.worker.JobExecutor.State.NEW;
-import static net.greghaines.jesque.worker.JobExecutor.State.RUNNING;
-import static net.greghaines.jesque.worker.JobExecutor.State.SHUTDOWN;
-import static net.greghaines.jesque.worker.JobExecutor.State.SHUTDOWN_IMMEDIATE;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_EXECUTE;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_FAILURE;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_PROCESS;
-import static net.greghaines.jesque.worker.WorkerEvent.JOB_SUCCESS;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_ERROR;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_START;
-import static net.greghaines.jesque.worker.WorkerEvent.WORKER_STOP;
-import static net.greghaines.jesque.worker.WorkerImpl.NextQueueStrategy.DRAIN_WHILE_MESSAGES_EXISTS;
-import static net.greghaines.jesque.worker.WorkerImpl.NextQueueStrategy.RESET_TO_HIGHEST_PRIORITY;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
  * WorkerImpl is an implementation of the Worker interface. Obeys the contract of a Resque worker in Redis.
@@ -173,7 +151,7 @@ public class WorkerImpl implements Worker {
                 (queues == null ? Collections.EMPTY_LIST : new ArrayList<>(queues)),
                 jobFactory,
                 jedis,
-                DRAIN_WHILE_MESSAGES_EXISTS);
+                NextQueueStrategy.DRAIN_WHILE_MESSAGES_EXISTS);
     }
 
     /**
@@ -206,7 +184,7 @@ public class WorkerImpl implements Worker {
         this.failQueueStrategyRef = new AtomicReference<FailQueueStrategy>(
                 new DefaultFailQueueStrategy(this.namespace));
         authenticateAndSelectDB();
-        setQueues(queues);
+        setOrderedPriorityQueues(queues);
         this.name = createName();
     }
 
@@ -373,14 +351,14 @@ public class WorkerImpl implements Worker {
      */
     @Override
     public void setQueues(final Collection<String> queues) {
-        setQueues(new ArrayList<>(queues));
+        setOrderedPriorityQueues(new ArrayList<>(queues));
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void setQueues(final List<String> queues) {
+    public void setOrderedPriorityQueues(final List<String> queues) {
         checkQueues(queues);
         this.queueNames.clear();
         this.queueNames.addAll((queues == ALL_QUEUES) // Using object equality on purpose
