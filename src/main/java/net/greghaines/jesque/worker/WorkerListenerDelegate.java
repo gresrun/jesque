@@ -135,8 +135,11 @@ public class WorkerListenerDelegate implements WorkerEventEmitter {
                 if (listener != null) {
                     try {
                         listener.onEvent(event, worker, queue, job, runner, result, t);
+                    } catch (DontPerformException e) {
+                        // Immediately abort execution of job.
+                        throw e;
                     } catch (Exception e) {
-                        log.error("Failure executing listener " + listener + " for event " + event 
+                        log.error("Failure executing listener " + listener + " for event " + event
                                 + " from queue " + queue + " on worker " + worker, e);
                     }
                 }
