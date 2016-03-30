@@ -5,6 +5,7 @@ import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
+import net.greghaines.jesque.worker.WorkerEvent;
 import net.greghaines.jesque.worker.WorkerImpl;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,13 +38,22 @@ public class DurabilityTest {
     }
 
     @Test
-    public void testDontPerform() throws Exception {
+    public void testDontPerform_process() throws Exception {
+        testDontPerform(WorkerEvent.JOB_PROCESS);
+    }
+
+    @Test
+    public void testDontPerform_execute() throws Exception {
+        testDontPerform(WorkerEvent.JOB_EXECUTE);
+    }
+
+    private void testDontPerform(WorkerEvent event) throws Exception {
         final String queue = "foo";
         TestUtils.enqueueJobs(queue, Arrays.asList(new Job("SleepAction", 1L)), config);
 
         final Worker worker = new WorkerImpl(config, Arrays.asList(queue),
                 new MapBasedJobFactory(JesqueUtils.map(JesqueUtils.entry("SleepAction", SleepAction.class))));
-        worker.getWorkerEventEmitter().addListener(new DontPerformWorkerListener());
+        worker.getWorkerEventEmitter().addListener(new DontPerformWorkerListener(event));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
@@ -107,7 +117,8 @@ public class DurabilityTest {
         final Jedis jedis = TestUtils.createJedis(config);
         assertEquals("Job should be requeued",
                 1, (long) jedis.llen(queueKey(queue)));
-        assertEquals("Incorrect job was requeued", ObjectMapperFactory.get().writeValueAsString(sleepJob),
+        assertEquals("Incorrect job was requeued",
+                ObjectMapperFactory.get().writeValueAsString(sleepJob),
                 jedis.lindex(queueKey(queue), 0));
         assertEquals("In-flight list should be empty when finishing a job",
                 0, (long) jedis.llen(inFlightKey(worker, queue)));

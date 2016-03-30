@@ -530,7 +530,7 @@ public class WorkerImpl implements Worker {
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
         } catch (DontPerformException e) {
-            // Just abort the job. Job is not considered a failure or a success.
+            // Just abort the job. Job is not considered a failure nor a success.
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
         } finally {

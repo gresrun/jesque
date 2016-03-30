@@ -6,13 +6,27 @@ import net.greghaines.jesque.worker.WorkerEvent;
 import net.greghaines.jesque.worker.WorkerListener;
 
 /**
- * {@link WorkerListener} that throws a {@link DontPerformException} on {@link WorkerEvent#JOB_PROCESS}.
+ * {@link WorkerListener} that throws a {@link DontPerformException} on a given event.
  */
 public class DontPerformWorkerListener implements WorkerListener {
+    /**
+     * Event to answer with a {@link DontPerformException}.
+     */
+    private final WorkerEvent event;
+
+    /**
+     * Constructor.
+     *
+     * @param event Event to answer with a {@link DontPerformException}.
+     */
+    public DontPerformWorkerListener(WorkerEvent event) {
+        this.event = event;
+    }
+
     @Override
     public void onEvent(WorkerEvent event, Worker worker, String queue, Job job, Object runner, Object result, Throwable t) {
-        if (WorkerEvent.JOB_PROCESS.equals(event)) {
-            throw new DontPerformException("test");
+        if (event.equals(this.event)) {
+            throw new DontPerformException(event.name());
         }
     }
 }
