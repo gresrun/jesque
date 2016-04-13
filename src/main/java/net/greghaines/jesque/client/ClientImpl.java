@@ -113,6 +113,15 @@ public class ClientImpl extends AbstractClient {
      * {@inheritDoc}
      */
     @Override
+    protected long doDequeue(String queue, String jobJson) throws Exception {
+        ensureJedisConnection();
+        return doDequeue(this.jedis, getNamespace(), queue, jobJson);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void doPriorityEnqueue(final String queue, final String jobJson) {
         ensureJedisConnection();
         doPriorityEnqueue(this.jedis, getNamespace(), queue, jobJson);

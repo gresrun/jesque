@@ -86,6 +86,37 @@ public abstract class AbstractClient implements Client {
      * {@inheritDoc}
      */
     @Override
+    public long dequeue(String queue, Job job) {
+        validateArguments(queue, job);
+        try {
+            return doDequeue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Actually de-queue the serialized job.
+     *
+     * @param queue
+     *            the queue to add the Job to
+     * @param jobJson
+     *            the serialized Job
+     * @throws Exception
+     *             in case something goes wrong
+     */
+    protected abstract long doDequeue(String queue, String jobJson) throws Exception;
+
+    protected static long doDequeue(Jedis jedis, String namespace, String queue, String jobJson) {
+        return jedis.lrem(JesqueUtils.createKey(namespace, QUEUE, queue), 0, jobJson);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void priorityEnqueue(final String queue, final Job job) {
         validateArguments(queue, job);
         try {
@@ -183,7 +214,6 @@ public abstract class AbstractClient implements Client {
      * priority job to a queue.
      * 
      * @param jedis
-     *            the connection to Redis
      * @param namespace
      *            the Resque namespace
      * @param queue
