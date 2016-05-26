@@ -28,6 +28,7 @@ public class WorkerImplFactory implements Callable<WorkerImpl> {
     private final Config config;
     private final Collection<String> queues;
     private final JobFactory jobFactory;
+    private final String workerGroupName;
 
 	/**
      * Create a new factory. Returned <code>WorkerImpl</code>s will use the provided arguments.
@@ -37,9 +38,22 @@ public class WorkerImplFactory implements Callable<WorkerImpl> {
      */
     public WorkerImplFactory(final Config config, final Collection<String> queues,
             final JobFactory jobFactory) {
+        this(config, queues, jobFactory, "");
+    }
+    
+    /**
+     * Create a new factory. Returned <code>WorkerImpl</code>s will use the provided arguments.
+     * @param config used to create a connection to Redis and the package prefix for incoming jobs
+     * @param queues the list of queues to poll
+     * @param jobFactory the job factory that materializes the jobs
+     * @param jobFactory the job factory that materializes the jobs
+     */
+    public WorkerImplFactory(final Config config, final Collection<String> queues,
+            final JobFactory jobFactory, String workerGroupName) {
         this.config = config;
         this.queues = queues;
         this.jobFactory = jobFactory;
+        this.workerGroupName = workerGroupName;
     }
 
     /**
@@ -47,6 +61,6 @@ public class WorkerImplFactory implements Callable<WorkerImpl> {
      * @return a new <code>WorkerImpl</code>
      */
     public WorkerImpl call() {
-        return new WorkerImpl(this.config, this.queues, this.jobFactory);
+        return new WorkerImpl(this.config, this.queues, this.jobFactory, this.workerGroupName);
     }
 }

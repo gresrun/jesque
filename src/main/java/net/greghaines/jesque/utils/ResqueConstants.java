@@ -58,6 +58,7 @@ public interface ResqueConstants {
     String STAT = "stat";
     String WORKER = "worker";
     String WORKERS = "workers";
+    String WORKER_GLOBAL_SCOPE = "worker-global";
     String CHANNEL = "channel";
     String INFLIGHT = "inflight";
     String FREQUENCY = "frequency";

@@ -28,6 +28,8 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -105,8 +107,8 @@ public class WorkerImpl implements Worker {
     protected final Config config;
     protected final Jedis jedis;
     protected final String namespace;
-    protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<String>();
     private final String name;
+    private String workerGroupName;
     protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
     protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
     private final AtomicBoolean paused = new AtomicBoolean(false);
@@ -134,7 +136,20 @@ public class WorkerImpl implements Worker {
     }
     
     /**
-     * Creates a new WorkerImpl, with the given connection to Redis.<br>
+     * Creates a new WorkerImpl, which creates it's own connection to Redis using values from the config.<br>
+     * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
+     * @param config used to create a connection to Redis and the package prefix for incoming jobs
+     * @param queues the list of queues to poll
+     * @param jobFactory the job factory that materializes the jobs
+     * @param workerGroupName the name of the sub-key under which the queues to subscribe for this group are stored in WORKER_GLOBAL_SCOPE
+     * @throws IllegalArgumentException if either config, queues or jobFactory is null
+     */
+    public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory, String workerGroupName) {
+        this(config, queues, jobFactory, new Jedis(config.getHost(), config.getPort(), config.getTimeout()), workerGroupName);
+    }
+    
+    /**
+     * Creates a new WorkerImpl, with the given connection to Redis -- generates a unique workerGroupName since one was not specified.<br>
      * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
      * @param config used to create a connection to Redis and the package prefix for incoming jobs
      * @param queues the list of queues to poll
@@ -144,6 +159,21 @@ public class WorkerImpl implements Worker {
      */
     public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory, 
             final Jedis jedis) {
+        this(config, queues, jobFactory, jedis, UUID.randomUUID().toString());
+    }
+    
+    /**
+     * Creates a new WorkerImpl with the provided connection to Redis and the provided workerGroupName.<br>
+     * This worker will use the queue names registered in Redis under the WORKER_GLOBAL_SCOPE:workerGroupName key to subscribe.
+     * @param config used to create a connection to Redis and the package prefix for incoming jobs
+     * @param queues the list of queues to poll
+     * @param jobFactory the job factory that materializes the jobs
+     * @param jedis the connection to Redis
+     * @param workerGroupName the name of the sub-key under which the queues to subscribe for this group are stored in WORKER_GLOBAL_SCOPE
+     * @throws IllegalArgumentException if either config, queues, jobFactory, jedis, or workerGroupName is null
+     */
+    public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory, 
+            final Jedis jedis, String workerGroupName) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -153,7 +183,9 @@ public class WorkerImpl implements Worker {
         if (jedis == null) {
             throw new IllegalArgumentException("jedis must not be null");
         }
-        checkQueues(queues);
+        if (null == workerGroupName || "".equals(workerGroupName)) {
+            workerGroupName = UUID.randomUUID().toString();
+        }
         this.config = config;
         this.jobFactory = jobFactory;
         this.namespace = config.getNamespace();
@@ -161,8 +193,14 @@ public class WorkerImpl implements Worker {
         this.failQueueStrategyRef = new AtomicReference<FailQueueStrategy>(
                 new DefaultFailQueueStrategy(this.namespace));
         authenticateAndSelectDB();
-        setQueues(queues);
         this.name = createName();
+        this.workerGroupName = workerGroupName;
+        if(!this.jedis.exists(key(WORKER_GLOBAL_SCOPE, workerGroupName, "queues"))) {
+            setQueues(queues);
+        } else {
+            LOG.info("WorkerImpl instantiated with pre-existing workerGroupName {}.", this.workerGroupName);
+        }
+        LOG.info("Worker in group {} instantiated with queues {}...", this.workerGroupName, queues);
     }
 
     /**
@@ -283,7 +321,7 @@ public class WorkerImpl implements Worker {
      */
     @Override
     public Collection<String> getQueues() {
-        return Collections.unmodifiableCollection(this.queueNames);
+        return Collections.unmodifiableCollection(this.jedis.lrange(key(WORKER_GLOBAL_SCOPE, workerGroupName, "queues"), 0, -1));
     }
 
     /**
@@ -294,7 +332,7 @@ public class WorkerImpl implements Worker {
         if (queueName == null || "".equals(queueName)) {
             throw new IllegalArgumentException("queueName must not be null or empty: " + queueName);
         }
-        this.queueNames.add(queueName);
+        this.jedis.rpush(key(WORKER_GLOBAL_SCOPE, workerGroupName, "queues"), queueName);
     }
 
     /**
@@ -306,12 +344,9 @@ public class WorkerImpl implements Worker {
             throw new IllegalArgumentException("queueName must not be null or empty: " + queueName);
         }
         if (all) { // Remove all instances
-            boolean tryAgain = true;
-            while (tryAgain) {
-                tryAgain = this.queueNames.remove(queueName);
-            }
+            this.jedis.lrem(key(WORKER_GLOBAL_SCOPE, workerGroupName, "queues"), 0, queueName);
         } else { // Only remove one instance
-            this.queueNames.remove(queueName);
+            this.jedis.lrem(key(WORKER_GLOBAL_SCOPE, workerGroupName, "queues"), 1, queueName);
         }
     }
 
@@ -320,7 +355,7 @@ public class WorkerImpl implements Worker {
      */
     @Override
     public void removeAllQueues() {
-        this.queueNames.clear();
+        this.jedis.ltrim(key(WORKER_GLOBAL_SCOPE, workerGroupName, "queues"), 1, 0);
     }
 
     /**
@@ -329,10 +364,17 @@ public class WorkerImpl implements Worker {
     @Override
     public void setQueues(final Collection<String> queues) {
         checkQueues(queues);
-        this.queueNames.clear();
-        this.queueNames.addAll((queues == ALL_QUEUES) // Using object equality on purpose
-            ? this.jedis.smembers(key(QUEUES)) // Like '*' in other clients
-            : queues);
+        Set<String> globalQueueList = this.jedis.smembers(key(QUEUES));
+        this.jedis.ltrim(key(WORKER_GLOBAL_SCOPE, workerGroupName, "queues"), 1, 0);
+        if(queues == ALL_QUEUES) {
+            for(String q : this.jedis.smembers(key(QUEUES))) {
+                this.jedis.rpush(key(WORKER_GLOBAL_SCOPE, workerGroupName, "queues"), q);
+            }
+        } else {
+            for(String q : queues) {
+                this.jedis.rpush(key(WORKER_GLOBAL_SCOPE, workerGroupName, "queues"), q);
+            } 
+        }
     }
 
     /**
@@ -406,11 +448,10 @@ public class WorkerImpl implements Worker {
         while (RUNNING.equals(this.state.get())) {
             try {
                 if (threadNameChangingEnabled) {
-                    renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
+                    renameThread("Waiting for " + JesqueUtils.join(",", this.getQueues()));
                 }
-                curQueue = this.queueNames.poll(EMPTY_QUEUE_SLEEP_TIME, TimeUnit.MILLISECONDS);
-                if (curQueue != null) {
-                    this.queueNames.add(curQueue); // Rotate the queues
+                curQueue = selectQueue();
+                if (curQueue != null && !curQueue.equals("nil")) {
                     checkPaused(); 
                     // Might have been waiting in poll()/checkPaused() for a while
                     if (RUNNING.equals(this.state.get())) {
@@ -419,12 +460,14 @@ public class WorkerImpl implements Worker {
                         if (payload != null) {
                             process(ObjectMapperFactory.get().readValue(payload, Job.class), curQueue);
                             missCount = 0;
-                        } else if (++missCount >= this.queueNames.size() && RUNNING.equals(this.state.get())) {
+                        } else if (++missCount >= this.jedis.llen(key(WORKER_GLOBAL_SCOPE, this.workerGroupName, "queues")) && RUNNING.equals(this.state.get())) {
                             // Keeps worker from busy-spinning on empty queues
                             missCount = 0;
                             Thread.sleep(EMPTY_QUEUE_SLEEP_TIME);
                         }
                     }
+                } else {
+                    Thread.sleep(EMPTY_QUEUE_SLEEP_TIME); // Don't busy-spin on empty queueNames list
                 }
             } catch (InterruptedException ie) {
                 if (!isShutdown()) {
@@ -449,6 +492,31 @@ public class WorkerImpl implements Worker {
         final String key = key(QUEUE, curQueue);
         return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue), 
                 JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
+    }
+    
+    protected String selectQueue() {
+        String selectedQueueName = null;
+        for(String queueName : this.jedis.lrange(key(WORKER_GLOBAL_SCOPE, this.workerGroupName, "queues"), 0, -1)) {
+            String type = this.jedis.type(key(QUEUE, queueName));
+            long depth = 0l;
+            switch(type) {
+            case "zset":
+                depth = this.jedis.zcard(key(QUEUE, queueName));
+                break;
+            case "list":
+                depth = this.jedis.llen(key(QUEUE, queueName));
+                break;
+            case "none":
+            default:
+                break;
+            }
+            if(depth > 0) {
+                selectedQueueName = queueName;
+                break;
+            }
+        }
+        LOG.debug("Worker in group {} selected queue {}...", this.workerGroupName, selectedQueueName);
+        return selectedQueueName;
     }
 
     /**
@@ -671,7 +739,7 @@ public class WorkerImpl implements Worker {
             buf.append(InetAddress.getLocalHost().getHostName()).append(COLON)
                     .append(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]) // PID
                     .append('-').append(this.workerId).append(COLON).append(JAVA_DYNAMIC_QUEUES);
-            for (final String queueName : this.queueNames) {
+            for (final String queueName : this.jedis.lrange(key(WORKER_GLOBAL_SCOPE, this.workerGroupName, "queues"), 0, -1)) {
                 buf.append(',').append(queueName);
             }
         } catch (UnknownHostException uhe) {
