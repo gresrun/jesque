@@ -66,8 +66,6 @@ public class AdminClientPoolImpl extends AbstractAdminClient {
      */
     @Override
     public void end() {
-        if (this.jedisPool != null && !this.jedisPool.isClosed()) {
-            this.jedisPool.close();
-        }
+        // Do nothing
     }
 }

@@ -103,7 +103,8 @@ public class ClientPoolImpl extends AbstractClient {
      */
     @Override
     public void end() {
-    } // Do nothing
+        // Do nothing
+    }
 
     /**
      * {@inheritDoc}

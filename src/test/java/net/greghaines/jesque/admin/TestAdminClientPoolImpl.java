@@ -45,18 +45,4 @@ public class TestAdminClientPoolImpl {
         verify(this.jedis).publish("resque:channel:admin", 
                 "{\"class\":\"ShutdownCommand\",\"args\":[true],\"vars\":null}");
     }
-
-    @Test
-    public void testEnd_Open() {
-        when(this.jedisPool.isClosed()).thenReturn(false);
-        this.adminClient.end();
-        verify(this.jedisPool).close();
-    }
-
-    @Test
-    public void testEnd_Closed() {
-        when(this.jedisPool.isClosed()).thenReturn(true);
-        this.adminClient.end();
-        verify(this.jedisPool, never()).close();
-    }
 }
