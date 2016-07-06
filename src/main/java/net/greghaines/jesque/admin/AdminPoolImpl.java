@@ -57,7 +57,7 @@ import redis.clients.jedis.JedisPubSub;
 import redis.clients.util.Pool;
 
 /**
- * AdminImpl receives administrative jobs for a worker using a connection pool.
+ * AdminPoolImpl receives administrative jobs for a worker using a connection pool.
  * 
  * @author Greg Haines
  */
