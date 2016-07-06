@@ -16,6 +16,8 @@
 package net.greghaines.jesque.admin;
 
 import net.greghaines.jesque.Config;
+import net.greghaines.jesque.utils.PoolUtils;
+import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import redis.clients.jedis.Jedis;
 import redis.clients.util.Pool;
 
@@ -46,8 +48,17 @@ public class AdminClientPoolImpl extends AbstractAdminClient {
      * {@inheritDoc}
      */
     @Override
-    protected void doPublish(final String channel, final String jobJson) {
-        doPublish(this.jedisPool.getResource(), getNamespace(), channel, jobJson);
+    protected void doPublish(final String channel, final String jobJson) throws Exception {
+        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public Void doWork(final Jedis jedis) {
+                doPublish(jedis, getNamespace(), channel, jobJson);
+                return null;
+            }
+        });
     }
     
     /**
