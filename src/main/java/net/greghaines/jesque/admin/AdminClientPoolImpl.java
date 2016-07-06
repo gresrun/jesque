@@ -34,7 +34,7 @@ public class AdminClientPoolImpl extends AbstractAdminClient {
      * Create a new AdminClientPoolImpl using the supplied configuration and connection pool.
      * 
      * @param config used to create a connection to Redis
-     * @param jedisPool connection pool
+     * @param jedisPool the Redis connection pool
      */
     public AdminClientPoolImpl(final Config config, final Pool<Jedis> jedisPool) {
         super(config);
