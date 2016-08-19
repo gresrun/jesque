@@ -121,10 +121,10 @@ public final class PoolUtils {
         if (jesqueConfig.getMasterName() != null && !"".equals(jesqueConfig.getMasterName()) 
                 && jesqueConfig.getSentinels() != null && jesqueConfig.getSentinels().size() > 0) {
             return new JedisSentinelPool(jesqueConfig.getMasterName(), jesqueConfig.getSentinels(), poolConfig, 
-                    jesqueConfig.getTimeout(), jesqueConfig.getPassword());
+                    jesqueConfig.getTimeout(), jesqueConfig.getPassword(), jesqueConfig.getDatabase());
         } else {
             return new JedisPool(poolConfig, jesqueConfig.getHost(), jesqueConfig.getPort(), 
-                    jesqueConfig.getTimeout(), jesqueConfig.getPassword());
+                    jesqueConfig.getTimeout(), jesqueConfig.getPassword(), jesqueConfig.getDatabase());
         }
     }
 
