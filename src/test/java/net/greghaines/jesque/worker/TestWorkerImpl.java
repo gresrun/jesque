@@ -3,6 +3,7 @@ package net.greghaines.jesque.worker;
 import static net.greghaines.jesque.utils.JesqueUtils.entry;
 import static net.greghaines.jesque.utils.JesqueUtils.map;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import net.greghaines.jesque.Config;
@@ -18,17 +19,17 @@ public class TestWorkerImpl {
     
     @Test(expected=IllegalArgumentException.class)
     public void testConstructor_NullConfig() {
-        new WorkerImpl(null, null, null, null);
+        new WorkerImpl(null, new ArrayList<String>(), new MapBasedJobFactory(map(entry("Test", TestAction.class))), null, "");
     }
     
     @Test(expected=IllegalArgumentException.class)
     public void testConstructor_NullJobFactory() {
-        new WorkerImpl(CONFIG, null, null, null);
+        new WorkerImpl(CONFIG, null, null, "");
     }
     
     @Test(expected=IllegalArgumentException.class)
     public void testConstructor_NullJedis() {
-        new WorkerImpl(CONFIG, null, new MapBasedJobFactory(map(entry("Test", TestAction.class))), null);
+        new WorkerImpl(CONFIG, null, new MapBasedJobFactory(map(entry("Test", TestAction.class))), null, "");
     }
 
     @Test
