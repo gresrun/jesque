@@ -1,5 +1,12 @@
 package net.greghaines.jesque.worker;
 
+import static net.greghaines.jesque.utils.JesqueUtils.entry;
+import static net.greghaines.jesque.utils.JesqueUtils.map;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.TestAction;
@@ -10,13 +17,6 @@ import org.jmock.lib.legacy.ClassImposteriser;
 import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
 
 public class TestWorkerImpl {
     

@@ -15,18 +15,22 @@
  */
 package net.greghaines.jesque.worker;
 
+
 import static net.greghaines.jesque.utils.ResqueConstants.*;
 import static net.greghaines.jesque.worker.JobExecutor.State.*;
 import static net.greghaines.jesque.worker.WorkerEvent.*;
 import static net.greghaines.jesque.worker.WorkerImpl.NextQueueStrategy.RESET_TO_HIGHEST_PRIORITY;
 
 import java.io.IOException;
-import java.lang.Throwable;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -66,6 +70,7 @@ public class WorkerImpl implements Worker {
     protected static final int RECONNECT_ATTEMPTS = 120; // Total time: 10 min
     private static final String LPOPLPUSH_LUA = "/workerScripts/jesque_lpoplpush.lua";
     private static final String POP_LUA = "/workerScripts/jesque_pop.lua";
+    private static final String POP_FROM_MULTIPLE_PRIO_QUEUES = "/workerScripts/fromMultiplePriorityQueues.lua";
 
     // Set the thread name to the message for debugging
     private static volatile boolean threadNameChangingEnabled = false;
@@ -210,7 +215,7 @@ public class WorkerImpl implements Worker {
                 this.listenerDelegate.fireEvent(WORKER_START, this, null, null, null, null, null);
                 this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
                 this.lpoplpushScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
-                this.multiPriorityQueuesScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
+                this.multiPriorityQueuesScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
                 poll();
             } catch (Exception ex) {
                 LOG.error("Uncaught exception in worker run-loop!", ex);
