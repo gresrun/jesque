@@ -19,8 +19,8 @@
     </prerequisites>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jedis.version>2.8.1</jedis.version>
-        <jackson.version>2.8.0</jackson.version>
+        <jedis.version>2.9.0</jedis.version>
+        <jackson.version>2.8.5</jackson.version>
         <slf4j.version>1.7.21</slf4j.version>
         <logback.version>1.1.7</logback.version>
         <junit.version>4.12</junit.version>
