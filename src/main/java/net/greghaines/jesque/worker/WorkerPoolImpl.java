@@ -56,15 +56,15 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
- * WorkerPoolImpl is an implementation of the Worker interface that uses a connection pool.
- * Obeys the contract of a Resque worker in Redis.
+ * WorkerPoolImpl is an implementation of the Worker interface that uses a connection pool. Obeys the contract of a
+ * Resque worker in Redis.
  */
 public class WorkerPoolImpl implements Worker {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(WorkerPoolImpl.class);
     private static final AtomicLong WORKER_COUNTER = new AtomicLong(0);
     protected static final long EMPTY_QUEUE_SLEEP_TIME = 500; // 500 ms
-    
+
     // Set the thread name to the message for debugging
     private static volatile boolean threadNameChangingEnabled = false;
 
@@ -76,10 +76,13 @@ public class WorkerPoolImpl implements Worker {
     }
 
     /**
-     * Enable/disable worker thread renaming during normal operation. (Disabled by default)<p>
+     * Enable/disable worker thread renaming during normal operation. (Disabled by default)
+     * <p>
      * <strong>Warning: Enabling this feature is very expensive CPU-wise!</strong><br>
-     * This feature is designed to assist in debugging worker state but should
-     * be disabled in production environments for performance reasons.</p>
+     * This feature is designed to assist in debugging worker state but should be disabled in production environments
+     * for performance reasons.
+     * </p>
+     * 
      * @param enabled whether threads' names should change during normal operation
      */
     public static void setThreadNameChangingEnabled(final boolean enabled) {
@@ -88,6 +91,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Verify that the given queues are all valid.
+     * 
      * @param queues the given queues
      */
     protected static void checkQueues(final Iterable<String> queues) {
@@ -115,21 +119,22 @@ public class WorkerPoolImpl implements Worker {
     private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
-    private final AtomicReference<ExceptionHandler> exceptionHandlerRef = 
-            new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
+    private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(
+            new DefaultExceptionHandler());
     private final AtomicReference<FailQueueStrategy> failQueueStrategyRef;
     private final JobFactory jobFactory;
-    
+
     /**
      * Creates a new WorkerImpl, with the given connection to Redis.<br>
      * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
+     * 
      * @param config used to create a connection to Redis and the package prefix for incoming jobs
      * @param queues the list of queues to poll
      * @param jobFactory the job factory that materializes the jobs
      * @param jedisPool the Redis connection pool
      * @throws IllegalArgumentException if either config, queues, jobFactory or jedis is null
      */
-    public WorkerPoolImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory, 
+    public WorkerPoolImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory,
             final Pool<Jedis> jedisPool) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
@@ -178,8 +183,8 @@ public class WorkerPoolImpl implements Worker {
                         jedis.set(key(WORKER, name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
                         listenerDelegate.fireEvent(WORKER_START, WorkerPoolImpl.this, null, null, null, null, null);
                         popScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript("/workerScripts/jesque_pop.lua")));
-                        lpoplpushScriptHash.set(jedis.scriptLoad(
-                                ScriptUtils.readScript("/workerScripts/jesque_lpoplpush.lua")));
+                        lpoplpushScriptHash
+                                .set(jedis.scriptLoad(ScriptUtils.readScript("/workerScripts/jesque_lpoplpush.lua")));
                         return null;
                     }
                 });
@@ -214,6 +219,7 @@ public class WorkerPoolImpl implements Worker {
     /**
      * Shutdown this Worker.<br>
      * <b>The worker cannot be started again; create a new worker in this case.</b>
+     * 
      * @param now if true, an effort will be made to stop any job in progress
      */
     @Override
@@ -349,11 +355,6 @@ public class WorkerPoolImpl implements Worker {
         }
     }
 
-    @Override
-    public void setOrderedPriorityQueues(List<String> queues) {
-        throw new UnsupportedOperationException("Not implemented, yet");
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -423,7 +424,7 @@ public class WorkerPoolImpl implements Worker {
                 curQueue = this.queueNames.poll(EMPTY_QUEUE_SLEEP_TIME, TimeUnit.MILLISECONDS);
                 if (curQueue != null) {
                     this.queueNames.add(curQueue); // Rotate the queues
-                    checkPaused(); 
+                    checkPaused();
                     // Might have been waiting in poll()/checkPaused() for a while
                     if (RUNNING.equals(this.state.get())) {
                         this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
@@ -464,6 +465,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Remove a job from the given queue.
+     * 
      * @param curQueue the queue to remove a job from
      * @return a JSON string of a job or null if there was nothing to de-queue
      */
@@ -475,7 +477,7 @@ public class WorkerPoolImpl implements Worker {
              */
             @Override
             public String doWork(final Jedis jedis) {
-                return (String) jedis.evalsha(popScriptHash.get(), 3, key, key(INFLIGHT, name, curQueue), 
+                return (String) jedis.evalsha(popScriptHash.get(), 3, key, key(INFLIGHT, name, curQueue),
                         JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
             }
         });
@@ -483,6 +485,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Handle an exception that was thrown from inside {@link #poll()}.
+     * 
      * @param curQueue the name of the queue that was being processed when the exception was thrown
      * @param ex the exception that was thrown
      */
@@ -508,6 +511,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Checks to see if worker is paused. If so, wait until unpaused.
+     * 
      * @throws IOException if there was an error creating the pause message
      */
     protected void checkPaused() throws IOException {
@@ -548,6 +552,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Materializes and executes the given job.
+     * 
      * @param job the Job to process
      * @param curQueue the queue the payload came from
      */
@@ -599,6 +604,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Executes the given job.
+     * 
      * @param job the job to execute
      * @param curQueue the queue the job came from
      * @param instance the materialized job
@@ -617,14 +623,15 @@ public class WorkerPoolImpl implements Worker {
             ((Runnable) instance).run(); // The job is executing!
             result = null;
         } else { // Should never happen since we're testing the class earlier
-            throw new ClassCastException("Instance must be a Runnable or a Callable: " + instance.getClass().getName()
-                    + " - " + instance);
+            throw new ClassCastException(
+                    "Instance must be a Runnable or a Callable: " + instance.getClass().getName() + " - " + instance);
         }
         return result;
     }
 
     /**
      * Update the status in Redis on success.
+     * 
      * @param job the Job that succeeded
      * @param runner the materialized Job
      * @param result the result of the successful execution of the Job
@@ -653,6 +660,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Update the status in Redis on failure.
+     * 
      * @param thrwbl the Throwable that occurred
      * @param job the Job that failed
      * @param curQueue the queue the Job came from
@@ -686,6 +694,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Create and serialize a JobFailure.
+     * 
      * @param thrwbl the Throwable that occurred
      * @param queue the queue the job came from
      * @param job the Job that failed
@@ -704,6 +713,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Create and serialize a WorkerStatus.
+     * 
      * @param queue the queue the Job came from
      * @param job the Job currently being processed
      * @return the JSON representation of a new WorkerStatus
@@ -719,6 +729,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Create and serialize a WorkerStatus for a pause event.
+     * 
      * @return the JSON representation of a new WorkerStatus
      * @throws IOException if there was an error serializing the WorkerStatus
      */
@@ -731,6 +742,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Creates a unique name, suitable for use with Resque.
+     * 
      * @return a unique name for this worker
      */
     protected String createName() {
@@ -750,6 +762,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Builds a namespaced Redis key with the given arguments.
+     * 
      * @param parts the key parts to be joined
      * @return an assembled String key
      */
@@ -759,6 +772,7 @@ public class WorkerPoolImpl implements Worker {
 
     /**
      * Rename the current thread with the given message.
+     * 
      * @param msg the message to add to the thread name
      */
     protected void renameThread(final String msg) {
