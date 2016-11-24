@@ -25,10 +25,7 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -350,6 +347,11 @@ public class WorkerPoolImpl implements Worker {
         } else {
             this.queueNames.addAll(queues);
         }
+    }
+
+    @Override
+    public void setOrderedPriorityQueues(List<String> queues) {
+        throw new UnsupportedOperationException("Not implemented, yet");
     }
 
     /**

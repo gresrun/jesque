@@ -15,19 +15,22 @@
  */
 package net.greghaines.jesque.worker;
 
+
 import static net.greghaines.jesque.utils.ResqueConstants.*;
 import static net.greghaines.jesque.worker.JobExecutor.State.*;
 import static net.greghaines.jesque.worker.WorkerEvent.*;
+import static net.greghaines.jesque.worker.WorkerImpl.NextQueueStrategy.RESET_TO_HIGHEST_PRIORITY;
 
 import java.io.IOException;
-import java.lang.Throwable;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -65,9 +68,13 @@ public class WorkerImpl implements Worker {
     protected static final long EMPTY_QUEUE_SLEEP_TIME = 500; // 500 ms
     protected static final long RECONNECT_SLEEP_TIME = 5000; // 5 sec
     protected static final int RECONNECT_ATTEMPTS = 120; // Total time: 10 min
-    
+    private static final String LPOPLPUSH_LUA = "/workerScripts/jesque_lpoplpush.lua";
+    private static final String POP_LUA = "/workerScripts/jesque_pop.lua";
+    private static final String POP_FROM_MULTIPLE_PRIO_QUEUES = "/workerScripts/fromMultiplePriorityQueues.lua";
+
     // Set the thread name to the message for debugging
     private static volatile boolean threadNameChangingEnabled = false;
+    private final NextQueueStrategy nextQueueStrategy;
 
     /**
      * @return true if worker threads names will change during normal operation
@@ -113,6 +120,7 @@ public class WorkerImpl implements Worker {
     private final AtomicBoolean processingJob = new AtomicBoolean(false);
     private final AtomicReference<String> popScriptHash = new AtomicReference<>(null);
     private final AtomicReference<String> lpoplpushScriptHash = new AtomicReference<>(null);
+    private final AtomicReference<String> multiPriorityQueuesScriptHash = new AtomicReference<>(null);
     private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
@@ -144,6 +152,25 @@ public class WorkerImpl implements Worker {
      */
     public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory, 
             final Jedis jedis) {
+        this(config,
+                (queues == null ? Collections.EMPTY_LIST : new ArrayList<>(queues)),
+                jobFactory,
+                jedis,
+                NextQueueStrategy.DRAIN_WHILE_MESSAGES_EXISTS);
+    }
+
+    /**
+     * Creates a new WorkerImpl, with the given connection to Redis.<br>
+     * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
+     * @param config used to create a connection to Redis and the package prefix for incoming jobs
+     * @param queues the list of queues to poll
+     * @param jobFactory the job factory that materializes the jobs
+     * @param jedis the connection to Redis
+     * @param nextQueueStrategy defines worker behaviour once it has found messages in a queue
+     * @throws IllegalArgumentException if either config, queues, jobFactory or jedis is null
+     */
+    public WorkerImpl(final Config config, final List<String> queues, final JobFactory jobFactory,
+            final Jedis jedis, NextQueueStrategy nextQueueStrategy) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -154,6 +181,7 @@ public class WorkerImpl implements Worker {
             throw new IllegalArgumentException("jedis must not be null");
         }
         checkQueues(queues);
+        this.nextQueueStrategy = nextQueueStrategy;
         this.config = config;
         this.jobFactory = jobFactory;
         this.namespace = config.getNamespace();
@@ -161,7 +189,7 @@ public class WorkerImpl implements Worker {
         this.failQueueStrategyRef = new AtomicReference<FailQueueStrategy>(
                 new DefaultFailQueueStrategy(this.namespace));
         authenticateAndSelectDB();
-        setQueues(queues);
+        setOrderedPriorityQueues(queues);
         this.name = createName();
     }
 
@@ -185,9 +213,9 @@ public class WorkerImpl implements Worker {
                 this.jedis.sadd(key(WORKERS), this.name);
                 this.jedis.set(key(WORKER, this.name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
                 this.listenerDelegate.fireEvent(WORKER_START, this, null, null, null, null, null);
-                this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript("/workerScripts/jesque_pop.lua")));
-                this.lpoplpushScriptHash.set(this.jedis.scriptLoad(
-                        ScriptUtils.readScript("/workerScripts/jesque_lpoplpush.lua")));
+                this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
+                this.lpoplpushScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
+                this.multiPriorityQueuesScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
                 poll();
             } catch (Exception ex) {
                 LOG.error("Uncaught exception in worker run-loop!", ex);
@@ -328,6 +356,14 @@ public class WorkerImpl implements Worker {
      */
     @Override
     public void setQueues(final Collection<String> queues) {
+        setOrderedPriorityQueues(new ArrayList<>(queues));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setOrderedPriorityQueues(final List<String> queues) {
         checkQueues(queues);
         this.queueNames.clear();
         this.queueNames.addAll((queues == ALL_QUEUES) // Using object equality on purpose
@@ -408,9 +444,8 @@ public class WorkerImpl implements Worker {
                 if (threadNameChangingEnabled) {
                     renameThread("Waiting for " + JesqueUtils.join(",", this.queueNames));
                 }
-                curQueue = this.queueNames.poll(EMPTY_QUEUE_SLEEP_TIME, TimeUnit.MILLISECONDS);
+                curQueue = getNextQueue();
                 if (curQueue != null) {
-                    this.queueNames.add(curQueue); // Rotate the queues
                     checkPaused(); 
                     // Might have been waiting in poll()/checkPaused() for a while
                     if (RUNNING.equals(this.state.get())) {
@@ -419,10 +454,13 @@ public class WorkerImpl implements Worker {
                         if (payload != null) {
                             process(ObjectMapperFactory.get().readValue(payload, Job.class), curQueue);
                             missCount = 0;
-                        } else if (++missCount >= this.queueNames.size() && RUNNING.equals(this.state.get())) {
-                            // Keeps worker from busy-spinning on empty queues
-                            missCount = 0;
-                            Thread.sleep(EMPTY_QUEUE_SLEEP_TIME);
+                        } else {
+                            missCount++;
+                            if (shouldSleep(missCount) && RUNNING.equals(this.state.get())) {
+                                // Keeps worker from busy-spinning on empty queues
+                                missCount = 0;
+                                Thread.sleep(EMPTY_QUEUE_SLEEP_TIME);
+                            }
                         }
                     }
                 }
@@ -440,6 +478,27 @@ public class WorkerImpl implements Worker {
         }
     }
 
+    private boolean shouldSleep(int missCount) {
+        return nextQueueStrategy == RESET_TO_HIGHEST_PRIORITY ||
+                missCount >= this.queueNames.size();
+    }
+
+    protected String getNextQueue() throws InterruptedException {
+        switch (nextQueueStrategy) {
+            case DRAIN_WHILE_MESSAGES_EXISTS:
+                final String nextPollQueue = this.queueNames.poll(EMPTY_QUEUE_SLEEP_TIME, TimeUnit.MILLISECONDS);
+                if (nextPollQueue != null) {
+                    // Rotate the queues
+                    this.queueNames.add(nextPollQueue);
+                }
+                return nextPollQueue;
+            case RESET_TO_HIGHEST_PRIORITY:
+                return JesqueUtils.join(",", this.queueNames);
+            default:
+                throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
+        }
+    }
+
     /**
      * Remove a job from the given queue.
      * @param curQueue the queue to remove a job from
@@ -447,8 +506,15 @@ public class WorkerImpl implements Worker {
      */
     protected String pop(final String curQueue) {
         final String key = key(QUEUE, curQueue);
-        return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue), 
-                JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
+        switch (nextQueueStrategy) {
+            case DRAIN_WHILE_MESSAGES_EXISTS:
+                return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue),
+                        JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
+            case RESET_TO_HIGHEST_PRIORITY:
+                return (String) this.jedis.evalsha(this.multiPriorityQueuesScriptHash.get(), 1, curQueue);
+            default:
+                throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
+        }
     }
 
     /**
@@ -707,5 +773,17 @@ public class WorkerImpl implements Worker {
     @Override
     public String toString() {
         return this.namespace + COLON + WORKER + COLON + this.name;
+    }
+
+    public enum NextQueueStrategy {
+        /**
+         * Would drain messages as long as current queue is not empty
+         */
+        DRAIN_WHILE_MESSAGES_EXISTS,
+
+        /**
+         * Would reset to check {first queue, second queue, etc'} after each message
+         */
+        RESET_TO_HIGHEST_PRIORITY
     }
 }

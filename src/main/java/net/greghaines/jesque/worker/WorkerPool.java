@@ -253,8 +253,16 @@ public class WorkerPool implements Worker {
      */
     @Override
     public void setQueues(final Collection<String> queues) {
+        setOrderedPriorityQueues(new ArrayList<>(queues));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setOrderedPriorityQueues(final List<String> queues) {
         for (final Worker worker : this.workers) {
-            worker.setQueues(queues);
+            worker.setOrderedPriorityQueues(queues);
         }
     }
 

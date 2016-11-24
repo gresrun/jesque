@@ -3,6 +3,7 @@ package net.greghaines.jesque.worker;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -213,15 +214,28 @@ public class TestWorkerPool {
     }
     
     @Test
-    public void testSetQueues() {
-        final Collection<String> queues = Arrays.asList("queue1", "queue2");
+    public void testSetQueuesList() {
+        final List<String> queues = Arrays.asList("queue1", "queue2");
         this.mockCtx.checking(new Expectations(){{
-            oneOf(workers.get(0)).setQueues(queues);
-            oneOf(workers.get(1)).setQueues(queues);
+            oneOf(workers.get(0)).setOrderedPriorityQueues(queues);
+            oneOf(workers.get(1)).setOrderedPriorityQueues(queues);
+        }});
+        this.pool.setOrderedPriorityQueues(queues);
+    }
+
+    @Test
+    public void testSetQueuesCollection() {
+        final Collection<String> queues = new HashSet<>();
+        queues.add("queue1");
+        queues.add("queue2");
+        final List<String> queuesAsList = Arrays.asList("queue1", "queue2");
+        this.mockCtx.checking(new Expectations(){{
+            oneOf(workers.get(0)).setOrderedPriorityQueues(queuesAsList);
+            oneOf(workers.get(1)).setOrderedPriorityQueues(queuesAsList);
         }});
         this.pool.setQueues(queues);
     }
-    
+
     @Test
     public void testGetJobFactory() {
         final Map<String, Class<?>> jobTypes = new LinkedHashMap<String, Class<?>>();
