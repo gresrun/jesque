@@ -176,7 +176,7 @@ public class ClientImpl extends AbstractClient {
     }
 
     private void authenticateAndSelectDB() {
-        if (this.config.getPassword() != null) {
+        if (this.config.getPassword() != null && !"".equals(this.config.getPassword())) {
             this.jedis.auth(this.config.getPassword());
         }
         this.jedis.select(this.config.getDatabase());
