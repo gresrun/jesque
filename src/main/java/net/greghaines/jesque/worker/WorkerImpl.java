@@ -599,6 +599,8 @@ public class WorkerImpl implements Worker {
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
+        } catch (DontPerformException e) {
+            // Just abort the job. Job is not considered a failure nor a success.
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
         } finally {
