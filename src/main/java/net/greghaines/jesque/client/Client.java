@@ -38,6 +38,19 @@ public interface Client {
     void enqueue(String queue, Job job);
 
     /**
+     * De-queue a job from the given queue.
+     *
+     * @param queue
+     *            the queue to add the Job to
+     * @param job
+     *            the job to be de-queued
+     * @return Number of de-queued jobs
+     * @throws IllegalArgumentException
+     *             if the queue is null or empty or if the job is null
+     */
+    long dequeue(String queue, Job job);
+
+    /**
      * Queues a job with high priority in a given queue to be run.
      * 
      * @param queue
