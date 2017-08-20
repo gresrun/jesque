@@ -30,8 +30,8 @@ for q in queues.gmatch(queues, NEXT_QUEUE_REGEX) do
     end
 
     if payload ~= nil then
-        redis.call('LPUSH', inFlightKey, payload)
-        return payload
+       redis.call('LPUSH', inFlightKey..':inflight-queue:'..queueName, payload)
+       return payload
     end
 end
 return nil
