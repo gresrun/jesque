@@ -64,6 +64,7 @@ public class WorkerImpl implements Worker {
     protected static final long RECONNECT_SLEEP_TIME = 5000; // 5 sec
     protected static final int RECONNECT_ATTEMPTS = 120; // Total time: 10 min
     private static final String LPOPLPUSH_LUA = "/workerScripts/jesque_lpoplpush.lua";
+    private static final String REMOVE_INFLIGHT_LUA = "/workerScripts/remove-inflight.lua";
     private static final String POP_LUA = "/workerScripts/jesque_pop.lua";
     private static final String POP_FROM_MULTIPLE_PRIO_QUEUES = "/workerScripts/fromMultiplePriorityQueues.lua";
 
@@ -119,6 +120,7 @@ public class WorkerImpl implements Worker {
     private final AtomicBoolean processingJob = new AtomicBoolean(false);
     private final AtomicReference<String> popScriptHash = new AtomicReference<>(null);
     private final AtomicReference<String> lpoplpushScriptHash = new AtomicReference<>(null);
+    private final AtomicReference<String> removeInFlightHash = new AtomicReference<>(null);
     private final AtomicReference<String> multiPriorityQueuesScriptHash = new AtomicReference<>(null);
     private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
@@ -219,6 +221,7 @@ public class WorkerImpl implements Worker {
                 this.lpoplpushScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
                 this.multiPriorityQueuesScriptHash
                         .set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
+                this.removeInFlightHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(REMOVE_INFLIGHT_LUA)));;
                 poll();
             } catch (Exception ex) {
                 LOG.error("Uncaught exception in worker run-loop!", ex);
@@ -507,12 +510,15 @@ public class WorkerImpl implements Worker {
      */
     protected String pop(final String curQueue) {
         final String key = key(QUEUE, curQueue);
+        final String inFlightKey = key(INFLIGHT, this.name, curQueue);
+        final String now = Long.toString(System.currentTimeMillis());
+
         switch (nextQueueStrategy) {
         case DRAIN_WHILE_MESSAGES_EXISTS:
-            return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue),
-                    JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
+            return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, inFlightKey,
+                    JesqueUtils.createRecurringHashKey(key), now);
         case RESET_TO_HIGHEST_PRIORITY:
-            return (String) this.jedis.evalsha(this.multiPriorityQueuesScriptHash.get(), 1, curQueue);
+            return (String) this.jedis.evalsha(this.multiPriorityQueuesScriptHash.get(), 2, curQueue, inFlightKey, now);
         default:
             throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
         }
@@ -612,7 +618,8 @@ public class WorkerImpl implements Worker {
         if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
             lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
         } else {
-            this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
+            this.jedis.evalsha(this.removeInFlightHash.get(), 2, key(INFLIGHT, this.name, curQueue),key("log"));
+            //this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
         }
     }
 
