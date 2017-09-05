@@ -35,16 +35,34 @@ public class Watchdog {
     private static final String IS_ALIVE = "isAlive";
     private static final int WATCHDOG_SCRIPT_KEYS_NUMBER = 0;
     private static final String WATCHDOG = "watchdog";
-    private static final int REQUEUE_JOBS_RETRY_NUM = 3;
-    private final Pool<Jedis> jedisPool;
+    private static boolean isActivated = false;
+    private static Watchdog instance = new Watchdog();
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(POOL_SIZE);
     private final AtomicReference<String> watchdogScriptHash = new AtomicReference<>(null);
+    private Pool<Jedis> jedisPool;
 
-    public Watchdog(Config config) {
-        this.jedisPool = PoolUtils.createJedisPool(config, new WatchdogJedisPoolConfig());
+    private Watchdog() {
+    }
 
-        activate();
+    public static synchronized void activate(Config config) {
+        if (isActivated) {
+            throw new RuntimeException("Watchdog was already activated with config " + config);
+        }
+
+        instance.init(config);
+        isActivated = true;
+    }
+
+    private void init(Config config) {
+        jedisPool = PoolUtils.createJedisPool(config, new WatchdogJedisPoolConfig());
+        final String isDebug = LOG.isDebugEnabled() ? Boolean.TRUE.toString() : Boolean.FALSE.toString();
+        final String serverName = getServerName();
+
+        loadScript();
+        activateIsAliveService(serverName);
+        activateWatchdogService(serverName, isDebug);
+        requeueLostJobs(serverName, isDebug);
     }
 
     private void loadScript() {
@@ -59,33 +77,16 @@ public class Watchdog {
         }
     }
 
-    private void activate() {
-        final String isDebug = LOG.isDebugEnabled() ? Boolean.TRUE.toString() : Boolean.FALSE.toString();
-        final String serverName = getServerName();
-
-        loadScript();
-        activateIsAliveService(serverName);
-        activateWatchdogService(serverName, isDebug);
-        requeueLostJobs(serverName, isDebug);
-    }
 
     private void requeueLostJobs(final String serverName, final String isDebug) {
         // On watchdog activation check whether server contains unhandled in-flight jobs and re-queuing them
-
-        int requeueJobsRetryNum = 0;
-
-
-        while (requeueJobsRetryNum <= REQUEUE_JOBS_RETRY_NUM) {
-            try {
-                doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
-                    jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, REQUEUE_JOBS, isDebug);
-                    return null;
-                });
-                break;
-            } catch (Exception e) {
-                requeueJobsRetryNum++;
-                LOG.error("Failed to run " + REQUEUE_JOBS + " job " + WATCHDOG_LUA + " script, retry " + requeueJobsRetryNum, e);
-            }
+        try {
+            doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
+                jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, REQUEUE_JOBS, getCurrTime(), isDebug);
+                return null;
+            });
+        } catch (Exception e) {
+            LOG.error("Failed to run " + REQUEUE_JOBS + " job " + WATCHDOG_LUA + " script", e);
         }
     }
 
@@ -95,7 +96,7 @@ public class Watchdog {
 
             try {
                 doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
-                    jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, WATCHDOG, isDebug, String.valueOf(TIME_TO_REQUEUE_JOBS_ON_INACTIVE_SERVER_SEC), String.valueOf(LIGHT_KEEPER_PERIOD));
+                    jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, WATCHDOG, getCurrTime(), isDebug, String.valueOf(TIME_TO_REQUEUE_JOBS_ON_INACTIVE_SERVER_SEC), String.valueOf(LIGHT_KEEPER_PERIOD));
                     return null;
                 });
             } catch (Exception e) {
@@ -112,7 +113,7 @@ public class Watchdog {
 
             try {
                 doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
-                    jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, IS_ALIVE);
+                    jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, getCurrTime(), IS_ALIVE);
                     return null;
                 });
             } catch (Exception e) {
@@ -121,6 +122,10 @@ public class Watchdog {
         };
 
         scheduler.scheduleAtFixedRate(isAlive, INITIAL_DELAY, IS_ALIVE_PERIOD, SECONDS);
+    }
+
+    private String getCurrTime() {
+        return String.valueOf(System.currentTimeMillis());
     }
 
     private String getServerName() {
@@ -149,4 +154,11 @@ class WatchdogJedisPoolConfig extends JedisPoolConfig {
     public int getMinIdle() {
         return 0;
     }
+
+    @Override
+    public boolean getTestOnBorrow() {
+        return true;
+    }
+
+
 }
