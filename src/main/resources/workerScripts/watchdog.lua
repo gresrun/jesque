@@ -1,13 +1,20 @@
 -- User: Dima Vizelman
 -- Date: 19/08/17
 
--- switch on script effects replication
-redis.replicate_commands()
+local function getMillis(sec)
+    if sec ~= nil then
+        return tonumber(sec*1000);
+    end
+
+    return nil
+end
 
 local serverName = ARGV[1]
 local jobName = ARGV[2]
-local isDebug = ARGV[3]
-
+local currentTime = tonumber(ARGV[3])
+local isDebug = ARGV[4]
+local timeToRequeueJobsOnInactiveServer = getMillis(ARGV[5])
+local lightKeeperPeriod = getMillis(ARGV[6])
 
 -- use lrange resque:watchdog:log 0 -1 to get debug info
 local log = "resque:watchdog:log"
@@ -16,12 +23,6 @@ local lightKeeperKey = "resque:light-keeper"
 local isAlivePrefix = "resque:isAlive:"
 local isAliveKey = isAlivePrefix..serverName
 local inflightQueuePattern = "inflight%-queue"
-local currentTime
-
-local function setCurrentTime()
-  local redisTime = redis.call('TIME')
-  currentTime = redisTime[1]*1000 + redisTime[2]
-end
 
 local function debugMessage(message)
     if isDebug == 'true' then
@@ -64,7 +65,6 @@ end
 local function areServersAlive()
    local isAlive = redis.call('KEYS', "resque:isAlive".."*")
 
-   local timeToRequeueJobsOnInactiveServer = tonumber(ARGV[4])*1000
    for _,key in ipairs(isAlive) do
           local isAliveTime = redis.call('GET',key);
 
@@ -95,8 +95,6 @@ local function inspectLightKeeper()
 
     local millisDiff = tonumber(currentTime)-tonumber(lightKeeperLastRun)
 
-    local lightKeeperPeriod = tonumber(ARGV[5]*1000)
-
     if millisDiff > lightKeeperPeriod then
         debugMessage("Light keeper was active at "..lightKeeperLastRun.." before "..tostring(millisDiff).." millis")
         redis.call('SET', lightKeeperKey,currentTime)
@@ -107,7 +105,8 @@ end
 
 ------------------------------------------------
 
-setCurrentTime()
+
+
 
 if jobName=='watchdog' then
     inspectLightKeeper()
