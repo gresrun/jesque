@@ -11,12 +11,19 @@ import redis.clients.util.Pool;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.greghaines.jesque.utils.PoolUtils.doWorkInPool;
+
+enum RecoveryStatus {
+    IDLE,
+    IN_PROCESS,
+    FINISHED,
+    FAILED,
+    DISABLED
+}
 
 /**
  * Created by dimav on 17/08/17.
@@ -41,28 +48,39 @@ public class Watchdog {
             Executors.newScheduledThreadPool(POOL_SIZE);
     private final AtomicReference<String> watchdogScriptHash = new AtomicReference<>(null);
     private Pool<Jedis> jedisPool;
+    private boolean redisRestartRecoveryOn;
+    private Runnable listener;
+    private String serverName;
+    private String isDebug;
+    private Future<?> recovering = null;
 
     private Watchdog() {
     }
 
     public static synchronized void activate(Config config) {
+        activate(config, null);
+    }
+
+    public static synchronized void activate(Config config, Runnable listener) {
         if (isActivated) {
             throw new RuntimeException("Watchdog was already activated with config " + config);
         }
 
-        instance.init(config);
+        instance.init(config, listener);
         isActivated = true;
     }
 
-    private void init(Config config) {
+    private void init(Config config, Runnable listener) {
         jedisPool = PoolUtils.createJedisPool(config, new WatchdogJedisPoolConfig());
-        final String isDebug = LOG.isDebugEnabled() ? Boolean.TRUE.toString() : Boolean.FALSE.toString();
-        final String serverName = getServerName();
+        isDebug = LOG.isDebugEnabled() ? Boolean.TRUE.toString() : Boolean.FALSE.toString();
+        serverName = getServerName();
+        this.listener = listener;
+        redisRestartRecoveryOn = (listener != null);
 
         loadScript();
-        activateIsAliveService(serverName);
-        activateWatchdogService(serverName, isDebug);
-        requeueLostJobs(serverName, isDebug);
+        activateIsAliveService();
+        activateWatchdogService();
+        requeueLostJobs();
     }
 
     private void loadScript() {
@@ -78,7 +96,7 @@ public class Watchdog {
     }
 
 
-    private void requeueLostJobs(final String serverName, final String isDebug) {
+    private void requeueLostJobs() {
         // On watchdog activation check whether server contains unhandled in-flight jobs and re-queuing them
         try {
             doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
@@ -90,7 +108,7 @@ public class Watchdog {
         }
     }
 
-    private void activateWatchdogService(final String serverName, final String isDebug) {
+    private void activateWatchdogService() {
         // Schedule watchdog job , checking whether one of the servers was inactive too long and re-queuing jobs of a such inactive server
         final Runnable lightKeeper = () -> {
 
@@ -107,13 +125,14 @@ public class Watchdog {
         scheduler.scheduleAtFixedRate(lightKeeper, LIGHT_KEEPER_PERIOD, LIGHT_KEEPER_PERIOD, SECONDS);
     }
 
-    private void activateIsAliveService(final String serverName) throws RuntimeException {
+    private void activateIsAliveService() throws RuntimeException {
         // Schedule isAlive job used to mark in redis server is still alive
         final Runnable isAlive = () -> {
 
             try {
                 doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
-                    jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, getCurrTime(), IS_ALIVE);
+                    heartbeatIsAlive(jedis);
+
                     return null;
                 });
             } catch (Exception e) {
@@ -122,6 +141,40 @@ public class Watchdog {
         };
 
         scheduler.scheduleAtFixedRate(isAlive, INITIAL_DELAY, IS_ALIVE_PERIOD, SECONDS);
+    }
+
+    private void heartbeatIsAlive(final Jedis jedis) {
+        String recoveringStatus = getRecoveryStatus();
+
+        final String needRedisRecovery = (String) jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, IS_ALIVE, getCurrTime(), isDebug, recoveringStatus , String.valueOf(LIGHT_KEEPER_PERIOD));
+
+
+        if (Boolean.valueOf(needRedisRecovery)) {
+            recovering = recoverFromRedisRestart();
+        }
+    }
+
+    private String getRecoveryStatus() {
+        String recoveringStatus;
+
+        if (!redisRestartRecoveryOn) {
+            recoveringStatus = RecoveryStatus.DISABLED.name();
+        } else if (recovering == null) {
+            recoveringStatus = RecoveryStatus.IDLE.name();
+        } else if (recovering.isDone()) {
+            try {
+                recovering.get();
+                recoveringStatus = RecoveryStatus.FINISHED.name();
+            } catch (ExecutionException | InterruptedException e) {
+                LOG.error("Recovery process has failed ", e);
+                recoveringStatus = RecoveryStatus.FAILED.name();
+            }
+
+            recovering = null;
+        } else {
+            recoveringStatus = RecoveryStatus.IN_PROCESS.name();
+        }
+        return recoveringStatus;
     }
 
     private String getCurrTime() {
@@ -136,8 +189,14 @@ public class Watchdog {
         }
     }
 
-}
 
+    private Future<?> recoverFromRedisRestart() {
+        ExecutorService executor
+                = Executors.newSingleThreadExecutor();
+
+        return executor.submit(() -> listener.run());
+    }
+}
 
 class WatchdogJedisPoolConfig extends JedisPoolConfig {
     @Override

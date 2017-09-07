@@ -13,8 +13,10 @@ local serverName = ARGV[1]
 local jobName = ARGV[2]
 local currentTime = tonumber(ARGV[3])
 local isDebug = ARGV[4]
-local timeToRequeueJobsOnInactiveServer = getMillis(ARGV[5])
-local lightKeeperPeriod = getMillis(ARGV[6])
+
+local timeToRequeueJobsOnInactiveServer
+local lightKeeperPeriod
+local recoveringStatus
 
 -- use lrange resque:watchdog:log 0 -1 to get debug info
 local log = "resque:watchdog:log"
@@ -23,6 +25,8 @@ local lightKeeperKey = "resque:light-keeper"
 local isAlivePrefix = "resque:isAlive:"
 local isAliveKey = isAlivePrefix..serverName
 local inflightQueuePattern = "inflight%-queue"
+local redisRecoveryKey = "resque:redis-recovery"
+local inProgressPrefix = "IN_PROGRESS_"
 
 local function debugMessage(message)
     if isDebug == 'true' then
@@ -63,7 +67,7 @@ local function requeueJobs(server)
 end
 
 local function areServersAlive()
-   local isAlive = redis.call('KEYS', "resque:isAlive".."*")
+   local isAlive = redis.call('KEYS', isAlivePrefix.."*")
 
    for _,key in ipairs(isAlive) do
           local isAliveTime = redis.call('GET',key);
@@ -102,18 +106,71 @@ local function inspectLightKeeper()
     end
 end
 
+local function runRecoveryProcess()
+    debugMessage("Start redis restart recovery process on server "..serverName)
+    redis.call('SET', redisRecoveryKey,inProgressPrefix..serverName)
+    return "true"
+end
+
+local function checkIfRecoveryRequired()
+    local runRecovery = "false"
+
+    if(recoveringStatus == "FINISHED") then
+        -- mark recovery as finished
+        debugMessage("Redis restart recovery process has finished on server "..serverName)
+        redis.call('SET', redisRecoveryKey,"READY")
+    elseif (recoveringStatus== "FAILED") then
+        -- allow to other server to run recovery
+        debugMessage("Redis restart recovery process has failed on server "..serverName)
+        redis.call('DEL', redisRecoveryKey)
+    elseif(recoveringStatus == "IDLE") then
+        local redisRecoveryValue = redis.call('GET', redisRecoveryKey)
+
+        if (not redisRecoveryValue) then -- redis restart was detected
+            -- start recovery process
+            runRecovery = runRecoveryProcess();
+        elseif (redisRecoveryValue ~= "READY") then -- redis recovery in progress
+            -- check server running recovery is still alive
+            local recoveryServer = redisRecoveryValue:sub(inProgressPrefix:len()+1)
+            local recoverServerIsAliveKey = isAlivePrefix..recoveryServer;
+            local isAliveLastRun = redis.call('GET', recoverServerIsAliveKey)
+
+            local millisDiff = tonumber(currentTime)- tonumber(isAliveLastRun)
+
+            -- if recovery server is not alive , rerun on current server
+            if millisDiff > lightKeeperPeriod then
+                debugMessage("Recovery server was not active for "..tostring(millisDiff).." millis,rerunning")
+                runRecovery = runRecoveryProcess();
+            end
+        end
+    end
+
+    return runRecovery
+end
 
 ------------------------------------------------
 
 
-
-
 if jobName=='watchdog' then
+    timeToRequeueJobsOnInactiveServer = getMillis(ARGV[5])
+    lightKeeperPeriod = getMillis(ARGV[6])
+
     inspectLightKeeper()
 elseif jobName=='requeueJobs' then
     requeueJobs(serverName)
 elseif jobName=='isAlive' then
+    recoveringStatus = ARGV[5]
+    lightKeeperPeriod = getMillis(ARGV[6])
+
     redis.call('SET', isAliveKey,currentTime)
+
+    if(recoveringStatus == "DISABLED") then
+        return false;
+    else
+        return checkIfRecoveryRequired()
+    end
+
+
 else
     errorMessage("Unsupported watchdog job "..jobName)
 end
