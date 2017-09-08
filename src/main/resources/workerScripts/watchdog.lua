@@ -115,15 +115,7 @@ end
 local function checkIfRecoveryRequired()
     local runRecovery = "false"
 
-    if(recoveringStatus == "FINISHED") then
-        -- mark recovery as finished
-        debugMessage("Redis restart recovery process has finished on server "..serverName)
-        redis.call('SET', redisRecoveryKey,"READY")
-    elseif (recoveringStatus== "FAILED") then
-        -- allow to other server to run recovery
-        debugMessage("Redis restart recovery process has failed on server "..serverName)
-        redis.call('DEL', redisRecoveryKey)
-    elseif(recoveringStatus == "IDLE") then
+    if(recoveringStatus == "HEARTBEAT") then
         local redisRecoveryValue = redis.call('GET', redisRecoveryKey)
 
         if (not redisRecoveryValue) then -- redis restart was detected
@@ -143,6 +135,14 @@ local function checkIfRecoveryRequired()
                 runRecovery = runRecoveryProcess();
             end
         end
+    elseif(recoveringStatus == "FINISHED") then
+        -- mark recovery as finished
+        debugMessage("Redis restart recovery process has finished on server "..serverName)
+        redis.call('SET', redisRecoveryKey,"READY")
+    elseif (recoveringStatus== "FAILED") then
+        -- allow to other server to run recovery
+        debugMessage("Redis restart recovery process has failed on server "..serverName)
+        redis.call('DEL', redisRecoveryKey)
     end
 
     return runRecovery

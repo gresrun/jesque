@@ -11,15 +11,16 @@ import redis.clients.util.Pool;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.greghaines.jesque.utils.PoolUtils.doWorkInPool;
 
 enum RecoveryStatus {
-    IDLE,
-    IN_PROCESS,
+    HEARTBEAT,
     FINISHED,
     FAILED,
     DISABLED
@@ -49,10 +50,9 @@ public class Watchdog {
     private final AtomicReference<String> watchdogScriptHash = new AtomicReference<>(null);
     private Pool<Jedis> jedisPool;
     private boolean redisRestartRecoveryOn;
-    private Runnable listener;
+    private Runnable redisRestartRecoveryListener;
     private String serverName;
     private String isDebug;
-    private Future<?> recovering = null;
 
     private Watchdog() {
     }
@@ -61,21 +61,21 @@ public class Watchdog {
         activate(config, null);
     }
 
-    public static synchronized void activate(Config config, Runnable listener) {
+    public static synchronized void activate(Config config, Runnable redisRestartRecoveryListener) {
         if (isActivated) {
             throw new RuntimeException("Watchdog was already activated with config " + config);
         }
 
-        instance.init(config, listener);
+        instance.init(config, redisRestartRecoveryListener);
         isActivated = true;
     }
 
-    private void init(Config config, Runnable listener) {
+    private void init(Config config, Runnable redisRestartRecoveryListener) {
         jedisPool = PoolUtils.createJedisPool(config, new WatchdogJedisPoolConfig());
         isDebug = LOG.isDebugEnabled() ? Boolean.TRUE.toString() : Boolean.FALSE.toString();
         serverName = getServerName();
-        this.listener = listener;
-        redisRestartRecoveryOn = (listener != null);
+        this.redisRestartRecoveryListener = redisRestartRecoveryListener;
+        redisRestartRecoveryOn = (redisRestartRecoveryListener != null);
 
         loadScript();
         activateIsAliveService();
@@ -144,37 +144,14 @@ public class Watchdog {
     }
 
     private void heartbeatIsAlive(final Jedis jedis) {
-        String recoveringStatus = getRecoveryStatus();
 
-        final String needRedisRecovery = (String) jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, IS_ALIVE, getCurrTime(), isDebug, recoveringStatus , String.valueOf(LIGHT_KEEPER_PERIOD));
+        final String recoveryStatus = redisRestartRecoveryOn ? RecoveryStatus.HEARTBEAT.name() : RecoveryStatus.DISABLED.name();
+        final String needRedisRecovery = (String) jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, IS_ALIVE, getCurrTime(), isDebug, recoveryStatus, String.valueOf(LIGHT_KEEPER_PERIOD));
 
 
         if (Boolean.valueOf(needRedisRecovery)) {
-            recovering = recoverFromRedisRestart();
+            recoverFromRedisRestart();
         }
-    }
-
-    private String getRecoveryStatus() {
-        String recoveringStatus;
-
-        if (!redisRestartRecoveryOn) {
-            recoveringStatus = RecoveryStatus.DISABLED.name();
-        } else if (recovering == null) {
-            recoveringStatus = RecoveryStatus.IDLE.name();
-        } else if (recovering.isDone()) {
-            try {
-                recovering.get();
-                recoveringStatus = RecoveryStatus.FINISHED.name();
-            } catch (ExecutionException | InterruptedException e) {
-                LOG.error("Recovery process has failed ", e);
-                recoveringStatus = RecoveryStatus.FAILED.name();
-            }
-
-            recovering = null;
-        } else {
-            recoveringStatus = RecoveryStatus.IN_PROCESS.name();
-        }
-        return recoveringStatus;
     }
 
     private String getCurrTime() {
@@ -190,11 +167,36 @@ public class Watchdog {
     }
 
 
-    private Future<?> recoverFromRedisRestart() {
+    private void recoverFromRedisRestart() {
         ExecutorService executor
                 = Executors.newSingleThreadExecutor();
 
-        return executor.submit(() -> listener.run());
+        executor.submit(() -> invokeListener());
+    }
+
+    private void invokeListener() {
+        try {
+            redisRestartRecoveryListener.run();
+            doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
+                jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, IS_ALIVE, getCurrTime(), isDebug, RecoveryStatus.FINISHED.name(), String.valueOf(LIGHT_KEEPER_PERIOD));
+                ;
+
+                return null;
+            });
+
+        } catch (Exception e) {
+            LOG.error("Recovery process has failed ", e);
+            try {
+                doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
+                    jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, IS_ALIVE, getCurrTime(), isDebug, RecoveryStatus.FAILED.name(), String.valueOf(LIGHT_KEEPER_PERIOD));
+                    ;
+
+                    return null;
+                });
+            } catch (Exception ie) {
+                throw new RuntimeException(ie);
+            }
+        }
     }
 }
 
