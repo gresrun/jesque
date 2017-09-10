@@ -16,7 +16,6 @@ local isDebug = ARGV[4]
 
 local timeToRequeueJobsOnInactiveServer
 local lightKeeperPeriod
-local recoveringStatus
 
 -- use lrange resque:watchdog:log 0 -1 to get debug info
 local log = "resque:watchdog:log"
@@ -115,37 +114,53 @@ end
 local function checkIfRecoveryRequired()
     local runRecovery = "false"
 
-    if(recoveringStatus == "HEARTBEAT") then
-        local redisRecoveryValue = redis.call('GET', redisRecoveryKey)
+    local redisRecoveryValue = redis.call('GET', redisRecoveryKey)
 
-        if (not redisRecoveryValue) then -- redis restart was detected
-            -- start recovery process
+    if (not redisRecoveryValue) then -- redis restart was detected
+        -- start recovery process
+        runRecovery = runRecoveryProcess();
+    elseif(redisRecoveryValue ~= "READY") then-- redis recovery in progress
+        -- check server running recovery is still alive
+        local recoveryServer = redisRecoveryValue:sub(inProgressPrefix:len()+1)
+        local recoverServerIsAliveKey = isAlivePrefix..recoveryServer;
+        local isAliveLastRun = redis.call('GET', recoverServerIsAliveKey)
+
+        local millisDiff = tonumber(currentTime)- tonumber(isAliveLastRun)
+
+        -- if recovery server is not alive , rerun on current server
+        if millisDiff > lightKeeperPeriod then
+            debugMessage("Recovery server was not active for "..tostring(millisDiff).." millis,rerunning")
             runRecovery = runRecoveryProcess();
-        elseif (redisRecoveryValue ~= "READY") then -- redis recovery in progress
-            -- check server running recovery is still alive
-            local recoveryServer = redisRecoveryValue:sub(inProgressPrefix:len()+1)
-            local recoverServerIsAliveKey = isAlivePrefix..recoveryServer;
-            local isAliveLastRun = redis.call('GET', recoverServerIsAliveKey)
-
-            local millisDiff = tonumber(currentTime)- tonumber(isAliveLastRun)
-
-            -- if recovery server is not alive , rerun on current server
-            if millisDiff > lightKeeperPeriod then
-                debugMessage("Recovery server was not active for "..tostring(millisDiff).." millis,rerunning")
-                runRecovery = runRecoveryProcess();
-            end
         end
-    elseif(recoveringStatus == "FINISHED") then
+    end
+
+    return runRecovery
+end
+
+local function updateRecoveryStatus(recoveryProcessStatus)
+    if(recoveryProcessStatus == "FINISHED") then
         -- mark recovery as finished
         debugMessage("Redis restart recovery process has finished on server "..serverName)
         redis.call('SET', redisRecoveryKey,"READY")
-    elseif (recoveringStatus== "FAILED") then
+    elseif (recoveryProcessStatus == "FAILED") then
         -- allow to other server to run recovery
         debugMessage("Redis restart recovery process has failed on server "..serverName)
         redis.call('DEL', redisRecoveryKey)
     end
+end
 
-    return runRecovery
+local function fixInterruptedRecovery()
+    local redisRecoveryValue = redis.call('GET', redisRecoveryKey)
+
+    if(redisRecoveryValue and redisRecoveryValue ~= "READY") then   -- redis recovery was detected
+        local recoveryServer = redisRecoveryValue:sub(inProgressPrefix:len()+1)
+
+        -- if recovery was running on current server prior to restart , clean out recovery key
+        if(recoveryServer == serverName) then
+            debugMessage("Recovery process was interrupted on "..serverName)
+            redis.call('DEL', redisRecoveryKey)
+        end
+    end
 end
 
 ------------------------------------------------
@@ -159,18 +174,21 @@ if jobName=='watchdog' then
 elseif jobName=='requeueJobs' then
     requeueJobs(serverName)
 elseif jobName=='isAlive' then
-    recoveringStatus = ARGV[5]
+    local recoveryEnabled = ARGV[5]
     lightKeeperPeriod = getMillis(ARGV[6])
 
     redis.call('SET', isAliveKey,currentTime)
 
-    if(recoveringStatus == "DISABLED") then
-        return false;
-    else
+    if(recoveryEnabled == "true") then
         return checkIfRecoveryRequired()
+    else
+        return false
     end
-
-
+elseif jobName=='updateRecoveryStatus' then
+    local recoveryProcessStatus = ARGV[5]
+    updateRecoveryStatus(recoveryProcessStatus)
+elseif jobName=='fixInterruptedRecovery' then
+    fixInterruptedRecovery()
 else
     errorMessage("Unsupported watchdog job "..jobName)
 end
