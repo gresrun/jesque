@@ -173,7 +173,7 @@ if jobName=='watchdog' then
     inspectLightKeeper()
 elseif jobName=='requeueJobs' then
     requeueJobs(serverName)
-elseif jobName=='isAlive' then
+elseif jobName=='reportAlive' then
     local recoveryEnabled = ARGV[5]
     lightKeeperPeriod = getMillis(ARGV[6])
 

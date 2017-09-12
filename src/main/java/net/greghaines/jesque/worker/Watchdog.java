@@ -31,13 +31,13 @@ public class Watchdog {
     private static final int POOL_SIZE = 2;
     private static final int INITIAL_DELAY = 0;
     private static final int LIGHT_KEEPER_PERIOD = 10;
-    private static final int IS_ALIVE_PERIOD = 2;
+    private static final int REPORT_ALIVE_PERIOD = 2;
     private static final int TIME_TO_REQUEUE_JOBS_ON_INACTIVE_SERVER_SEC = 60;
     private static final String WATCHDOG_LUA = "/workerScripts/watchdog.lua";
     private static final String REQUEUE_JOBS = "requeueJobs";
     private static final String UPDATE_RECOVERY_STATUS_JOB = "updateRecoveryStatus";
     private static final String FIX_INTERRUPTED_RECOVERY_JOB = "fixInterruptedRecovery";
-    private static final String IS_ALIVE_JOB = "isAlive";
+    private static final String REPORT_ALIVE_JOB = "reportAlive";
     private static final int WATCHDOG_SCRIPT_KEYS_NUMBER = 0;
     private static final String WATCHDOG = "watchdog";
     private static final String FAILED = "FAILED";
@@ -78,7 +78,7 @@ public class Watchdog {
 
         loadScript();
         fixInterruptedRecovery();
-        activateIsAliveService();
+        activateReportAliveService();
         activateWatchdogService();
         requeueLostJobs();
     }
@@ -137,27 +137,27 @@ public class Watchdog {
         scheduler.scheduleAtFixedRate(lightKeeper, LIGHT_KEEPER_PERIOD, LIGHT_KEEPER_PERIOD, SECONDS);
     }
 
-    private void activateIsAliveService() throws RuntimeException {
-        // Schedule isAlive job used to mark in redis server is still alive
-        final Runnable isAlive = () -> {
+    private void activateReportAliveService() throws RuntimeException {
+        // Schedule reportAlive job used to mark in redis server is still alive
+        final Runnable reportAlive = () -> {
 
             try {
                 workInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
-                    heartbeatIsAlive(jedis);
+                    reportAlive(jedis);
 
                     return null;
                 });
             } catch (Exception e) {
-                LOG.error("Failed to run " + IS_ALIVE_JOB + " job " + WATCHDOG_LUA + " script", e);
+                LOG.error("Failed to run " + REPORT_ALIVE_JOB + " job " + WATCHDOG_LUA + " script", e);
             }
         };
 
-        scheduler.scheduleAtFixedRate(isAlive, INITIAL_DELAY, IS_ALIVE_PERIOD, SECONDS);
+        scheduler.scheduleAtFixedRate(reportAlive, INITIAL_DELAY, REPORT_ALIVE_PERIOD, SECONDS);
     }
 
-    private void heartbeatIsAlive(final Jedis jedis) {
+    private void reportAlive(final Jedis jedis) {
 
-        final String needRedisRecovery = (String) jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, IS_ALIVE_JOB, getCurrTime(), isDebug, String.valueOf(redisRestartRecoveryOn), String.valueOf(LIGHT_KEEPER_PERIOD));
+        final String needRedisRecovery = (String) jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, REPORT_ALIVE_JOB, getCurrTime(), isDebug, String.valueOf(redisRestartRecoveryOn), String.valueOf(LIGHT_KEEPER_PERIOD));
 
 
         if (Boolean.valueOf(needRedisRecovery)) {

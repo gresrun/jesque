@@ -127,7 +127,7 @@ public class WorkerImpl implements Worker {
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
     private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(
-            new DefaultExceptionHandler());
+            new WorkerImplExceptionHandler());
     private final AtomicReference<FailQueueStrategy> failQueueStrategyRef;
     private final JobFactory jobFactory;
 
@@ -536,7 +536,7 @@ public class WorkerImpl implements Worker {
      * @param ex the exception that was thrown
      */
     protected void recoverFromException(final String curQueue, final Exception ex) {
-        RecoveryStrategy recoveryStrategy = getRecoveryStrategy(curQueue, ex);
+        RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, ex, curQueue);
 
         switch (recoveryStrategy) {
         case RECONNECT:
@@ -547,7 +547,7 @@ public class WorkerImpl implements Worker {
                 end(false);
             } else {
                 authenticateAndSelectDB();
-                LOG.info("Reconnected to Redis " + this);
+                LOG.info("Reconnected to Redis ");
             }
             break;
         case TERMINATE:
@@ -562,22 +562,6 @@ public class WorkerImpl implements Worker {
                     + " while attempting to recover from the following exception; worker proceeding...", ex);
             break;
         }
-    }
-
-    private RecoveryStrategy getRecoveryStrategy(final String curQueue, final Exception ex) {
-        RecoveryStrategy recoveryStrategy;
-
-        if(ex instanceof JedisNoScriptException){
-            try {
-                loadScripts();
-                recoveryStrategy = RecoveryStrategy.RECONNECT;
-            } catch (IOException e) {
-                recoveryStrategy = RecoveryStrategy.TERMINATE;
-            }
-        } else {
-            recoveryStrategy = this.exceptionHandlerRef.get().onException(this, ex, curQueue);
-        }
-        return recoveryStrategy;
     }
 
     private void authenticateAndSelectDB() {
@@ -816,4 +800,32 @@ public class WorkerImpl implements Worker {
     public String toString() {
         return this.namespace + COLON + WORKER + COLON + this.name;
     }
+
+    class WorkerImplExceptionHandler implements ExceptionHandler {
+
+        ExceptionHandler defaultExceptionHandler = new DefaultExceptionHandler();
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public RecoveryStrategy onException(final JobExecutor jobExecutor, final Exception ex,
+                                            final String curQueue) {
+            RecoveryStrategy recoveryStrategy;
+
+            if(ex instanceof JedisNoScriptException){
+                try {
+                    loadScripts();
+                    recoveryStrategy = RecoveryStrategy.RECONNECT;
+                } catch (IOException e) {
+                    recoveryStrategy = defaultExceptionHandler.onException(jobExecutor,ex,curQueue);;
+                }
+            } else {
+                recoveryStrategy = defaultExceptionHandler.onException(jobExecutor,ex,curQueue);;
+            }
+
+            return recoveryStrategy;
+        }
+    }
+
 }
