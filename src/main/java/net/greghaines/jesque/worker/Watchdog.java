@@ -7,16 +7,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.exceptions.JedisNoScriptException;
 import redis.clients.util.Pool;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.greghaines.jesque.utils.PoolUtils.doWorkInPool;
+
 
 /**
  * Created by dimav on 17/08/17.
@@ -28,41 +31,56 @@ public class Watchdog {
     private static final int POOL_SIZE = 2;
     private static final int INITIAL_DELAY = 0;
     private static final int LIGHT_KEEPER_PERIOD = 10;
-    private static final int IS_ALIVE_PERIOD = 2;
+    private static final int REPORT_ALIVE_PERIOD = 2;
     private static final int TIME_TO_REQUEUE_JOBS_ON_INACTIVE_SERVER_SEC = 60;
     private static final String WATCHDOG_LUA = "/workerScripts/watchdog.lua";
     private static final String REQUEUE_JOBS = "requeueJobs";
-    private static final String IS_ALIVE = "isAlive";
+    private static final String UPDATE_RECOVERY_STATUS_JOB = "updateRecoveryStatus";
+    private static final String FIX_INTERRUPTED_RECOVERY_JOB = "fixInterruptedRecovery";
+    private static final String REPORT_ALIVE_JOB = "reportAlive";
     private static final int WATCHDOG_SCRIPT_KEYS_NUMBER = 0;
     private static final String WATCHDOG = "watchdog";
+    private static final String FAILED = "FAILED";
+    private static final String FINISHED = "FINISHED";
     private static boolean isActivated = false;
     private static Watchdog instance = new Watchdog();
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(POOL_SIZE);
     private final AtomicReference<String> watchdogScriptHash = new AtomicReference<>(null);
     private Pool<Jedis> jedisPool;
+    private boolean redisRestartRecoveryOn;
+    private Runnable redisRestartRecoveryListener;
+    private String serverName;
+    private String isDebug;
 
     private Watchdog() {
     }
 
     public static synchronized void activate(Config config) {
+        activate(config, null);
+    }
+
+    public static synchronized void activate(Config config, Runnable redisRestartRecoveryListener) {
         if (isActivated) {
             throw new RuntimeException("Watchdog was already activated with config " + config);
         }
 
-        instance.init(config);
+        instance.init(config, redisRestartRecoveryListener);
         isActivated = true;
     }
 
-    private void init(Config config) {
+    private void init(Config config, Runnable redisRestartRecoveryListener) {
         jedisPool = PoolUtils.createJedisPool(config, new WatchdogJedisPoolConfig());
-        final String isDebug = LOG.isDebugEnabled() ? Boolean.TRUE.toString() : Boolean.FALSE.toString();
-        final String serverName = getServerName();
+        isDebug = LOG.isDebugEnabled() ? Boolean.TRUE.toString() : Boolean.FALSE.toString();
+        serverName = getServerName();
+        this.redisRestartRecoveryListener = redisRestartRecoveryListener;
+        redisRestartRecoveryOn = (redisRestartRecoveryListener != null);
 
         loadScript();
-        activateIsAliveService(serverName);
-        activateWatchdogService(serverName, isDebug);
-        requeueLostJobs(serverName, isDebug);
+        fixInterruptedRecovery();
+        activateReportAliveService();
+        activateWatchdogService();
+        requeueLostJobs();
     }
 
     private void loadScript() {
@@ -78,10 +96,22 @@ public class Watchdog {
     }
 
 
-    private void requeueLostJobs(final String serverName, final String isDebug) {
+    private void fixInterruptedRecovery() {
+        // On watchdog activation check whether recovery process failed on this server and rerun process if needed
+        try {
+            workInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
+                jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, FIX_INTERRUPTED_RECOVERY_JOB, getCurrTime(), isDebug);
+                return null;
+            });
+        } catch (Exception e) {
+            LOG.error("Failed to run " + FIX_INTERRUPTED_RECOVERY_JOB + " job " + WATCHDOG_LUA + " script", e);
+        }
+    }
+
+    private void requeueLostJobs() {
         // On watchdog activation check whether server contains unhandled in-flight jobs and re-queuing them
         try {
-            doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
+            workInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
                 jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, REQUEUE_JOBS, getCurrTime(), isDebug);
                 return null;
             });
@@ -90,12 +120,12 @@ public class Watchdog {
         }
     }
 
-    private void activateWatchdogService(final String serverName, final String isDebug) {
+    private void activateWatchdogService() {
         // Schedule watchdog job , checking whether one of the servers was inactive too long and re-queuing jobs of a such inactive server
         final Runnable lightKeeper = () -> {
 
             try {
-                doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
+                workInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
                     jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, WATCHDOG, getCurrTime(), isDebug, String.valueOf(TIME_TO_REQUEUE_JOBS_ON_INACTIVE_SERVER_SEC), String.valueOf(LIGHT_KEEPER_PERIOD));
                     return null;
                 });
@@ -107,21 +137,32 @@ public class Watchdog {
         scheduler.scheduleAtFixedRate(lightKeeper, LIGHT_KEEPER_PERIOD, LIGHT_KEEPER_PERIOD, SECONDS);
     }
 
-    private void activateIsAliveService(final String serverName) throws RuntimeException {
-        // Schedule isAlive job used to mark in redis server is still alive
-        final Runnable isAlive = () -> {
+    private void activateReportAliveService() throws RuntimeException {
+        // Schedule reportAlive job used to mark in redis server is still alive
+        final Runnable reportAlive = () -> {
 
             try {
-                doWorkInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
-                    jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, getCurrTime(), IS_ALIVE);
+                workInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
+                    reportAlive(jedis);
+
                     return null;
                 });
             } catch (Exception e) {
-                LOG.error("Failed to run " + IS_ALIVE + " function " + WATCHDOG_LUA + " script", e);
+                LOG.error("Failed to run " + REPORT_ALIVE_JOB + " job " + WATCHDOG_LUA + " script", e);
             }
         };
 
-        scheduler.scheduleAtFixedRate(isAlive, INITIAL_DELAY, IS_ALIVE_PERIOD, SECONDS);
+        scheduler.scheduleAtFixedRate(reportAlive, INITIAL_DELAY, REPORT_ALIVE_PERIOD, SECONDS);
+    }
+
+    private void reportAlive(final Jedis jedis) {
+
+        final String needRedisRecovery = (String) jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, REPORT_ALIVE_JOB, getCurrTime(), isDebug, String.valueOf(redisRestartRecoveryOn), String.valueOf(LIGHT_KEEPER_PERIOD));
+
+
+        if (Boolean.valueOf(needRedisRecovery)) {
+            recoverFromRedisRestart();
+        }
     }
 
     private String getCurrTime() {
@@ -136,8 +177,44 @@ public class Watchdog {
         }
     }
 
-}
 
+    private void recoverFromRedisRestart() {
+        ExecutorService executor
+                = Executors.newSingleThreadExecutor();
+
+        executor.submit(this::invokeListener);
+    }
+
+    private void invokeListener() {
+        try {
+            redisRestartRecoveryListener.run();
+            workInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
+                jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, UPDATE_RECOVERY_STATUS_JOB, getCurrTime(), isDebug, FINISHED);
+                return null;
+            });
+
+        } catch (Exception e) {
+            LOG.error("Recovery process has failed ", e);
+            try {
+                workInPool(this.jedisPool, (PoolUtils.PoolWork<Jedis, Void>) jedis -> {
+                    jedis.evalsha(watchdogScriptHash.get(), WATCHDOG_SCRIPT_KEYS_NUMBER, serverName, UPDATE_RECOVERY_STATUS_JOB, getCurrTime(), isDebug, FAILED);
+                    return null;
+                });
+            } catch (Exception ie) {
+                throw new RuntimeException(ie);
+            }
+        }
+    }
+
+    private <V> void workInPool(final Pool<Jedis> pool, final PoolUtils.PoolWork<Jedis, V> work) throws Exception {
+        try {
+            doWorkInPool(pool, work);
+        } catch (JedisNoScriptException e) {
+            loadScript();
+            throw e;
+        }
+    }
+}
 
 class WatchdogJedisPoolConfig extends JedisPoolConfig {
     @Override

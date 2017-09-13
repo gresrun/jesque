@@ -52,6 +52,7 @@ import net.greghaines.jesque.utils.ScriptUtils;
 import net.greghaines.jesque.utils.VersionUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisException;
+import redis.clients.jedis.exceptions.JedisNoScriptException;
 
 /**
  * WorkerImpl is an implementation of the Worker interface. Obeys the contract of a Resque worker in Redis.
@@ -126,7 +127,7 @@ public class WorkerImpl implements Worker {
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
     private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(
-            new DefaultExceptionHandler());
+            new WorkerImplExceptionHandler());
     private final AtomicReference<FailQueueStrategy> failQueueStrategyRef;
     private final JobFactory jobFactory;
 
@@ -217,11 +218,7 @@ public class WorkerImpl implements Worker {
                 this.jedis.sadd(key(WORKERS), this.name);
                 this.jedis.set(key(WORKER, this.name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
                 this.listenerDelegate.fireEvent(WORKER_START, this, null, null, null, null, null);
-                this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
-                this.lpoplpushScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
-                this.multiPriorityQueuesScriptHash
-                        .set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
-                this.removeInFlightHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(REMOVE_INFLIGHT_LUA)));;
+                loadScripts();
                 poll();
             } catch (Exception ex) {
                 LOG.error("Uncaught exception in worker run-loop!", ex);
@@ -240,6 +237,14 @@ public class WorkerImpl implements Worker {
         } else {
             throw new IllegalStateException("This WorkerImpl is shutdown");
         }
+    }
+
+    private void loadScripts() throws IOException {
+        this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
+        this.lpoplpushScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
+        this.multiPriorityQueuesScriptHash
+                .set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
+        this.removeInFlightHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(REMOVE_INFLIGHT_LUA)));
     }
 
     /**
@@ -531,7 +536,8 @@ public class WorkerImpl implements Worker {
      * @param ex the exception that was thrown
      */
     protected void recoverFromException(final String curQueue, final Exception ex) {
-        final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, ex, curQueue);
+        RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, ex, curQueue);
+
         switch (recoveryStrategy) {
         case RECONNECT:
             LOG.info("Reconnecting to Redis in response to exception", ex);
@@ -541,7 +547,7 @@ public class WorkerImpl implements Worker {
                 end(false);
             } else {
                 authenticateAndSelectDB();
-                LOG.info("Reconnected to Redis");
+                LOG.info("Reconnected to Redis ");
             }
             break;
         case TERMINATE:
@@ -794,4 +800,32 @@ public class WorkerImpl implements Worker {
     public String toString() {
         return this.namespace + COLON + WORKER + COLON + this.name;
     }
+
+    class WorkerImplExceptionHandler implements ExceptionHandler {
+
+        ExceptionHandler defaultExceptionHandler = new DefaultExceptionHandler();
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public RecoveryStrategy onException(final JobExecutor jobExecutor, final Exception ex,
+                                            final String curQueue) {
+            RecoveryStrategy recoveryStrategy;
+
+            if(ex instanceof JedisNoScriptException){
+                try {
+                    loadScripts();
+                    recoveryStrategy = RecoveryStrategy.RECONNECT;
+                } catch (IOException e) {
+                    recoveryStrategy = defaultExceptionHandler.onException(jobExecutor,ex,curQueue);;
+                }
+            } else {
+                recoveryStrategy = defaultExceptionHandler.onException(jobExecutor,ex,curQueue);;
+            }
+
+            return recoveryStrategy;
+        }
+    }
+
 }
