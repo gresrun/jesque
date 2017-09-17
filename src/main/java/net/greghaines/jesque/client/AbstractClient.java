@@ -19,7 +19,9 @@ import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 
 import net.greghaines.jesque.Config;
+import net.greghaines.jesque.DuplicateJobException;
 import net.greghaines.jesque.Job;
+import net.greghaines.jesque.JobUniquenessValidator;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
@@ -28,17 +30,17 @@ import redis.clients.jedis.Transaction;
 
 /**
  * Common logic for Client implementations.
- * 
+ *
  * @author Greg Haines
  * @author Animesh Kumar
  */
 public abstract class AbstractClient implements Client {
 
     private final String namespace;
-
+    protected JobUniquenessValidator jobUniquenessValidator;
     /**
      * Constructor.
-     * 
+     *
      * @param config
      *            used to get the namespace for key creation
      */
@@ -56,9 +58,13 @@ public abstract class AbstractClient implements Client {
         return this.namespace;
     }
 
+    protected void setJobUniquenessValidator(final JobUniquenessValidator jobUniquenessValidator) {
+        this.jobUniquenessValidator = jobUniquenessValidator;
+    }
+
     /**
      * Builds a namespaced Redis key with the given arguments.
-     * 
+     *
      * @param parts
      *            the key parts to be joined
      * @return an assembled String key
@@ -67,6 +73,11 @@ public abstract class AbstractClient implements Client {
         return JesqueUtils.createKey(this.namespace, parts);
     }
 
+    protected void validateJobUniqueness(Jedis jedis,String jobJson){
+        if(jobUniquenessValidator!=null && jobUniquenessValidator.checkJobUniqueness(jedis,jobJson)){
+            throw new DuplicateJobException("Duplicate job " +jobJson);
+        }
+    }
     /**
      * {@inheritDoc}
      */
@@ -122,7 +133,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Actually enqueue the serialized job.
-     * 
+     *
      * @param queue
      *            the queue to add the Job to
      * @param msg
@@ -134,7 +145,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Actually enqueue the serialized job with high priority.
-     * 
+     *
      * @param queue
      *            the queue to add the Job to
      * @param msg
@@ -146,7 +157,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Actually acquire the lock based upon the client acquisition model.
-     * 
+     *
      * @param lockName
      *            the name of the lock to acquire
      * @param timeout
@@ -157,13 +168,13 @@ public abstract class AbstractClient implements Client {
      * @throws Exception
      *             in case something goes wrong
      */
-    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder, 
+    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder,
             final int timeout) throws Exception;
 
     /**
      * Helper method that encapsulates the minimum logic for adding a job to a
      * queue.
-     * 
+     *
      * @param jedis
      *            the connection to Redis
      * @param namespace
@@ -181,7 +192,7 @@ public abstract class AbstractClient implements Client {
     /**
      * Helper method that encapsulates the minimum logic for adding a high
      * priority job to a queue.
-     * 
+     *
      * @param jedis
      *            the connection to Redis
      * @param namespace
@@ -198,7 +209,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Helper method that encapsulates the logic to acquire a lock.
-     * 
+     *
      * @param jedis
      *            the connection to Redis
      * @param namespace

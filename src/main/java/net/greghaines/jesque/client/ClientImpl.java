@@ -20,6 +20,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import net.greghaines.jesque.Config;
+import net.greghaines.jesque.JobUniquenessValidator;
 import net.greghaines.jesque.utils.JedisUtils;
 
 import redis.clients.jedis.Jedis;
@@ -62,12 +63,29 @@ public class ClientImpl extends AbstractClient {
      *             if the config is null
      */
     public ClientImpl(final Config config, final boolean checkConnectionBeforeUse) {
+        this(config,checkConnectionBeforeUse,null);
+    }
+
+    /**
+     * Create a new ClientImpl, which creates it's own connection to Redis using
+     * values from the config.
+     *
+     * @param config
+     *            used to create a connection to Redis
+     * @param checkConnectionBeforeUse
+     *            check to make sure the connection is alive before using it
+     *  @param jobUniquenessValidator used to avoid duplicate jobs submission
+     * @throws IllegalArgumentException
+     *             if the config is null
+     */
+    public ClientImpl(final Config config, final boolean checkConnectionBeforeUse, JobUniquenessValidator jobUniquenessValidator) {
         super(config);
         this.config = config;
         this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
         authenticateAndSelectDB();
         this.checkConnectionBeforeUse = checkConnectionBeforeUse;
         this.keepAliveService = null;
+        setJobUniquenessValidator(jobUniquenessValidator);
     }
 
     /**
@@ -106,6 +124,7 @@ public class ClientImpl extends AbstractClient {
     @Override
     protected void doEnqueue(final String queue, final String jobJson) {
         ensureJedisConnection();
+        validateJobUniqueness(this.jedis,jobJson);
         doEnqueue(this.jedis, getNamespace(), queue, jobJson);
     }
 
@@ -115,6 +134,7 @@ public class ClientImpl extends AbstractClient {
     @Override
     protected void doPriorityEnqueue(final String queue, final String jobJson) {
         ensureJedisConnection();
+        validateJobUniqueness(this.jedis,jobJson);
         doPriorityEnqueue(this.jedis, getNamespace(), queue, jobJson);
     }
 
@@ -145,6 +165,7 @@ public class ClientImpl extends AbstractClient {
     @Override
     protected void doDelayedEnqueue(final String queue, final String msg, final long future) throws Exception {
         ensureJedisConnection();
+        validateJobUniqueness(this.jedis,msg);
         doDelayedEnqueue(this.jedis, getNamespace(), queue, msg, future);
     }
 

@@ -35,16 +35,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import net.greghaines.jesque.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
-import net.greghaines.jesque.Config;
-import net.greghaines.jesque.Job;
-import net.greghaines.jesque.JobFailure;
-import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
@@ -72,7 +69,7 @@ public class WorkerImpl implements Worker {
     // Set the thread name to the message for debugging
     private static volatile boolean threadNameChangingEnabled = false;
     private final NextQueueStrategy nextQueueStrategy;
-
+    private JobUniquenessValidator jobUniquenessValidator;
     /**
      * @return true if worker threads names will change during normal operation
      */
@@ -163,6 +160,22 @@ public class WorkerImpl implements Worker {
     /**
      * Creates a new WorkerImpl, with the given connection to Redis.<br>
      * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
+     *
+     * @param config used to create a connection to Redis and the package prefix for incoming jobs
+     * @param queues the list of queues to poll
+     * @param jobFactory the job factory that materializes the jobs
+     * @param jedis the connection to Redis
+     * @param nextQueueStrategy defines worker behavior once it has found messages in a queue
+     * @throws IllegalArgumentException if either config, queues, jobFactory, jedis or nextQueueStrategy is null
+     */
+    public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory,
+                      final Jedis jedis, final NextQueueStrategy nextQueueStrategy) {
+        this(config, queues , jobFactory, jedis , nextQueueStrategy, null);
+    }
+
+    /**
+     * Creates a new WorkerImpl, with the given connection to Redis.<br>
+     * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
      * 
      * @param config used to create a connection to Redis and the package prefix for incoming jobs
      * @param queues the list of queues to poll
@@ -172,7 +185,7 @@ public class WorkerImpl implements Worker {
      * @throws IllegalArgumentException if either config, queues, jobFactory, jedis or nextQueueStrategy is null
      */
     public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory,
-            final Jedis jedis, final NextQueueStrategy nextQueueStrategy) {
+            final Jedis jedis, final NextQueueStrategy nextQueueStrategy, JobUniquenessValidator jobUniquenessValidator) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -196,6 +209,7 @@ public class WorkerImpl implements Worker {
         authenticateAndSelectDB();
         setQueues(queues);
         this.name = createName();
+        this.jobUniquenessValidator = jobUniquenessValidator;
     }
 
     /**
@@ -456,7 +470,7 @@ public class WorkerImpl implements Worker {
                         this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
                         final String payload = pop(curQueue);
                         if (payload != null) {
-                            process(ObjectMapperFactory.get().readValue(payload, Job.class), curQueue);
+                            process(ObjectMapperFactory.get().readValue(payload, Job.class), payload,curQueue);
                             missCount = 0;
                         } else {
                             missCount++;
@@ -598,9 +612,10 @@ public class WorkerImpl implements Worker {
      * Materializes and executes the given job.
      * 
      * @param job the Job to process
+     * @param jobJson the job json used for duplicate key removal
      * @param curQueue the queue the payload came from
      */
-    protected void process(final Job job, final String curQueue) {
+    protected void process(final Job job, String jobJson ,final String curQueue) {
         try {
             this.processingJob.set(true);
             if (threadNameChangingEnabled) {
@@ -615,8 +630,18 @@ public class WorkerImpl implements Worker {
             failure(thrwbl, job, curQueue);
         } finally {
             removeInFlight(curQueue);
+            deleteUniqueJobKey(jobJson);
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
+        }
+    }
+
+    private void deleteUniqueJobKey(final String jobJson) {
+        if(jobUniquenessValidator!=null){
+            final UniqueKeyExtractor uniqueKeyExtractor = jobUniquenessValidator.getUniqueKeyExtractor();
+            final String uniqueJobKey = uniqueKeyExtractor.getUniqueKeyFromJob(jobJson);
+            final String uniqueRedisKey =jobUniquenessValidator.generateRedisKeyFromUniqueJobKey(uniqueJobKey);
+            jedis.del(uniqueRedisKey);
         }
     }
 

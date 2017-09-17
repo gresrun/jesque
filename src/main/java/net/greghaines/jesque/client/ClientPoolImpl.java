@@ -16,6 +16,7 @@
 package net.greghaines.jesque.client;
 
 import net.greghaines.jesque.Config;
+import net.greghaines.jesque.JobUniquenessValidator;
 import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import redis.clients.jedis.Jedis;
@@ -41,16 +42,30 @@ public class ClientPoolImpl extends AbstractClient {
      *            the connection pool
      */
     public ClientPoolImpl(final Config config, final Pool<Jedis> jedisPool) {
+        this(config,jedisPool,null);
+    }
+
+    /**
+     * Create a ClientPoolImpl.
+     *
+     * @param config
+     *            used to get the namespace for key creation
+     * @param jedisPool
+     *            the connection pool
+     *  @param jobUniquenessValidator used to avoid duplicate jobs submission
+     *
+     */
+    public ClientPoolImpl(final Config config, final Pool<Jedis> jedisPool, JobUniquenessValidator jobUniquenessValidator) {
         super(config);
         if (jedisPool == null) {
             throw new IllegalArgumentException("jedisPool must not be null");
         }
         this.jedisPool = jedisPool;
+        setJobUniquenessValidator(jobUniquenessValidator);
     }
-
-    /**
-     * {@inheritDoc}
-     */
+        /**
+         * {@inheritDoc}
+         */
     @Override
     protected void doEnqueue(final String queue, final String jobJson) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
@@ -59,6 +74,7 @@ public class ClientPoolImpl extends AbstractClient {
              */
             @Override
             public Void doWork(final Jedis jedis) {
+                validateJobUniqueness(jedis,jobJson);
                 doEnqueue(jedis, getNamespace(), queue, jobJson);
                 return null;
             }
@@ -76,6 +92,7 @@ public class ClientPoolImpl extends AbstractClient {
              */
             @Override
             public Void doWork(final Jedis jedis) {
+                validateJobUniqueness(jedis,jobJson);
                 doPriorityEnqueue(jedis, getNamespace(), queue, jobJson);
                 return null;
             }
@@ -117,6 +134,7 @@ public class ClientPoolImpl extends AbstractClient {
              */
             @Override
             public Void doWork(final Jedis jedis) {
+                validateJobUniqueness(jedis,msg);
                 doDelayedEnqueue(jedis, getNamespace(), queue, msg, future);
                 return null;
             }
