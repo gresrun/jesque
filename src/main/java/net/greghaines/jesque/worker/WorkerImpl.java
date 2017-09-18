@@ -63,13 +63,13 @@ public class WorkerImpl implements Worker {
     protected static final int RECONNECT_ATTEMPTS = 120; // Total time: 10 min
     private static final String LPOPLPUSH_LUA = "/workerScripts/jesque_lpoplpush.lua";
     private static final String REMOVE_INFLIGHT_LUA = "/workerScripts/remove-inflight.lua";
+    private static final String RESUBMIT_INFLIGHT_LUA = "/workerScripts/resubmit-inflight.lua";
     private static final String POP_LUA = "/workerScripts/jesque_pop.lua";
     private static final String POP_FROM_MULTIPLE_PRIO_QUEUES = "/workerScripts/fromMultiplePriorityQueues.lua";
 
     // Set the thread name to the message for debugging
     private static volatile boolean threadNameChangingEnabled = false;
     private final NextQueueStrategy nextQueueStrategy;
-    private JobUniquenessValidator jobUniquenessValidator;
     /**
      * @return true if worker threads names will change during normal operation
      */
@@ -119,6 +119,8 @@ public class WorkerImpl implements Worker {
     private final AtomicReference<String> popScriptHash = new AtomicReference<>(null);
     private final AtomicReference<String> lpoplpushScriptHash = new AtomicReference<>(null);
     private final AtomicReference<String> removeInFlightHash = new AtomicReference<>(null);
+    private final AtomicReference<String> resubmitInFlightHash = new AtomicReference<>(null);
+
     private final AtomicReference<String> multiPriorityQueuesScriptHash = new AtomicReference<>(null);
     private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
@@ -160,22 +162,6 @@ public class WorkerImpl implements Worker {
     /**
      * Creates a new WorkerImpl, with the given connection to Redis.<br>
      * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
-     *
-     * @param config used to create a connection to Redis and the package prefix for incoming jobs
-     * @param queues the list of queues to poll
-     * @param jobFactory the job factory that materializes the jobs
-     * @param jedis the connection to Redis
-     * @param nextQueueStrategy defines worker behavior once it has found messages in a queue
-     * @throws IllegalArgumentException if either config, queues, jobFactory, jedis or nextQueueStrategy is null
-     */
-    public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory,
-                      final Jedis jedis, final NextQueueStrategy nextQueueStrategy) {
-        this(config, queues , jobFactory, jedis , nextQueueStrategy, null);
-    }
-
-    /**
-     * Creates a new WorkerImpl, with the given connection to Redis.<br>
-     * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
      * 
      * @param config used to create a connection to Redis and the package prefix for incoming jobs
      * @param queues the list of queues to poll
@@ -185,7 +171,7 @@ public class WorkerImpl implements Worker {
      * @throws IllegalArgumentException if either config, queues, jobFactory, jedis or nextQueueStrategy is null
      */
     public WorkerImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory,
-            final Jedis jedis, final NextQueueStrategy nextQueueStrategy, JobUniquenessValidator jobUniquenessValidator) {
+            final Jedis jedis, final NextQueueStrategy nextQueueStrategy) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -209,7 +195,6 @@ public class WorkerImpl implements Worker {
         authenticateAndSelectDB();
         setQueues(queues);
         this.name = createName();
-        this.jobUniquenessValidator = jobUniquenessValidator;
     }
 
     /**
@@ -259,6 +244,7 @@ public class WorkerImpl implements Worker {
         this.multiPriorityQueuesScriptHash
                 .set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
         this.removeInFlightHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(REMOVE_INFLIGHT_LUA)));
+        this.resubmitInFlightHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(RESUBMIT_INFLIGHT_LUA)));
     }
 
     /**
@@ -470,7 +456,7 @@ public class WorkerImpl implements Worker {
                         this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
                         final String payload = pop(curQueue);
                         if (payload != null) {
-                            process(ObjectMapperFactory.get().readValue(payload, Job.class), payload,curQueue);
+                            process(ObjectMapperFactory.get().readValue(payload, Job.class),curQueue);
                             missCount = 0;
                         } else {
                             missCount++;
@@ -612,10 +598,9 @@ public class WorkerImpl implements Worker {
      * Materializes and executes the given job.
      * 
      * @param job the Job to process
-     * @param jobJson the job json used for duplicate key removal
      * @param curQueue the queue the payload came from
      */
-    protected void process(final Job job, String jobJson ,final String curQueue) {
+    protected void process(final Job job ,final String curQueue) {
         try {
             this.processingJob.set(true);
             if (threadNameChangingEnabled) {
@@ -626,30 +611,26 @@ public class WorkerImpl implements Worker {
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
+        } catch (RetryJobException ex) {
+            resubmitInFlight(curQueue,ex);
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
         } finally {
             removeInFlight(curQueue);
-            deleteUniqueJobKey(jobJson);
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
         }
     }
 
-    private void deleteUniqueJobKey(final String jobJson) {
-        if(jobUniquenessValidator!=null){
-            final UniqueKeyExtractor uniqueKeyExtractor = jobUniquenessValidator.getUniqueKeyExtractor();
-            final String uniqueJobKey = uniqueKeyExtractor.getUniqueKeyFromJob(jobJson);
-            final String uniqueRedisKey =jobUniquenessValidator.generateRedisKeyFromUniqueJobKey(uniqueJobKey);
-            jedis.del(uniqueRedisKey);
-        }
+    private void resubmitInFlight(final String curQueue, RetryJobException ex) {
+        this.jedis.evalsha(this.resubmitInFlightHash.get(), 1, key(INFLIGHT, this.name, curQueue),String.valueOf(System.currentTimeMillis() + ex.getDelay()));
     }
 
     private void removeInFlight(final String curQueue) {
         if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
             lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
         } else {
-            this.jedis.evalsha(this.removeInFlightHash.get(), 2, key(INFLIGHT, this.name, curQueue),key("log"));
+            this.jedis.evalsha(this.removeInFlightHash.get(), 1, key(INFLIGHT, this.name, curQueue));
             //this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
         }
     }

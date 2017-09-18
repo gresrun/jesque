@@ -25,8 +25,13 @@ import net.greghaines.jesque.JobUniquenessValidator;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
+import net.greghaines.jesque.utils.ScriptUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
+import redis.clients.jedis.exceptions.JedisException;
+
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Common logic for Client implementations.
@@ -36,8 +41,15 @@ import redis.clients.jedis.Transaction;
  */
 public abstract class AbstractClient implements Client {
 
+    private static final String ENQUEUE = "enqueue";
+    private static final String PRIORITY_ENQUEUE = "priorityEnqueue";
+    private static final String DELAYED_ENQUEUE = "delayedEnqueue";
+    private static final String DUPLICATED = "duplicated";
     private final String namespace;
     protected JobUniquenessValidator jobUniquenessValidator;
+    private static final String PUSH_LUA = "/clientScripts/jesque_push.lua";
+    private static final AtomicReference<String> pushScriptHash = new AtomicReference<>(null);
+
     /**
      * Constructor.
      *
@@ -58,8 +70,33 @@ public abstract class AbstractClient implements Client {
         return this.namespace;
     }
 
+    protected JobUniquenessValidator getJobUniquenessValidator() {
+        return jobUniquenessValidator;
+    }
+
     protected void setJobUniquenessValidator(final JobUniquenessValidator jobUniquenessValidator) {
         this.jobUniquenessValidator = jobUniquenessValidator;
+    }
+
+    private static boolean isScriptLoaded = false;
+
+    static void loadScript(Jedis jedis) {
+        if(!isScriptLoaded) {
+            synchronized (AbstractClient.class) {
+                if(!isScriptLoaded) {
+                    doLoadScript(jedis);
+                    isScriptLoaded = true;
+                }
+            }
+        }
+    }
+
+    private static void doLoadScript(final Jedis jedis) {
+        try {
+            pushScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(PUSH_LUA)));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -73,11 +110,8 @@ public abstract class AbstractClient implements Client {
         return JesqueUtils.createKey(this.namespace, parts);
     }
 
-    protected void validateJobUniqueness(Jedis jedis,String jobJson){
-        if(jobUniquenessValidator!=null && jobUniquenessValidator.checkJobUniqueness(jedis,jobJson)){
-            throw new DuplicateJobException("Duplicate job " +jobJson);
-        }
-    }
+    abstract Jedis getJedis();
+
     /**
      * {@inheritDoc}
      */
@@ -86,6 +120,9 @@ public abstract class AbstractClient implements Client {
         validateArguments(queue, job);
         try {
             doEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (JedisException re) {
+            doLoadScript(getJedis());
+            throw re;
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -101,6 +138,9 @@ public abstract class AbstractClient implements Client {
         validateArguments(queue, job);
         try {
             doPriorityEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (JedisException re) {
+            doLoadScript(getJedis());
+            throw re;
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -185,8 +225,14 @@ public abstract class AbstractClient implements Client {
      *            the job serialized as JSON
      */
     public static void doEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
-        jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-        jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+        doEnqueue(jedis,namespace,queue, jobJson , null);
+    }
+
+    static void doEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, JobUniquenessValidator jobUniquenessValidator) {
+        final String queuesKey = JesqueUtils.createKey(namespace, QUEUES);
+        final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
+
+        doEnqueue(jedis, ENQUEUE, queue, jobJson, queueKey, queuesKey, jobUniquenessValidator);
     }
 
     /**
@@ -203,8 +249,14 @@ public abstract class AbstractClient implements Client {
      *            the job serialized as JSON
      */
     public static void doPriorityEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
-        jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-        jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+        doPriorityEnqueue(jedis,namespace, queue, jobJson,null);
+    }
+
+    static void doPriorityEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson , JobUniquenessValidator jobUniquenessValidator) {
+        final String queuesKey = JesqueUtils.createKey(namespace, QUEUES);
+        final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
+
+        doEnqueue(jedis, PRIORITY_ENQUEUE, queue, jobJson, queueKey, queuesKey, jobUniquenessValidator);
     }
 
     /**
@@ -280,14 +332,47 @@ public abstract class AbstractClient implements Client {
     }
 
     public static void doDelayedEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future) {
-        final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
+        doDelayedEnqueue(jedis,namespace,queue,jobJson,future, null);
+    }
+
+    static void doDelayedEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future, JobUniquenessValidator jobUniquenessValidator) {
+        final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
         // Add task only if this queue is either delayed or unused
-        if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
-            jedis.zadd(key, future, jobJson);
-            jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+        if (JedisUtils.canUseAsDelayedQueue(jedis, queueKey)) {
+            final String queuesKey = JesqueUtils.createKey(namespace, QUEUES);
+            doEnqueue(jedis, DELAYED_ENQUEUE, queue, jobJson, queueKey, queuesKey, jobUniquenessValidator, future);
         } else {
             throw new IllegalArgumentException(queue + " cannot be used as a delayed queue");
         }
+    }
+
+    private static void doEnqueue(final Jedis jedis, final String enqueueType, final String queue, final String jobJson, final String queueKey, final String queuesKey, final JobUniquenessValidator jobUniquenessValidator) {
+        doEnqueue(jedis, enqueueType, queue, jobJson, queueKey, queuesKey, jobUniquenessValidator, 0L);
+    }
+
+    private static void doEnqueue(final Jedis jedis, final String enqueueType, final String queue, final String jobJson, final String queueKey, final String queuesKey, final JobUniquenessValidator jobUniquenessValidator, final long future) {
+        String uniqueKey = getUniqueKey(jobJson, jobUniquenessValidator);
+
+        final String pushStatus;
+        if(future==0) {
+            pushStatus = (String) jedis.evalsha(pushScriptHash.get(), 3, queuesKey, queueKey, uniqueKey, enqueueType, getCurrTime(), queue, jobJson);
+        } else{
+            pushStatus = (String) jedis.evalsha(pushScriptHash.get(), 3, queuesKey, queueKey, uniqueKey, enqueueType, getCurrTime(), queue, jobJson, String.valueOf(future));
+        }
+
+        if(DUPLICATED.equals(pushStatus)){
+            throw new DuplicateJobException("Dupliacted job has been found: uniqieKey " + uniqueKey+ " job" + jobJson);
+        }
+    }
+
+    private static String getUniqueKey(final String jobJson, final JobUniquenessValidator jobUniquenessValidator) {
+        String uniqueKey = "";
+
+        if (jobUniquenessValidator != null) {
+            final String uniqueJobKey = jobUniquenessValidator.getUniqueKeyExtractor().getUniqueKeyFromJob(jobJson);
+            uniqueKey = jobUniquenessValidator.generateRedisKeyFromUniqueJobKey(uniqueJobKey);
+        }
+        return uniqueKey;
     }
 
     protected abstract void doDelayedEnqueue(String queue, String msg, long future) throws Exception;
@@ -300,6 +385,9 @@ public abstract class AbstractClient implements Client {
         validateArguments(queue, job, future);
         try {
             doDelayedEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future);
+        } catch (JedisException re) {
+            doLoadScript(getJedis());
+            throw re;
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -421,5 +509,9 @@ public abstract class AbstractClient implements Client {
         if (frequency < 1) {
             throw new IllegalArgumentException("frequency must be greater than one second");
         }
+    }
+
+    private static String getCurrTime() {
+        return String.valueOf(System.currentTimeMillis());
     }
 }

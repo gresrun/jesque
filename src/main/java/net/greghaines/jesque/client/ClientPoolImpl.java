@@ -62,8 +62,31 @@ public class ClientPoolImpl extends AbstractClient {
         }
         this.jedisPool = jedisPool;
         setJobUniquenessValidator(jobUniquenessValidator);
+
+        try {
+            PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
+                /**
+                 * {@inheritDoc}
+                 */
+                @Override
+                public Void doWork(final Jedis jedis) {
+                    loadScript(jedis);
+                    return null;
+                }
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
-        /**
+
+
+    @Override
+    Jedis getJedis() {
+        return jedisPool.getResource();
+    }
+
+    /**
          * {@inheritDoc}
          */
     @Override
@@ -74,8 +97,7 @@ public class ClientPoolImpl extends AbstractClient {
              */
             @Override
             public Void doWork(final Jedis jedis) {
-                validateJobUniqueness(jedis,jobJson);
-                doEnqueue(jedis, getNamespace(), queue, jobJson);
+                doEnqueue(jedis, getNamespace(), queue, jobJson, getJobUniquenessValidator());
                 return null;
             }
         });
@@ -92,8 +114,7 @@ public class ClientPoolImpl extends AbstractClient {
              */
             @Override
             public Void doWork(final Jedis jedis) {
-                validateJobUniqueness(jedis,jobJson);
-                doPriorityEnqueue(jedis, getNamespace(), queue, jobJson);
+                doPriorityEnqueue(jedis, getNamespace(), queue, jobJson, getJobUniquenessValidator());
                 return null;
             }
         });
@@ -134,8 +155,7 @@ public class ClientPoolImpl extends AbstractClient {
              */
             @Override
             public Void doWork(final Jedis jedis) {
-                validateJobUniqueness(jedis,msg);
-                doDelayedEnqueue(jedis, getNamespace(), queue, msg, future);
+                doDelayedEnqueue(jedis, getNamespace(), queue, msg, future, getJobUniquenessValidator());
                 return null;
             }
         });

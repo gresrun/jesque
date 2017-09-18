@@ -86,6 +86,12 @@ public class ClientImpl extends AbstractClient {
         this.checkConnectionBeforeUse = checkConnectionBeforeUse;
         this.keepAliveService = null;
         setJobUniquenessValidator(jobUniquenessValidator);
+        loadScript(jedis);
+    }
+
+    @Override
+    Jedis getJedis() {
+        return jedis;
     }
 
     /**
@@ -124,8 +130,7 @@ public class ClientImpl extends AbstractClient {
     @Override
     protected void doEnqueue(final String queue, final String jobJson) {
         ensureJedisConnection();
-        validateJobUniqueness(this.jedis,jobJson);
-        doEnqueue(this.jedis, getNamespace(), queue, jobJson);
+        doEnqueue(this.jedis, getNamespace(), queue, jobJson, getJobUniquenessValidator());
     }
 
     /**
@@ -134,8 +139,7 @@ public class ClientImpl extends AbstractClient {
     @Override
     protected void doPriorityEnqueue(final String queue, final String jobJson) {
         ensureJedisConnection();
-        validateJobUniqueness(this.jedis,jobJson);
-        doPriorityEnqueue(this.jedis, getNamespace(), queue, jobJson);
+        doPriorityEnqueue(this.jedis, getNamespace(), queue, jobJson, getJobUniquenessValidator());
     }
 
     /**
@@ -165,8 +169,7 @@ public class ClientImpl extends AbstractClient {
     @Override
     protected void doDelayedEnqueue(final String queue, final String msg, final long future) throws Exception {
         ensureJedisConnection();
-        validateJobUniqueness(this.jedis,msg);
-        doDelayedEnqueue(this.jedis, getNamespace(), queue, msg, future);
+        doDelayedEnqueue(this.jedis, getNamespace(), queue, msg, future, getJobUniquenessValidator());
     }
 
     /**
