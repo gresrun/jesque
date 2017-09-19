@@ -1,15 +1,22 @@
 local queuesKey = KEYS[1]
 local queueKey = KEYS[2]
-local uniqueKey = KEYS[3]
-local testKey = KEYS[4]
 local operation = ARGV[1]
 local currentTime = tonumber(ARGV[2])
 local queue = ARGV[3]
 local jobJson = ARGV[4]
+local uniquenessValidation = ARGV[5]
+local uniqueKey
 
 
 local function enforceUniqueness()
     return redis.call('SETNX', uniqueKey,currentTime)
+end
+
+local function getUniqueKey(jobJson)
+    local jobJsonObj = cjson.decode(jobJson)
+
+    -- choose first argument as unique key
+    return "resque:uniqueKey:"..jobJsonObj.class.."_"..jobJsonObj.args[1]
 end
 
 local function push(jobJsonToPush)
@@ -20,7 +27,7 @@ local function push(jobJsonToPush)
     elseif operation == 'priorityEnqueue' then
         redis.call('LPUSH', queueKey,jobJsonToPush)
     elseif operation == 'delayedEnqueue' then
-        local future = tonumber(ARGV[5])
+        local future = tonumber(ARGV[6])
         redis.call('ZADD', queueKey,future,jobJsonToPush)
     end
 end
@@ -32,18 +39,21 @@ local function pushEnriched(jobJsonToModify)
         push(extendedJobJson);
 end
 
-local isUnique=nil
+local isUnique
 
-if uniqueKey~='' then
+if uniquenessValidation=="true" then
+    uniqueKey = getUniqueKey(jobJson)
     isUnique = enforceUniqueness()
 end
 
-if isUnique==1 then
-    pushEnriched(jobJson)
-    return "pushed"
-elseif isUnique==nil then
+if uniquenessValidation=="true" then
+    if(isUnique==1) then
+        pushEnriched(jobJson)
+        return "pushed"
+    else
+        return "duplicated"
+    end
+else
     push(jobJson);
     return "pushed"
-elseif isUnique==0 then
-    return "duplicated"
 end
