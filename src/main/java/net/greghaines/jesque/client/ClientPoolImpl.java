@@ -65,9 +65,6 @@ public class ClientPoolImpl extends AbstractClient {
 
         try {
             PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-                /**
-                 * {@inheritDoc}
-                 */
                 @Override
                 public Void doWork(final Jedis jedis) {
                     loadScript(jedis);
@@ -85,16 +82,9 @@ public class ClientPoolImpl extends AbstractClient {
     Jedis getJedis() {
         return jedisPool.getResource();
     }
-
-    /**
-         * {@inheritDoc}
-         */
-    @Override
+   @Override
     protected void doEnqueue(final String queue, final String jobJson) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
                 doEnqueue(jedis, getNamespace(), queue, jobJson, getJobUniquenessValidator());
@@ -103,15 +93,9 @@ public class ClientPoolImpl extends AbstractClient {
         });
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void doPriorityEnqueue(final String queue, final String jobJson) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
                 doPriorityEnqueue(jedis, getNamespace(), queue, jobJson, getJobUniquenessValidator());
@@ -120,15 +104,9 @@ public class ClientPoolImpl extends AbstractClient {
         });
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout) throws Exception {
         return PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Boolean>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Boolean doWork(final Jedis jedis) {
                 return doAcquireLock(jedis, getNamespace(), lockName, lockHolder, timeout);
@@ -136,23 +114,14 @@ public class ClientPoolImpl extends AbstractClient {
         });
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void end() {
         // Do nothing
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void doDelayedEnqueue(final String queue, final String msg, final long future) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
                 doDelayedEnqueue(jedis, getNamespace(), queue, msg, future, getJobUniquenessValidator());
@@ -167,9 +136,6 @@ public class ClientPoolImpl extends AbstractClient {
     @Override
     protected void doRemoveDelayedEnqueue(final String queue, final String msg) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
                 doRemoveDelayedEnqueue(jedis, getNamespace(), queue, msg);
@@ -181,9 +147,6 @@ public class ClientPoolImpl extends AbstractClient {
     @Override
     protected void doRecurringEnqueue(final String queue, final String msg, final long future, final long frequency) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
                 doRecurringEnqueue(jedis, getNamespace(), queue, msg, future, frequency);
@@ -195,9 +158,6 @@ public class ClientPoolImpl extends AbstractClient {
     @Override
     protected void doRemoveRecurringEnqueue(final String queue, final String msg) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
                 doRemoveRecurringEnqueue(jedis, getNamespace(), queue, msg);
