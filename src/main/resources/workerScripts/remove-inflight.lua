@@ -6,5 +6,12 @@ local inFlightKey = KEYS[1]
 local inFlights = redis.call('KEYS', inFlightKey.."*")
 
 for _,key in ipairs(inFlights) do
-    redis.call('LPOP', key)
+    local jobJson = redis.call('LPOP', key)
+
+    -- remove unique key
+    local jobJsonObj = cjson.decode(jobJson)
+
+    if jobJsonObj.uniqueKey ~= nil then
+       redis.call('DEL', jobJsonObj.uniqueKey)
+    end
 end

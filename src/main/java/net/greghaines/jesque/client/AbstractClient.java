@@ -19,26 +19,39 @@ import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 
 import net.greghaines.jesque.Config;
+import net.greghaines.jesque.DuplicateJobException;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
+import net.greghaines.jesque.utils.ScriptUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
+import redis.clients.jedis.exceptions.JedisException;
+
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Common logic for Client implementations.
- * 
+ *
  * @author Greg Haines
  * @author Animesh Kumar
  */
 public abstract class AbstractClient implements Client {
 
+    private static final String ENQUEUE = "enqueue";
+    private static final String PRIORITY_ENQUEUE = "priorityEnqueue";
+    private static final String DELAYED_ENQUEUE = "delayedEnqueue";
+    private static final String DUPLICATED = "duplicated";
     private final String namespace;
+    protected boolean jobUniquenessValidation;
+    private static final String PUSH_LUA = "/clientScripts/jesque_push.lua";
+    private static final AtomicReference<String> pushScriptHash = new AtomicReference<>(null);
 
     /**
      * Constructor.
-     * 
+     *
      * @param config
      *            used to get the namespace for key creation
      */
@@ -56,9 +69,34 @@ public abstract class AbstractClient implements Client {
         return this.namespace;
     }
 
+    protected boolean getJobUniquenessValidation() {
+        return jobUniquenessValidation;
+    }
+
+    private static boolean isScriptLoaded = false;
+
+    static void loadScript(Jedis jedis) {
+        if(!isScriptLoaded) {
+            synchronized (AbstractClient.class) {
+                if(!isScriptLoaded) {
+                    doLoadScript(jedis);
+                    isScriptLoaded = true;
+                }
+            }
+        }
+    }
+
+    private static void doLoadScript(final Jedis jedis) {
+        try {
+            pushScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(PUSH_LUA)));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Builds a namespaced Redis key with the given arguments.
-     * 
+     *
      * @param parts
      *            the key parts to be joined
      * @return an assembled String key
@@ -66,6 +104,8 @@ public abstract class AbstractClient implements Client {
     protected String key(final String... parts) {
         return JesqueUtils.createKey(this.namespace, parts);
     }
+
+    abstract Jedis getJedis();
 
     /**
      * {@inheritDoc}
@@ -75,6 +115,9 @@ public abstract class AbstractClient implements Client {
         validateArguments(queue, job);
         try {
             doEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (JedisException re) {
+            doLoadScript(getJedis());
+            throw re;
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -90,6 +133,9 @@ public abstract class AbstractClient implements Client {
         validateArguments(queue, job);
         try {
             doPriorityEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job));
+        } catch (JedisException re) {
+            doLoadScript(getJedis());
+            throw re;
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -122,7 +168,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Actually enqueue the serialized job.
-     * 
+     *
      * @param queue
      *            the queue to add the Job to
      * @param msg
@@ -134,7 +180,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Actually enqueue the serialized job with high priority.
-     * 
+     *
      * @param queue
      *            the queue to add the Job to
      * @param msg
@@ -146,7 +192,7 @@ public abstract class AbstractClient implements Client {
 
     /**
      * Actually acquire the lock based upon the client acquisition model.
-     * 
+     *
      * @param lockName
      *            the name of the lock to acquire
      * @param timeout
@@ -157,13 +203,13 @@ public abstract class AbstractClient implements Client {
      * @throws Exception
      *             in case something goes wrong
      */
-    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder, 
+    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder,
             final int timeout) throws Exception;
 
     /**
      * Helper method that encapsulates the minimum logic for adding a job to a
      * queue.
-     * 
+     *
      * @param jedis
      *            the connection to Redis
      * @param namespace
@@ -174,14 +220,20 @@ public abstract class AbstractClient implements Client {
      *            the job serialized as JSON
      */
     public static void doEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
-        jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-        jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+        doEnqueue(jedis,namespace,queue, jobJson , false);
+    }
+
+    static void doEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, boolean jobUniquenessValidation) {
+        final String queuesKey = JesqueUtils.createKey(namespace, QUEUES);
+        final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
+
+        doEnqueue(jedis, ENQUEUE, queue, jobJson, queueKey, queuesKey, jobUniquenessValidation);
     }
 
     /**
      * Helper method that encapsulates the minimum logic for adding a high
      * priority job to a queue.
-     * 
+     *
      * @param jedis
      *            the connection to Redis
      * @param namespace
@@ -192,13 +244,19 @@ public abstract class AbstractClient implements Client {
      *            the job serialized as JSON
      */
     public static void doPriorityEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
-        jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-        jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+        doPriorityEnqueue(jedis,namespace, queue, jobJson,false);
+    }
+
+    static void doPriorityEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson , boolean jobUniquenessValidation) {
+        final String queuesKey = JesqueUtils.createKey(namespace, QUEUES);
+        final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
+
+        doEnqueue(jedis, PRIORITY_ENQUEUE, queue, jobJson, queueKey, queuesKey, jobUniquenessValidation);
     }
 
     /**
      * Helper method that encapsulates the logic to acquire a lock.
-     * 
+     *
      * @param jedis
      *            the connection to Redis
      * @param namespace
@@ -269,13 +327,36 @@ public abstract class AbstractClient implements Client {
     }
 
     public static void doDelayedEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future) {
-        final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
+        doDelayedEnqueue(jedis,namespace,queue,jobJson,future, false);
+    }
+
+    static void doDelayedEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future, boolean jobUniquenessValidation) {
+        final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
         // Add task only if this queue is either delayed or unused
-        if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
-            jedis.zadd(key, future, jobJson);
-            jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+        if (JedisUtils.canUseAsDelayedQueue(jedis, queueKey)) {
+            final String queuesKey = JesqueUtils.createKey(namespace, QUEUES);
+            doEnqueue(jedis, DELAYED_ENQUEUE, queue, jobJson, queueKey, queuesKey, jobUniquenessValidation, future);
         } else {
             throw new IllegalArgumentException(queue + " cannot be used as a delayed queue");
+        }
+    }
+
+    private static void doEnqueue(final Jedis jedis, final String enqueueType, final String queue, final String jobJson, final String queueKey, final String queuesKey, final boolean jobUniquenessValidation) {
+        doEnqueue(jedis, enqueueType, queue, jobJson, queueKey, queuesKey, jobUniquenessValidation, 0L);
+    }
+
+    private static void doEnqueue(final Jedis jedis, final String enqueueType, final String queue, final String jobJson, final String queueKey, final String queuesKey, final boolean jobUniquenessValidation, final long future) {
+        final String pushStatus;
+        final String uniquenessValidation = String.valueOf(jobUniquenessValidation);
+
+        if(future==0) {
+            pushStatus = (String) jedis.evalsha(pushScriptHash.get(), 2, queuesKey, queueKey, enqueueType, getCurrTime(), queue, jobJson, uniquenessValidation);
+        } else{
+            pushStatus = (String) jedis.evalsha(pushScriptHash.get(), 2, queuesKey, queueKey, enqueueType, getCurrTime(), queue, jobJson, uniquenessValidation, String.valueOf(future));
+        }
+
+        if(DUPLICATED.equals(pushStatus)){
+            throw new DuplicateJobException("Duplicated job " + jobJson + " has been found");
         }
     }
 
@@ -289,6 +370,9 @@ public abstract class AbstractClient implements Client {
         validateArguments(queue, job, future);
         try {
             doDelayedEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future);
+        } catch (JedisException re) {
+            doLoadScript(getJedis());
+            throw re;
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -410,5 +494,9 @@ public abstract class AbstractClient implements Client {
         if (frequency < 1) {
             throw new IllegalArgumentException("frequency must be greater than one second");
         }
+    }
+
+    private static String getCurrTime() {
+        return String.valueOf(System.currentTimeMillis());
     }
 }

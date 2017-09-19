@@ -41,56 +41,70 @@ public class ClientPoolImpl extends AbstractClient {
      *            the connection pool
      */
     public ClientPoolImpl(final Config config, final Pool<Jedis> jedisPool) {
+        this(config,jedisPool,false);
+    }
+
+    /**
+     * Create a ClientPoolImpl.
+     *
+     * @param config
+     *            used to get the namespace for key creation
+     * @param jedisPool
+     *            the connection pool
+     *  @param jobUniquenessValidaton used to avoid duplicate jobs submission
+     *
+     */
+    public ClientPoolImpl(final Config config, final Pool<Jedis> jedisPool, boolean jobUniquenessValidaton) {
         super(config);
         if (jedisPool == null) {
             throw new IllegalArgumentException("jedisPool must not be null");
         }
         this.jedisPool = jedisPool;
+        this.jobUniquenessValidation = jobUniquenessValidaton;
+        try {
+            PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
+                @Override
+                public Void doWork(final Jedis jedis) {
+                    loadScript(jedis);
+                    return null;
+                }
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
-    /**
-     * {@inheritDoc}
-     */
+
     @Override
+    Jedis getJedis() {
+        return jedisPool.getResource();
+    }
+   @Override
     protected void doEnqueue(final String queue, final String jobJson) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
-                doEnqueue(jedis, getNamespace(), queue, jobJson);
+                doEnqueue(jedis, getNamespace(), queue, jobJson, getJobUniquenessValidation());
                 return null;
             }
         });
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void doPriorityEnqueue(final String queue, final String jobJson) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
-                doPriorityEnqueue(jedis, getNamespace(), queue, jobJson);
+                doPriorityEnqueue(jedis, getNamespace(), queue, jobJson, getJobUniquenessValidation());
                 return null;
             }
         });
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout) throws Exception {
         return PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Boolean>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Boolean doWork(final Jedis jedis) {
                 return doAcquireLock(jedis, getNamespace(), lockName, lockHolder, timeout);
@@ -98,26 +112,17 @@ public class ClientPoolImpl extends AbstractClient {
         });
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void end() {
         // Do nothing
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void doDelayedEnqueue(final String queue, final String msg, final long future) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
-                doDelayedEnqueue(jedis, getNamespace(), queue, msg, future);
+                doDelayedEnqueue(jedis, getNamespace(), queue, msg, future, getJobUniquenessValidation());
                 return null;
             }
         });
@@ -129,9 +134,6 @@ public class ClientPoolImpl extends AbstractClient {
     @Override
     protected void doRemoveDelayedEnqueue(final String queue, final String msg) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
                 doRemoveDelayedEnqueue(jedis, getNamespace(), queue, msg);
@@ -143,9 +145,6 @@ public class ClientPoolImpl extends AbstractClient {
     @Override
     protected void doRecurringEnqueue(final String queue, final String msg, final long future, final long frequency) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
                 doRecurringEnqueue(jedis, getNamespace(), queue, msg, future, frequency);
@@ -157,9 +156,6 @@ public class ClientPoolImpl extends AbstractClient {
     @Override
     protected void doRemoveRecurringEnqueue(final String queue, final String msg) throws Exception {
         PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
             @Override
             public Void doWork(final Jedis jedis) {
                 doRemoveRecurringEnqueue(jedis, getNamespace(), queue, msg);

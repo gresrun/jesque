@@ -35,16 +35,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import net.greghaines.jesque.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
-import net.greghaines.jesque.Config;
-import net.greghaines.jesque.Job;
-import net.greghaines.jesque.JobFailure;
-import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
@@ -66,13 +63,13 @@ public class WorkerImpl implements Worker {
     protected static final int RECONNECT_ATTEMPTS = 120; // Total time: 10 min
     private static final String LPOPLPUSH_LUA = "/workerScripts/jesque_lpoplpush.lua";
     private static final String REMOVE_INFLIGHT_LUA = "/workerScripts/remove-inflight.lua";
+    private static final String RESUBMIT_INFLIGHT_LUA = "/workerScripts/resubmit-inflight.lua";
     private static final String POP_LUA = "/workerScripts/jesque_pop.lua";
     private static final String POP_FROM_MULTIPLE_PRIO_QUEUES = "/workerScripts/fromMultiplePriorityQueues.lua";
 
     // Set the thread name to the message for debugging
     private static volatile boolean threadNameChangingEnabled = false;
     private final NextQueueStrategy nextQueueStrategy;
-
     /**
      * @return true if worker threads names will change during normal operation
      */
@@ -122,6 +119,8 @@ public class WorkerImpl implements Worker {
     private final AtomicReference<String> popScriptHash = new AtomicReference<>(null);
     private final AtomicReference<String> lpoplpushScriptHash = new AtomicReference<>(null);
     private final AtomicReference<String> removeInFlightHash = new AtomicReference<>(null);
+    private final AtomicReference<String> resubmitInFlightHash = new AtomicReference<>(null);
+
     private final AtomicReference<String> multiPriorityQueuesScriptHash = new AtomicReference<>(null);
     private final long workerId = WORKER_COUNTER.getAndIncrement();
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
@@ -245,6 +244,7 @@ public class WorkerImpl implements Worker {
         this.multiPriorityQueuesScriptHash
                 .set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
         this.removeInFlightHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(REMOVE_INFLIGHT_LUA)));
+        this.resubmitInFlightHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(RESUBMIT_INFLIGHT_LUA)));
     }
 
     /**
@@ -456,7 +456,7 @@ public class WorkerImpl implements Worker {
                         this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
                         final String payload = pop(curQueue);
                         if (payload != null) {
-                            process(ObjectMapperFactory.get().readValue(payload, Job.class), curQueue);
+                            process(ObjectMapperFactory.get().readValue(payload, Job.class),curQueue);
                             missCount = 0;
                         } else {
                             missCount++;
@@ -600,7 +600,7 @@ public class WorkerImpl implements Worker {
      * @param job the Job to process
      * @param curQueue the queue the payload came from
      */
-    protected void process(final Job job, final String curQueue) {
+    protected void process(final Job job ,final String curQueue) {
         try {
             this.processingJob.set(true);
             if (threadNameChangingEnabled) {
@@ -611,6 +611,8 @@ public class WorkerImpl implements Worker {
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
+        } catch (RetryJobException ex) {
+            resubmitInFlight(curQueue,ex);
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
         } finally {
@@ -620,11 +622,15 @@ public class WorkerImpl implements Worker {
         }
     }
 
+    private void resubmitInFlight(final String curQueue, RetryJobException ex) {
+        this.jedis.evalsha(this.resubmitInFlightHash.get(), 1, key(INFLIGHT, this.name, curQueue),String.valueOf(System.currentTimeMillis() + ex.getDelay()));
+    }
+
     private void removeInFlight(final String curQueue) {
         if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
             lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
         } else {
-            this.jedis.evalsha(this.removeInFlightHash.get(), 2, key(INFLIGHT, this.name, curQueue),key("log"));
+            this.jedis.evalsha(this.removeInFlightHash.get(), 1, key(INFLIGHT, this.name, curQueue));
             //this.jedis.lpop(key(INFLIGHT, this.name, curQueue));
         }
     }
