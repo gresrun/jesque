@@ -601,6 +601,8 @@ public class WorkerImpl implements Worker {
      * @param curQueue the queue the payload came from
      */
     protected void process(final Job job ,final String curQueue) {
+        boolean resubmit = false;
+        long resubmitDelay = 0;
         try {
             this.processingJob.set(true);
             if (threadNameChangingEnabled) {
@@ -612,18 +614,23 @@ public class WorkerImpl implements Worker {
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
         } catch (RetryJobException ex) {
-            resubmitInFlight(curQueue,ex);
+            resubmit = true;
+            resubmitDelay = ex.getDelay();
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
         } finally {
-            removeInFlight(curQueue);
+            if(resubmit){
+                resubmitInFlight(curQueue,resubmitDelay);
+            } else {
+                removeInFlight(curQueue);
+            }
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
         }
     }
 
-    private void resubmitInFlight(final String curQueue, RetryJobException ex) {
-        this.jedis.evalsha(this.resubmitInFlightHash.get(), 1, key(INFLIGHT, this.name, curQueue),String.valueOf(System.currentTimeMillis() + ex.getDelay()));
+    private void resubmitInFlight(final String curQueue, long delay) {
+        this.jedis.evalsha(this.resubmitInFlightHash.get(), 1, key(INFLIGHT, this.name, curQueue),String.valueOf(System.currentTimeMillis() + delay));
     }
 
     private void removeInFlight(final String curQueue) {
