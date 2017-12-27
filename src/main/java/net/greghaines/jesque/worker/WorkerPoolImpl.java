@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.util.Pool;
 
@@ -675,9 +676,21 @@ public class WorkerPoolImpl implements Worker {
                 public Void doWork(final Jedis jedis) throws IOException {
                     jedis.incr(key(STAT, FAILED));
                     jedis.incr(key(STAT, FAILED, name));
-                    final String failQueueKey = failQueueStrategyRef.get().getFailQueueKey(thrwbl, job, curQueue);
+                    final FailQueueStrategy strategy = failQueueStrategyRef.get();
+                    final String failQueueKey = strategy.getFailQueueKey(thrwbl, job, curQueue);
                     if (failQueueKey != null) {
-                        jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+                        final int failQueueMaxItems = strategy.getFailQueueMaxItems(curQueue);
+                        if (failQueueMaxItems > 0) {
+                            Long currentItems = jedis.llen(failQueueKey);
+                            if (currentItems >= failQueueMaxItems) {
+                                Transaction tx = jedis.multi();
+                                tx.ltrim(failQueueKey, 1, -1);
+                                tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+                                tx.exec();
+                            }
+                        } else {
+                            jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+                        }
                     }
                     return null;
                 }
