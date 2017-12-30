@@ -32,4 +32,12 @@ public interface FailQueueStrategy {
      * @return the key of the failure queue to put the job into or null
      */
     String getFailQueueKey(Throwable thrwbl, Job job, String curQueue);
+
+    /**
+     * Determine the max number of items to keep in the failure queue.
+     * Returning a value <1 means that there is no limit.
+     * @param curQueue the queue the Job came from
+     * @return the max number of items to keep for the failure queue
+     */
+    int getFailQueueMaxItems(String curQueue);
 }

@@ -51,6 +51,7 @@ import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.ScriptUtils;
 import net.greghaines.jesque.utils.VersionUtils;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisException;
 
 /**
@@ -677,9 +678,21 @@ public class WorkerImpl implements Worker {
         try {
             this.jedis.incr(key(STAT, FAILED));
             this.jedis.incr(key(STAT, FAILED, this.name));
-            final String failQueueKey = this.failQueueStrategyRef.get().getFailQueueKey(thrwbl, job, curQueue);
+            final FailQueueStrategy strategy = this.failQueueStrategyRef.get();
+            final String failQueueKey = strategy.getFailQueueKey(thrwbl, job, curQueue);
             if (failQueueKey != null) {
-                this.jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+                final int failQueueMaxItems = strategy.getFailQueueMaxItems(curQueue);
+                if (failQueueMaxItems > 0) {
+                    Long currentItems = this.jedis.llen(failQueueKey);
+                    if (currentItems >= failQueueMaxItems) {
+                        Transaction tx = this.jedis.multi();
+                        tx.ltrim(failQueueKey, 1, -1);
+                        tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+                        tx.exec();
+                    }
+                } else {
+                    this.jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+                }
             }
         } catch (JedisException je) {
             LOG.warn("Error updating failure stats for throwable=" + thrwbl + " job=" + job, je);
