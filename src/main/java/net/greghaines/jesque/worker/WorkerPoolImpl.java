@@ -526,6 +526,8 @@ public class WorkerPoolImpl implements Worker {
      */
     protected String pop(final String curQueue) {
         final String key = key(QUEUE, curQueue);
+        final String now = Long.toString(System.currentTimeMillis());
+        final String inflightKey = key(INFLIGHT, this.name, curQueue);
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, String>() {
             /**
              * {@inheritDoc}
@@ -534,10 +536,10 @@ public class WorkerPoolImpl implements Worker {
             public String doWork(final Jedis jedis) {
                 switch (nextQueueStrategy) {
                     case DRAIN_WHILE_MESSAGES_EXISTS:
-                        return (String) jedis.evalsha(popScriptHash.get(), 3, key, key(INFLIGHT, name, curQueue),
-                                JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
+                        return (String) jedis.evalsha(popScriptHash.get(), 3, key, inflightKey,
+                                JesqueUtils.createRecurringHashKey(key), now);
                     case RESET_TO_HIGHEST_PRIORITY:
-                        return (String) jedis.evalsha(multiPriorityQueuesScriptHash.get(), 1, curQueue);
+                        return (String) jedis.evalsha(multiPriorityQueuesScriptHash.get(), 2, curQueue, inflightKey, now);
                     default:
                         throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
                 }
