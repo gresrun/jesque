@@ -20,7 +20,7 @@ for q in queues.gmatch(queues, NEXT_QUEUE_REGEX) do
     local payload
 
     if queueType == 'zset' then
-        local firstMsg = redis.call('ZRANGEBYSCORE', queueName, '-inf', now, 'WITHSCORES', 'LIMIT', '0', '1')
+        local firstMsg = redis.call('ZRANGEBYSCORE', queueName, '-inf', now, 'LIMIT', '0', '1')
         if firstMsg ~= nil then
             payload = firstMsg[1]
             if payload ~= nil then
