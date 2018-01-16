@@ -11,7 +11,7 @@ end
 
 local ok, queueType = next(redis.call('TYPE', queueKey))
 if queueType == 'zset' then
-	local i, lPayload = next(redis.call('ZRANGEBYSCORE', queueKey, '-inf', now, 'WITHSCORES', 'LIMIT' , '0' , '1'))
+	local i, lPayload = next(redis.call('ZRANGEBYSCORE', queueKey, '-inf', now, 'LIMIT' , '0' , '1'))
 	if lPayload then
 		payload = lPayload
 		local frequency = redis.call('HGET', freqKey, payload)

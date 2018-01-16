@@ -508,14 +508,16 @@ public class WorkerImpl implements Worker {
      */
     protected String pop(final String curQueue) {
         final String key = key(QUEUE, curQueue);
+        final String now = Long.toString(System.currentTimeMillis());
+        final String inflightKey = key(INFLIGHT, this.name, curQueue);
         switch (nextQueueStrategy) {
-        case DRAIN_WHILE_MESSAGES_EXISTS:
-            return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, key(INFLIGHT, this.name, curQueue),
-                    JesqueUtils.createRecurringHashKey(key), Long.toString(System.currentTimeMillis()));
-        case RESET_TO_HIGHEST_PRIORITY:
-            return (String) this.jedis.evalsha(this.multiPriorityQueuesScriptHash.get(), 1, curQueue);
-        default:
-            throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
+            case DRAIN_WHILE_MESSAGES_EXISTS:
+                return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, inflightKey,
+                        JesqueUtils.createRecurringHashKey(key), now);
+            case RESET_TO_HIGHEST_PRIORITY:
+                return (String) this.jedis.evalsha(this.multiPriorityQueuesScriptHash.get(), 2, curQueue, inflightKey, now);
+            default:
+                throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
         }
     }
 
