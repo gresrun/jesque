@@ -47,6 +47,7 @@ final Worker worker = new WorkerImpl(config,
 final Thread workerThread = new Thread(worker);
 workerThread.start();
 
+Thread.sleep(100);
 worker.end(true);
 try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 ```
