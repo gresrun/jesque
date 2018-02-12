@@ -61,7 +61,7 @@ client.delayedEnqueue("fooDelay", job, future);
 ```
 
 ### Recurring Jobs
-Recurring jobs can start at a specific time and exeucte at specified intervals. 
+Recurring jobs can start at a specific time and execute at specified intervals. 
 ```java
 final long delay = 10; // in seconds
 final long future = System.currentTimeMillis() + (delay * 1000); // timestamp
