@@ -47,6 +47,9 @@ final Worker worker = new WorkerImpl(config,
 final Thread workerThread = new Thread(worker);
 workerThread.start();
 
+// Enqueue more jobs, etc.
+
+// Shutdown the worker when finished
 worker.end(true);
 try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 ```
