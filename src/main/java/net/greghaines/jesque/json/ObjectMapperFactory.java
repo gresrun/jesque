@@ -15,12 +15,11 @@
  */
 package net.greghaines.jesque.json;
 
-import java.text.DateFormat;
-
-import net.greghaines.jesque.utils.CompositeDateFormat;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import net.greghaines.jesque.utils.CompositeDateFormat;
+
+import java.text.DateFormat;
 
 /**
  * A helper that creates a fully-configured singleton ObjectMapper.
@@ -34,8 +33,7 @@ public final class ObjectMapperFactory {
 	static {
 		mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 		final DateFormat jsonDateFormat = new CompositeDateFormat();
-		mapper.getDeserializationConfig().with(jsonDateFormat);
-		mapper.getSerializationConfig().with(jsonDateFormat);
+		mapper.setDateFormat(jsonDateFormat);
 	}
 	
 	/**
