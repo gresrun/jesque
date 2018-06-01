@@ -4,3 +4,6 @@
 target/
 *.class
 stdout
+.idea/
+jesque.iml
+
