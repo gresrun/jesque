@@ -164,7 +164,7 @@ public class TestQueueInfoDAORedisImpl {
             oneOf(jedis).smembers(QUEUES_KEY); will(returnValue(queueCountMap.keySet()));
             for (final Entry<String,String> e : queueTypeMap.entrySet()) {
                 final String queueKey = "resque:queue:" + e.getKey();
-                oneOf(jedis).type(queueKey); will(returnValue(e.getValue()));
+                exactly(2).of(jedis).type(queueKey); will(returnValue(e.getValue()));
                 if (KeyType.ZSET.toString().equals(e.getValue())) {
                     oneOf(jedis).zcard(queueKey); will(returnValue(queueCountMap.get(e.getKey())));
                 } else {
@@ -194,7 +194,7 @@ public class TestQueueInfoDAORedisImpl {
         payloads.add(ObjectMapperFactory.get().writeValueAsString(new Job("bar")));
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
-            exactly(2).of(jedis).type(queueKey); will(returnValue(KeyType.LIST.toString()));
+            exactly(3).of(jedis).type(queueKey); will(returnValue(KeyType.LIST.toString()));
             oneOf(jedis).llen(queueKey); will(returnValue(size));
             oneOf(jedis).lrange(queueKey, jobOffset, jobOffset + jobCount - 1); will(returnValue(payloads));
             oneOf(jedis).close();
@@ -220,7 +220,7 @@ public class TestQueueInfoDAORedisImpl {
         payloads.add(ObjectMapperFactory.get().writeValueAsString(new Job("bar")));
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
-            exactly(2).of(jedis).type(queueKey); will(returnValue(KeyType.ZSET.toString()));
+            exactly(3).of(jedis).type(queueKey); will(returnValue(KeyType.ZSET.toString()));
             oneOf(jedis).zcard(queueKey); will(returnValue(size));
             oneOf(jedis).zrange(queueKey, jobOffset, jobOffset + jobCount - 1); will(returnValue(payloads));
             oneOf(jedis).close();
