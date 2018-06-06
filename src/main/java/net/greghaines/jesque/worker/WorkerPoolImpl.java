@@ -750,6 +750,8 @@ public class WorkerPoolImpl implements Worker {
                                 tx.ltrim(failQueueKey, 1, -1);
                                 tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
                                 tx.exec();
+                            } else {
+                                jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
                             }
                         } else {
                             jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
