@@ -539,7 +539,7 @@ public class WorkerImpl implements Worker {
                 try {
                     loadRedisScripts();
                 } catch (IOException e) {
-                    LOG.error("Failed to load redis scripts", e);
+                    LOG.error("Failed to reload Lua scripts after reconnect", e);
                 }
             }
             break;
