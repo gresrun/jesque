@@ -537,10 +537,10 @@ public class WorkerImpl implements Worker {
                 authenticateAndSelectDB();
                 LOG.info("Reconnected to Redis");
                 try {
-					loadRedisScripts();
-				} catch (IOException e) {
-					LOG.error("Failed to load redis scripts", e);
-				}
+                    loadRedisScripts();
+                } catch (IOException e) {
+                    LOG.error("Failed to load redis scripts", e);
+                }
             }
             break;
         case TERMINATE:
@@ -797,12 +797,12 @@ public class WorkerImpl implements Worker {
         return (String) this.jedis.evalsha(this.lpoplpushScriptHash.get(), 2, from, to);
     }
 
-	private void loadRedisScripts() throws IOException {
-		this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
-		this.lpoplpushScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
-		this.multiPriorityQueuesScriptHash
-		        .set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
-	}
+    private void loadRedisScripts() throws IOException {
+        this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
+        this.lpoplpushScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
+        this.multiPriorityQueuesScriptHash
+                .set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
+    }
 
     /**
      * {@inheritDoc}
