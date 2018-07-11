@@ -216,10 +216,7 @@ public class WorkerImpl implements Worker {
                 this.jedis.sadd(key(WORKERS), this.name);
                 this.jedis.set(key(WORKER, this.name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
                 this.listenerDelegate.fireEvent(WORKER_START, this, null, null, null, null, null);
-                this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
-                this.lpoplpushScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
-                this.multiPriorityQueuesScriptHash
-                        .set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
+                loadRedisScripts();
                 poll();
             } catch (Exception ex) {
                 LOG.error("Uncaught exception in worker run-loop!", ex);
@@ -539,6 +536,11 @@ public class WorkerImpl implements Worker {
             } else {
                 authenticateAndSelectDB();
                 LOG.info("Reconnected to Redis");
+                try {
+                    loadRedisScripts();
+                } catch (IOException e) {
+                    LOG.error("Failed to reload Lua scripts after reconnect", e);
+                }
             }
             break;
         case TERMINATE:
@@ -793,6 +795,13 @@ public class WorkerImpl implements Worker {
 
     protected String lpoplpush(final String from, final String to) {
         return (String) this.jedis.evalsha(this.lpoplpushScriptHash.get(), 2, from, to);
+    }
+
+    private void loadRedisScripts() throws IOException {
+        this.popScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
+        this.lpoplpushScriptHash.set(this.jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
+        this.multiPriorityQueuesScriptHash
+                .set(this.jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
     }
 
     /**
