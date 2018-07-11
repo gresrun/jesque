@@ -693,6 +693,8 @@ public class WorkerImpl implements Worker {
                         tx.ltrim(failQueueKey, 1, -1);
                         tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
                         tx.exec();
+                    } else {
+                        this.jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
                     }
                 } else {
                     this.jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
