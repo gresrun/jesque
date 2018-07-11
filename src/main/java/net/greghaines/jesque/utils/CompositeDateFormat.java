@@ -17,11 +17,13 @@ package net.greghaines.jesque.utils;
 
 import java.io.Serializable;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.text.FieldPosition;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 
@@ -51,6 +53,12 @@ public class CompositeDateFormat extends DateFormat {
         new PatternDateFormatFactory(ResqueConstants.DATE_FORMAT_RUBY_V4),
         new PatternDateFormatFactory(ResqueConstants.DATE_FORMAT_PHP)
     );
+
+    public CompositeDateFormat() {
+        super();
+        setCalendar(new GregorianCalendar());
+        setNumberFormat(new DecimalFormat());
+    }
 
     /**
      * {@inheritDoc}
