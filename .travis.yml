@@ -5,4 +5,4 @@ jdk:
 services:
   - redis-server
 after_success:
-  - mvn cobertura:cobertura coveralls:cobertura
+  - mvn cobertura:cobertura coveralls:report
