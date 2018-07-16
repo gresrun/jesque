@@ -21,7 +21,8 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.utils.JesqueUtils;
 
 /**
- * DefaultFailQueueStrategy puts all jobs in the standard Redis failure queue.
+ * DefaultFailQueueStrategy puts all jobs in the standard Redis failure queue
+ * and imposes no limits on the max number of failed items to keep.
  */
 public class DefaultFailQueueStrategy implements FailQueueStrategy {
 
@@ -41,5 +42,13 @@ public class DefaultFailQueueStrategy implements FailQueueStrategy {
     @Override
     public String getFailQueueKey(final Throwable thrwbl, final Job job, final String curQueue) {
         return JesqueUtils.createKey(this.namespace, FAILED);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getFailQueueMaxItems(String curQueue) {
+        return 0;
     }
 }

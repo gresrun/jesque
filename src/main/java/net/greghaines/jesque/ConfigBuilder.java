@@ -111,7 +111,7 @@ public class ConfigBuilder implements Serializable {
      */
     public ConfigBuilder withPort(final int port) {
         if (port < 1 || port > 65535) {
-            throw new IllegalArgumentException("post must be a valid port in the range 1-65535: " + port);
+            throw new IllegalArgumentException("port must be a valid port in the range 1-65535: " + port);
         }
         this.port = port;
         return this;

@@ -23,6 +23,9 @@ public class TestQueueInfo {
         final List<Job> jobs = Arrays.asList(new Job());
         qInfo.setJobs(jobs);
         Assert.assertEquals(jobs, qInfo.getJobs());
+        final boolean delayed = true;
+        qInfo.setDelayed(delayed);
+        Assert.assertEquals(delayed, qInfo.isDelayed());
     }
     
     @Test
