@@ -14,9 +14,6 @@
     <description>An implementation of Resque in Java</description>
     <url>https://github.com/gresrun/jesque</url>
     <inceptionYear>2011</inceptionYear>
-    <prerequisites>
-        <maven>3.0.0</maven>
-    </prerequisites>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jedis.version>2.9.0</jedis.version>
