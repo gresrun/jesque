@@ -482,7 +482,7 @@ public class WorkerPoolImpl implements Worker {
                      */
                     @Override
                     public Void doWork(final Jedis jedis) {
-                        removeInFlight(jedis, fCurQueue);
+                        removeInFlight(jedis, fCurQueue, true);
                         return null;
                     }
                 });
@@ -621,6 +621,7 @@ public class WorkerPoolImpl implements Worker {
      * @param curQueue the queue the payload came from
      */
     protected void process(final Job job, final String curQueue) {
+        boolean success = false;
         try {
             this.processingJob.set(true);
             if (threadNameChangingEnabled) {
@@ -640,16 +641,18 @@ public class WorkerPoolImpl implements Worker {
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
+            success = true;
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
         } finally {
+            final boolean skipReque = success;
             PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
                 /**
                  * {@inheritDoc}
                  */
                 @Override
                 public Void doWork(final Jedis jedis) {
-                    removeInFlight(jedis, curQueue);
+                    removeInFlight(jedis, curQueue, skipReque);
                     jedis.del(key(WORKER, name));
                     return null;
                 }
@@ -658,8 +661,8 @@ public class WorkerPoolImpl implements Worker {
         }
     }
 
-    private void removeInFlight(final Jedis jedis, final String curQueue) {
-        if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
+    private void removeInFlight(final Jedis jedis, final String curQueue, boolean skipRequeue) {
+        if (SHUTDOWN_IMMEDIATE.equals(this.state.get()) && !skipRequeue) {
             lpoplpush(jedis, key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
         } else {
             jedis.lpop(key(INFLIGHT, this.name, curQueue));

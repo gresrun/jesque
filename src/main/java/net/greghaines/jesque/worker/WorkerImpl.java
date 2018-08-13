@@ -464,7 +464,7 @@ public class WorkerImpl implements Worker {
                 }
             } catch (JsonParseException | JsonMappingException e) {
                 // If the job JSON is not deserializable, we never want to submit it again...
-                removeInFlight(curQueue);
+                removeInFlight(curQueue, true);
                 recoverFromException(curQueue, e);
             } catch (Exception e) {
                 recoverFromException(curQueue, e);
@@ -594,6 +594,7 @@ public class WorkerImpl implements Worker {
      * @param curQueue the queue the payload came from
      */
     protected void process(final Job job, final String curQueue) {
+        boolean success = false;
         try {
             this.processingJob.set(true);
             if (threadNameChangingEnabled) {
@@ -604,17 +605,18 @@ public class WorkerImpl implements Worker {
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
+            success = true;
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
         } finally {
-            removeInFlight(curQueue);
+            removeInFlight(curQueue, success);
             this.jedis.del(key(WORKER, this.name));
             this.processingJob.set(false);
         }
     }
 
-    private void removeInFlight(final String curQueue) {
-        if (SHUTDOWN_IMMEDIATE.equals(this.state.get())) {
+    private void removeInFlight(final String curQueue, boolean skipRequeue) {
+        if (SHUTDOWN_IMMEDIATE.equals(this.state.get()) && !skipRequeue) {
             lpoplpush(key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
         } else {
             this.jedis.lpop(key(INFLIGHT, this.name, curQueue));

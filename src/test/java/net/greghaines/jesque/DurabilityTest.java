@@ -26,10 +26,12 @@ import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
  * </ul>
  *
  * @author Daniël de Kok
+ * @author Florian Langenhahn
  */
 public class DurabilityTest {
     
     private static final Job sleepJob = new Job("SleepAction", 3000L);
+    private static final Job sleepWithExceptionJob = new Job("SleepWithExceptionAction", 3000L);
     private static final Config config = new ConfigBuilder().build();
 
     @Before
@@ -65,7 +67,7 @@ public class DurabilityTest {
     }
 
     @Test
-    public void testInterrupted() throws InterruptedException, JsonProcessingException {
+    public void testInterruptedNoExceptionJobSucceeds() {
         final String queue = "bar";
         TestUtils.enqueueJobs(queue, Arrays.asList(sleepJob), config);
 
@@ -77,14 +79,31 @@ public class DurabilityTest {
         TestUtils.stopWorker(worker, workerThread, true);
 
         final Jedis jedis = TestUtils.createJedis(config);
+        Assert.assertTrue("Job should not be requeued", jedis.llen(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue)) == 0L);
+        Assert.assertTrue("In-flight list should be empty when finishing a job", jedis.llen(inFlightKey(worker, queue)) == 0L);
+    }
+
+    @Test
+    public void testInterrupted() throws JsonProcessingException {
+        final String queue = "bar";
+        TestUtils.enqueueJobs(queue, Arrays.asList(sleepWithExceptionJob), config);
+
+        final Worker worker = new WorkerImpl(config, Arrays.asList(queue),
+                new MapBasedJobFactory(JesqueUtils.map(JesqueUtils.entry("SleepWithExceptionAction", SleepWithExceptionAction.class))));
+        final Thread workerThread = new Thread(worker);
+        workerThread.start();
+
+        TestUtils.stopWorker(worker, workerThread, true);
+
+        final Jedis jedis = TestUtils.createJedis(config);
         Assert.assertTrue("Job should be requeued", jedis.llen(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue)) == 1L);
-        Assert.assertEquals("Incorrect job was requeued", ObjectMapperFactory.get().writeValueAsString(sleepJob),
+        Assert.assertEquals("Incorrect job was requeued", ObjectMapperFactory.get().writeValueAsString(sleepWithExceptionJob),
                 jedis.lindex(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue), 0));
         Assert.assertTrue("In-flight list should be empty when finishing a job", jedis.llen(inFlightKey(worker, queue)) == 0L);
     }
 
     @Test
-    public void testJSONException() throws InterruptedException, JsonProcessingException {
+    public void testJSONException() throws InterruptedException {
         final String queue = "baz";
 
         final Jedis jedis = TestUtils.createJedis(config);
