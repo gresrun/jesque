@@ -35,6 +35,7 @@ import org.junit.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Tuple;
 import redis.clients.util.Pool;
 
 public class TestQueueInfoDAORedisImpl {
@@ -215,14 +216,14 @@ public class TestQueueInfoDAORedisImpl {
         final long jobOffset = 1;
         final long jobCount = 2;
         final long size = 4;
-        final Collection<String> payloads = new HashSet<String>();
-        payloads.add(ObjectMapperFactory.get().writeValueAsString(new Job("foo")));
-        payloads.add(ObjectMapperFactory.get().writeValueAsString(new Job("bar")));
+        final Set<Tuple> payloads = new HashSet<>();
+        payloads.add(new Tuple(ObjectMapperFactory.get().writeValueAsString(new Job("foo")), 1d));
+        payloads.add(new Tuple(ObjectMapperFactory.get().writeValueAsString(new Job("bar")), 1d));
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
             exactly(3).of(jedis).type(queueKey); will(returnValue(KeyType.ZSET.toString()));
             oneOf(jedis).zcard(queueKey); will(returnValue(size));
-            oneOf(jedis).zrange(queueKey, jobOffset, jobOffset + jobCount - 1); will(returnValue(payloads));
+            oneOf(jedis).zrangeWithScores(queueKey, jobOffset, jobOffset + jobCount - 1); will(returnValue(payloads));
             oneOf(jedis).close();
         }});
         final QueueInfo queueInfo = this.qInfoDAO.getQueueInfo(name, jobOffset, jobCount);
