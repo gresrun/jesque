@@ -139,6 +139,9 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
                     queueInfo.setName(queueName);
                     queueInfo.setSize(size(jedis, queueName));
                     queueInfo.setDelayed(delayed(jedis, queueName));
+                    if (queueInfo.isDelayed()) {
+                        queueInfo.setPending(pending(jedis, queueName));
+                    }
                     queueInfos.add(queueInfo);
                 }
                 Collections.sort(queueInfos);
@@ -162,6 +165,9 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
                 queueInfo.setName(name);
                 queueInfo.setSize(size(jedis, name));
                 queueInfo.setDelayed(delayed(jedis, name));
+                if (queueInfo.isDelayed()) {
+                    queueInfo.setPending(pending(jedis, name));
+                }
                 final List<Job> jobs = getJobs(jedis, name, jobOffset, jobCount);
                 queueInfo.setJobs(jobs);
                 return queueInfo;
@@ -219,6 +225,11 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
             size = jedis.llen(key);
         }
         return size;
+    }
+
+    private long pending(final Jedis jedis, final String queueName) {
+        final String key = key(QUEUE, queueName);
+        return jedis.zcount(key, 0, System.currentTimeMillis());
     }
 
     /**
