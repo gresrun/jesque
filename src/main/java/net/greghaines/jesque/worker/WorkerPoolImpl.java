@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
 import redis.clients.jedis.exceptions.JedisException;
+import redis.clients.jedis.exceptions.JedisNoScriptException;
 import redis.clients.util.Pool;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -65,6 +66,7 @@ public class WorkerPoolImpl implements Worker {
     private static final Logger LOG = LoggerFactory.getLogger(WorkerPoolImpl.class);
     private static final AtomicLong WORKER_COUNTER = new AtomicLong(0);
     protected static final long EMPTY_QUEUE_SLEEP_TIME = 500; // 500 ms
+    protected static final long RECONNECT_SLEEP_TIME = 5000; // 5 sec
     private static final String LPOPLPUSH_LUA = "/workerScripts/jesque_lpoplpush.lua";
     private static final String POP_LUA = "/workerScripts/jesque_pop.lua";
     private static final String POP_FROM_MULTIPLE_PRIO_QUEUES = "/workerScripts/fromMultiplePriorityQueues.lua";
@@ -126,7 +128,7 @@ public class WorkerPoolImpl implements Worker {
     private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
     private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(
-            new DefaultExceptionHandler());
+            new DefaultPoolExceptionHandler());
     private final AtomicReference<FailQueueStrategy> failQueueStrategyRef;
     private final JobFactory jobFactory;
 
@@ -209,10 +211,7 @@ public class WorkerPoolImpl implements Worker {
                         jedis.sadd(key(WORKERS), name);
                         jedis.set(key(WORKER, name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
                         listenerDelegate.fireEvent(WORKER_START, WorkerPoolImpl.this, null, null, null, null, null);
-                        popScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
-                        lpoplpushScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
-                        multiPriorityQueuesScriptHash
-                                .set(jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
+                        loadRedisScripts(jedis);
                         return null;
                     }
                 });
@@ -557,7 +556,16 @@ public class WorkerPoolImpl implements Worker {
         final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, ex, curQueue);
         switch (recoveryStrategy) {
         case RECONNECT:
-            LOG.info("Ignoring RECONNECT strategy in response to exception because this is a pool", ex);
+            if (ex instanceof JedisNoScriptException) {
+                LOG.info("Got JedisNoScriptException while reconnecting, reloading Redis scripts");
+                loadRedisScripts();
+            } else {
+                LOG.info("Waiting " + RECONNECT_SLEEP_TIME + "ms for pool to reconnect to redis", ex);
+                try {
+                    Thread.sleep(RECONNECT_SLEEP_TIME);
+                } catch (InterruptedException e) {
+                }
+            }
             break;
         case TERMINATE:
             LOG.warn("Terminating in response to exception", ex);
@@ -862,6 +870,25 @@ public class WorkerPoolImpl implements Worker {
 
     protected String lpoplpush(final Jedis jedis, final String from, final String to) {
         return (String) jedis.evalsha(this.lpoplpushScriptHash.get(), 2, from, to);
+    }
+
+    protected void loadRedisScripts(Jedis jedis) throws IOException {
+        popScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
+        lpoplpushScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
+        multiPriorityQueuesScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
+    }
+
+    protected void loadRedisScripts() {
+        PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public Void doWork(final Jedis jedis) throws IOException {
+                loadRedisScripts(jedis);
+                return null;
+            }
+        });
     }
 
     /**
