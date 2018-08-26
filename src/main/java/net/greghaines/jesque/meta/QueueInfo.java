@@ -34,6 +34,7 @@ public class QueueInfo implements Comparable<QueueInfo>, Serializable {
     private Long size;
     private List<Job> jobs;
     private Boolean delayed;
+    private Long pending; // only set if this queue is delayed
 
     /**
      * @return the name of the queue
@@ -92,6 +93,20 @@ public class QueueInfo implements Comparable<QueueInfo>, Serializable {
     }
 
     /**
+     * @return the number of pending jobs in the queue
+     */
+    public Long getPending() {
+        return this.pending;
+    }
+
+    /**
+     * @param pending the number of pending jobs in the queue
+     */
+    public void setPending(final Long pending) {
+        this.pending = pending;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -110,6 +125,7 @@ public class QueueInfo implements Comparable<QueueInfo>, Serializable {
         result = prime * result + ((this.name == null) ? 0 : this.name.hashCode());
         result = prime * result + ((this.size == null) ? 0 : this.size.hashCode());
         result = prime * result + ((this.delayed == null) ? 0 : this.delayed.hashCode());
+        result = prime * result + ((this.pending == null) ? 0 : this.pending.hashCode());
         return result;
     }
 
@@ -126,7 +142,8 @@ public class QueueInfo implements Comparable<QueueInfo>, Serializable {
             equal = (JesqueUtils.nullSafeEquals(this.jobs, other.jobs)
                     && JesqueUtils.nullSafeEquals(this.name, other.name)
                     && JesqueUtils.nullSafeEquals(this.size, other.size)
-                    && JesqueUtils.nullSafeEquals(this.delayed, other.delayed));
+                    && JesqueUtils.nullSafeEquals(this.delayed, other.delayed)
+                    && JesqueUtils.nullSafeEquals(this.pending, other.pending));
         }
         return equal;
     }

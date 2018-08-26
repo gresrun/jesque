@@ -168,6 +168,7 @@ public class TestQueueInfoDAORedisImpl {
                 exactly(2).of(jedis).type(queueKey); will(returnValue(e.getValue()));
                 if (KeyType.ZSET.toString().equals(e.getValue())) {
                     oneOf(jedis).zcard(queueKey); will(returnValue(queueCountMap.get(e.getKey())));
+                    oneOf(jedis).zcount(with(equal(queueKey)), with(equal(0.0)), with(any(Double.class))); will(returnValue(1L));
                 } else {
                     oneOf(jedis).llen(queueKey); will(returnValue(queueCountMap.get(e.getKey())));
                 }
@@ -223,6 +224,7 @@ public class TestQueueInfoDAORedisImpl {
             oneOf(pool).getResource(); will(returnValue(jedis));
             exactly(3).of(jedis).type(queueKey); will(returnValue(KeyType.ZSET.toString()));
             oneOf(jedis).zcard(queueKey); will(returnValue(size));
+            oneOf(jedis).zcount(with(equal(queueKey)), with(equal(0.0)), with(any(Double.class))); will(returnValue(jobCount));
             oneOf(jedis).zrangeWithScores(queueKey, jobOffset, jobOffset + jobCount - 1); will(returnValue(payloads));
             oneOf(jedis).close();
         }});
