@@ -5,6 +5,7 @@
 --
 local queues = KEYS[1]
 local inFlightKey = KEYS[2]
+local namespace = KEYS[3]
 --local debug = {'Hooray!', "'"..queues.."'"}
 
 local now = ARGV[1]
@@ -15,7 +16,7 @@ local OPTIONAL_SPACE_SEPARATOR = '%s*'
 local NEXT_QUEUE_REGEX = QUEUE_NAME_CAPTURING_REGEX .. OPTIONAL_COMMA_SEPARATOR .. OPTIONAL_SPACE_SEPARATOR
 
 for q in queues.gmatch(queues, NEXT_QUEUE_REGEX) do
-    local queueName = 'resque:queue:' .. q
+    local queueName = namespace .. ':queue:' .. q
     local status, queueType = next(redis.call('TYPE', queueName))
     local payload
 

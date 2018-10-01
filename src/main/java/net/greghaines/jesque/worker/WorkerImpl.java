@@ -512,7 +512,7 @@ public class WorkerImpl implements Worker {
                 return (String) this.jedis.evalsha(this.popScriptHash.get(), 3, key, inflightKey,
                         JesqueUtils.createRecurringHashKey(key), now);
             case RESET_TO_HIGHEST_PRIORITY:
-                return (String) this.jedis.evalsha(this.multiPriorityQueuesScriptHash.get(), 2, curQueue, inflightKey, now);
+                return (String) this.jedis.evalsha(this.multiPriorityQueuesScriptHash.get(), 3, curQueue, inflightKey, namespace, now);
             default:
                 throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
         }
