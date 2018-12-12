@@ -28,7 +28,6 @@ import static net.greghaines.jesque.worker.WorkerEvent.JOB_SUCCESS;
 import static net.greghaines.jesque.worker.WorkerEvent.WORKER_ERROR;
 import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
 
-import java.lang.Throwable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +73,22 @@ public class IntegrationTest {
         assertSuccess(null);
     }
 
+
+    @Test
+    public void jobSuccessWithBatchEnqueueing() {
+        final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+
+        doWorkInBatch(Arrays.asList(job, job), map(entry("TestAction", TestAction.class)), null);
+
+        final Jedis jedis = createJedis(CONFIG);
+        try {
+            Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
+            Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
+        } finally {
+            jedis.quit();
+        }
+    }
+
     @Test
     public void jobFailure() throws Exception {
         LOG.info("Running jobFailure()...");
@@ -81,9 +96,43 @@ public class IntegrationTest {
     }
 
     @Test
+    public void jobFailureWithBatchEnqueueing() {
+        final Job job = new Job("FailAction");
+
+        doWorkInBatch(Arrays.asList(job, job), map(entry("FailAction", FailAction.class)), null);
+
+        final Jedis jedis = createJedis(CONFIG);
+        try {
+            Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
+            Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
+        } finally {
+            jedis.quit();
+        }
+    }
+
+    @Test
     public void jobMixed() throws Exception {
         LOG.info("Running jobMixed()...");
         assertMixed(null);
+    }
+
+    @Test
+    public void jobMixedWithBatchEnqueueing() {
+        final Job job1 = new Job("FailAction");
+        final Job job2 = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Job job3 = new Job("FailAction");
+        final Job job4 = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+
+        doWorkInBatch(Arrays.asList(job1, job2, job3, job4),
+                map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)), null);
+
+        final Jedis jedis = createJedis(CONFIG);
+        try {
+            Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
+            Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
+        } finally {
+            jedis.quit();
+        }
     }
 
     @Test
@@ -219,6 +268,21 @@ public class IntegrationTest {
 
     private static void doWork(final List<Job> jobs, final Map<String, ? extends Class<? extends Runnable>> jobTypes,
             final WorkerListener listener, final WorkerEvent... events) {
+        final Worker worker = new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE), new MapBasedJobFactory(jobTypes));
+        if (listener != null && events.length > 0) {
+            worker.getWorkerEventEmitter().addListener(listener, events);
+        }
+        final Thread workerThread = new Thread(worker);
+        workerThread.start();
+        try {
+            TestUtils.enqueueJobs(TEST_QUEUE, jobs, CONFIG);
+        } finally {
+            TestUtils.stopWorker(worker, workerThread);
+        }
+    }
+
+    private static void doWorkInBatch(final List<Job> jobs, final Map<String, ? extends Class<? extends Runnable>> jobTypes,
+                                      final WorkerListener listener, final WorkerEvent... events) {
         final Worker worker = new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE), new MapBasedJobFactory(jobTypes));
         if (listener != null && events.length > 0) {
             worker.getWorkerEventEmitter().addListener(listener, events);

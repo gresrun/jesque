@@ -17,6 +17,8 @@ package net.greghaines.jesque.client;
 
 import net.greghaines.jesque.Job;
 
+import java.util.List;
+
 /**
  * A Client allows Jobs to be enqueued for execution by Workers.
  * 
@@ -36,6 +38,18 @@ public interface Client {
      *             if the queue is null or empty or if the job is null
      */
     void enqueue(String queue, Job job);
+
+    /**
+     * Queues a list of jobs in a given queue to be run.
+     *
+     * @param queue
+     *            the queue to add the Job to
+     * @param jobs
+     *            the list of jobs to be enqueued
+     * @throws IllegalArgumentException
+     *             if the queue is null or empty or if the list of job is null
+     */
+    void enqueue(String queue, List<Job> jobs);
 
     /**
      * Queues a job with high priority in a given queue to be run.
