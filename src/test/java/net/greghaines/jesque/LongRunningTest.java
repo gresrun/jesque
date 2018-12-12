@@ -49,7 +49,7 @@ public class LongRunningTest {
     @Ignore
     public void issue28() throws InterruptedException {
         changeRedisTimeout(10);
-        TestUtils.enqueueJobs("longRunning", Arrays.asList(new Job("LongRunningAction", 20 * 1000L)), config);
+        TestUtils.enqueueJob("longRunning", new Job("LongRunningAction", 20 * 1000L), config);
         final Worker worker2 = new WorkerImpl(config, Arrays.asList("longRunning"), 
                 new MapBasedJobFactory(map(entry("LongRunningAction", LongRunningAction.class))));
         final AtomicBoolean successRef = new AtomicBoolean(false);

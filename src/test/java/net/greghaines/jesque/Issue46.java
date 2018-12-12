@@ -51,7 +51,7 @@ public class Issue46 {
         final Thread workerThread = new Thread(worker);
         workerThread.start();
         try {
-            TestUtils.enqueueJobs(TEST_QUEUE, Arrays.asList(job), CONFIG);
+            TestUtils.enqueueJob(TEST_QUEUE, job, CONFIG);
         } finally {
             TestUtils.stopWorker(worker, workerThread);
         }

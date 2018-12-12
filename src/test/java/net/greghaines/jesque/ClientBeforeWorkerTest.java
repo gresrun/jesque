@@ -55,7 +55,7 @@ public class ClientBeforeWorkerTest {
     public void issue18() throws Exception {
         // Enqueue the job before worker is created and started
         final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
-        TestUtils.enqueueJobs(testQueue, Arrays.asList(job), config);
+        TestUtils.enqueueJob(testQueue, job, config);
         Jedis jedis = createJedis(config);
         try { // Assert that we enqueued the job
             Assert.assertEquals(Long.valueOf(1), jedis.llen(createKey(config.getNamespace(), QUEUE, testQueue)));

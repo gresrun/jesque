@@ -42,7 +42,7 @@ public class DurabilityTest {
     @Test
     public void testNotInterrupted() throws InterruptedException, JsonProcessingException {
         final String queue = "foo";
-        TestUtils.enqueueJobs(queue, Arrays.asList(sleepJob), config);
+        TestUtils.enqueueJob(queue, sleepJob, config);
 
         final Worker worker = new WorkerImpl(config, Arrays.asList(queue),
                 new MapBasedJobFactory(JesqueUtils.map(JesqueUtils.entry("SleepAction", SleepAction.class))));
@@ -69,7 +69,7 @@ public class DurabilityTest {
     @Test
     public void testInterruptedNoExceptionJobSucceeds() {
         final String queue = "bar";
-        TestUtils.enqueueJobs(queue, Arrays.asList(sleepJob), config);
+        TestUtils.enqueueJob(queue, sleepJob, config);
 
         final Worker worker = new WorkerImpl(config, Arrays.asList(queue),
                 new MapBasedJobFactory(JesqueUtils.map(JesqueUtils.entry("SleepAction", SleepAction.class))));
@@ -86,7 +86,7 @@ public class DurabilityTest {
     @Test
     public void testInterrupted() throws JsonProcessingException {
         final String queue = "bar";
-        TestUtils.enqueueJobs(queue, Arrays.asList(sleepWithExceptionJob), config);
+        TestUtils.enqueueJob(queue, sleepWithExceptionJob, config);
 
         final Worker worker = new WorkerImpl(config, Arrays.asList(queue),
                 new MapBasedJobFactory(JesqueUtils.map(JesqueUtils.entry("SleepWithExceptionAction", SleepWithExceptionAction.class))));

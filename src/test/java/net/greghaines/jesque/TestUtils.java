@@ -72,12 +72,10 @@ public final class TestUtils {
         return jedis;
     }
 
-    public static void enqueueJobs(final String queue, final List<Job> jobs, final Config config) {
+    public static void enqueueJob(final String queue, final Job job, final Config config) {
         final Client client = new ClientImpl(config);
         try {
-            for (final Job job : jobs) {
-                client.enqueue(queue, job);
-            }
+            client.enqueue(queue, job);
         } finally {
             client.end();
         }

@@ -48,7 +48,7 @@ public class InfiniteTest {
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
-        TestUtils.enqueueJobs("inf", Arrays.asList(new Job("InfiniteAction")), config);
+        TestUtils.enqueueJob("inf", new Job("InfiniteAction"), config);
         final Worker worker2 = new WorkerImpl(config, Arrays.asList("inf"), 
                 new MapBasedJobFactory(map(entry("InfiniteAction", InfiniteAction.class))));
         final Thread workerThread2 = new Thread(worker2);
