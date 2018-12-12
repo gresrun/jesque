@@ -90,17 +90,9 @@ public abstract class AbstractClient implements Client {
      */
     @Override
     public void enqueue(final String queue, final List<Job> jobs) {
-        if (queue == null || "".equals(queue)) {
-            throw new IllegalArgumentException("queue must not be null or empty: " + queue);
-        }
-
+        validateQueue(queue);
         for(Job job: jobs) {
-            if (job == null) {
-                throw new IllegalArgumentException("job must not be null");
-            }
-            if (!job.isValid()) {
-                throw new IllegalStateException("job is not valid: " + job);
-            }
+            validateJob(job);
         }
 
         try {
@@ -456,9 +448,17 @@ public abstract class AbstractClient implements Client {
     }
 
     private static void validateArguments(final String queue, final Job job) {
+        validateQueue(queue);
+        validateJob(job);
+    }
+
+    private static void validateQueue(String queue) {
         if (queue == null || "".equals(queue)) {
             throw new IllegalArgumentException("queue must not be null or empty: " + queue);
         }
+    }
+
+    private static void validateJob(Job job) {
         if (job == null) {
             throw new IllegalArgumentException("job must not be null");
         }
