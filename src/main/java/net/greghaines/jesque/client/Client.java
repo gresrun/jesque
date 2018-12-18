@@ -17,6 +17,8 @@ package net.greghaines.jesque.client;
 
 import net.greghaines.jesque.Job;
 
+import java.util.List;
+
 /**
  * A Client allows Jobs to be enqueued for execution by Workers.
  * 
@@ -36,6 +38,20 @@ public interface Client {
      *             if the queue is null or empty or if the job is null
      */
     void enqueue(String queue, Job job);
+
+    /**
+     * Queues jobs in a given queue to be run. It uses Redis Pipelining (https://redis.io/topics/pipelining).
+     * Check out the "Important Note" here: https://redis.io/topics/pipelining#redis-pipelining. => Consider splitting
+     * long lists of jobs into chunks of 10,000 or so.
+     * 
+     * @param queue
+     *            the queue to add the Job to
+     * @param jobs
+     *            the jobs to be enqueued
+     * @throws IllegalArgumentException
+     *             if the queue is null or empty or if the list of jobs is null
+     */
+    void batchEnqueue(String queue, List<Job> jobs);
 
     /**
      * Queues a job with high priority in a given queue to be run.

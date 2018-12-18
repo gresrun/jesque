@@ -54,6 +54,9 @@ worker.end(true);
 try { workerThread.join(); } catch (Exception e){ e.printStackTrace(); }
 ```
 
+If enqueueing multiple jobs at the same time, there is `client.batchEnqueue(String queue, List<Job> jobs)` which does it
+in an optimized way.
+
 ### Delayed jobs
 Delayed jobs can be executed at sometime in the future.
 ```java

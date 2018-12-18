@@ -15,16 +15,20 @@
  */
 package net.greghaines.jesque.client;
 
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
-
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.Transaction;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
+import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 
 /**
  * Common logic for Client implementations.
@@ -86,6 +90,30 @@ public abstract class AbstractClient implements Client {
      * {@inheritDoc}
      */
     @Override
+    public void batchEnqueue(String queue, List<Job> jobs) {
+        if (jobs == null) {
+            throw new IllegalArgumentException("job list must not be null");
+        }
+        for (Job job : jobs) {
+            validateArguments(queue, job);
+        }
+        List<String> serializedJobs = new ArrayList<>(jobs.size());
+        try {
+            for (Job job : jobs) {
+                serializedJobs.add(ObjectMapperFactory.get().writeValueAsString(job));
+            }
+            doBatchEnqueue(queue, serializedJobs);
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void priorityEnqueue(final String queue, final Job job) {
         validateArguments(queue, job);
         try {
@@ -133,6 +161,18 @@ public abstract class AbstractClient implements Client {
     protected abstract void doEnqueue(String queue, String msg) throws Exception;
 
     /**
+     * Actually enqueue the serialized jobs.
+     * 
+     * @param queue
+     *            the queue to add the Jobs to
+     * @param msgs
+     *            the serialized Jobs
+     * @throws Exception
+     *             in case something goes wrong
+     */
+    protected abstract void doBatchEnqueue(String queue, List<String> msgs) throws Exception;
+
+    /**
      * Actually enqueue the serialized job with high priority.
      * 
      * @param queue
@@ -176,6 +216,27 @@ public abstract class AbstractClient implements Client {
     public static void doEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
         jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
         jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+    }
+
+    /**
+     * Helper method that encapsulates the minimum logic for adding jobs to a queue.
+     * 
+     * @param jedis
+     *            the connection to Redis
+     * @param namespace
+     *            the Resque namespace
+     * @param queue
+     *            the Resque queue name
+     * @param jobJsons
+     *            a list of jobs serialized as JSON
+     */
+    public static void doBatchEnqueue(final Jedis jedis, final String namespace, final String queue, final List<String> jobJsons) {
+        Pipeline pipelined = jedis.pipelined();
+        pipelined.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+        for (String jobJson : jobJsons) {
+            pipelined.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+        }
+        pipelined.sync();
     }
 
     /**
