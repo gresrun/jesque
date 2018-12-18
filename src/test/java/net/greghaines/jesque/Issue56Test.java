@@ -43,7 +43,7 @@ public class Issue56Test {
     }
 
     public static void enqueue() {
-        final long future = System.currentTimeMillis() + 5;
+        final long future = System.currentTimeMillis() + 500;
         final Job job = new Job(TestAction.class.getSimpleName());
         CLIENT.delayedEnqueue(QUEUE, job, future);
     }
