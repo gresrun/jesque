@@ -94,8 +94,9 @@ public abstract class AbstractClient implements Client {
         if (jobs == null) {
             throw new IllegalArgumentException("job list must not be null");
         }
+        validateQueue(queue);
         for (Job job : jobs) {
-            validateArguments(queue, job);
+            validateJob(job);
         }
         List<String> serializedJobs = new ArrayList<>(jobs.size());
         try {
@@ -448,9 +449,11 @@ public abstract class AbstractClient implements Client {
     }
 
     private static void validateArguments(final String queue, final Job job) {
-        if (queue == null || "".equals(queue)) {
-            throw new IllegalArgumentException("queue must not be null or empty: " + queue);
-        }
+        validateQueue(queue);
+        validateJob(job);
+    }
+
+    private static void validateJob(Job job) {
         if (job == null) {
             throw new IllegalArgumentException("job must not be null");
         }
@@ -459,8 +462,18 @@ public abstract class AbstractClient implements Client {
         }
     }
 
+    private static void validateQueue(String queue) {
+        if (queue == null || "".equals(queue)) {
+            throw new IllegalArgumentException("queue must not be null or empty: " + queue);
+        }
+    }
+
     private static void validateArguments(final String queue, final Job job, final long future) {
         validateArguments(queue, job);
+        validateFuture(future);
+    }
+
+    private static void validateFuture(long future) {
         if (System.currentTimeMillis() > future) {
             throw new IllegalArgumentException("future must be after current time");
         }
@@ -468,6 +481,10 @@ public abstract class AbstractClient implements Client {
 
     private static void validateArguments(final String queue, final Job job, final long future, final long frequency) {
         validateArguments(queue, job, future);
+        validateFrequency(frequency);
+    }
+
+    private static void validateFrequency(long frequency) {
         if (frequency < 1) {
             throw new IllegalArgumentException("frequency must be greater than one second");
         }
