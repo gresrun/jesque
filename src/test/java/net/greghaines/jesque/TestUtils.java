@@ -83,6 +83,15 @@ public final class TestUtils {
         }
     }
 
+    public static void batchEnqueueJobs(String queue, List<Job> jobs, Config config) {
+        final Client client = new ClientImpl(config);
+        try {
+            client.batchEnqueue(queue, jobs);
+        } finally {
+            client.end();
+        }
+    }
+
     public static void stopWorker(final JobExecutor worker, final Thread workerThread) {
         stopWorker(worker, workerThread, false);
     }

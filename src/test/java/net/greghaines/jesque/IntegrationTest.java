@@ -87,6 +87,12 @@ public class IntegrationTest {
     }
 
     @Test
+    public void jobBatchMixed() throws Exception {
+        LOG.info("Running jobBatchMixed()...");
+        assertBatchMixed(null);
+    }
+
+    @Test
     public void successInSpiteOfListenerFailPoll() {
         LOG.info("Running successInSpiteOfListenerFailPoll()...");
         assertSuccess(new FailingWorkerListener(), WORKER_POLL);
@@ -126,6 +132,12 @@ public class IntegrationTest {
     public void mixedInSpiteOfListenerFailAll() {
         LOG.info("Running mixedInSpiteOfListenerFailAll()...");
         assertMixed(new FailingWorkerListener(), WorkerEvent.values());
+    }
+
+    @Test
+    public void batchMixedInSpiteOfListenerFailAll() {
+        LOG.info("Running batchMixedInSpiteOfListenerFailAll()...");
+        assertBatchMixed(new FailingWorkerListener(), WorkerEvent.values());
     }
 
     @Test
@@ -217,6 +229,24 @@ public class IntegrationTest {
         }
     }
 
+    private static void assertBatchMixed(final WorkerListener listener, final WorkerEvent... events) {
+        final Job job1 = new Job("FailAction");
+        final Job job2 = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Job job3 = new Job("FailAction");
+        final Job job4 = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+
+        doBatchWork(Arrays.asList(job1, job2, job3, job4),
+                map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)), listener, events);
+
+        final Jedis jedis = createJedis(CONFIG);
+        try {
+            Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
+            Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
+        } finally {
+            jedis.quit();
+        }
+    }
+
     private static void doWork(final List<Job> jobs, final Map<String, ? extends Class<? extends Runnable>> jobTypes,
             final WorkerListener listener, final WorkerEvent... events) {
         final Worker worker = new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE), new MapBasedJobFactory(jobTypes));
@@ -227,6 +257,21 @@ public class IntegrationTest {
         workerThread.start();
         try {
             TestUtils.enqueueJobs(TEST_QUEUE, jobs, CONFIG);
+        } finally {
+            TestUtils.stopWorker(worker, workerThread);
+        }
+    }
+
+    private static void doBatchWork(final List<Job> jobs, final Map<String, ? extends Class<? extends Runnable>> jobTypes,
+            final WorkerListener listener, final WorkerEvent... events) {
+        final Worker worker = new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE), new MapBasedJobFactory(jobTypes));
+        if (listener != null && events.length > 0) {
+            worker.getWorkerEventEmitter().addListener(listener, events);
+        }
+        final Thread workerThread = new Thread(worker);
+        workerThread.start();
+        try {
+            TestUtils.batchEnqueueJobs(TEST_QUEUE, jobs, CONFIG);
         } finally {
             TestUtils.stopWorker(worker, workerThread);
         }
