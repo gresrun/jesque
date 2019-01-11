@@ -538,7 +538,7 @@ public class WorkerPoolImpl implements Worker {
                         return (String) jedis.evalsha(popScriptHash.get(), 3, key, inflightKey,
                                 JesqueUtils.createRecurringHashKey(key), now);
                     case RESET_TO_HIGHEST_PRIORITY:
-                        return (String) jedis.evalsha(multiPriorityQueuesScriptHash.get(), 2, curQueue, inflightKey, now);
+                        return (String) jedis.evalsha(multiPriorityQueuesScriptHash.get(), 3, curQueue, inflightKey, namespace, now);
                     default:
                         throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
                 }
