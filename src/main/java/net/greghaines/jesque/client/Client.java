@@ -40,9 +40,8 @@ public interface Client {
     void enqueue(String queue, Job job);
 
     /**
-     * Queues jobs in a given queue to be run. It uses Redis Pipelining (https://redis.io/topics/pipelining).
-     * Check out the "Important Note" here: https://redis.io/topics/pipelining#redis-pipelining. => Consider splitting
-     * long lists of jobs into chunks of 10,000 or so.
+     * Queues jobs in a given queue to be run.
+     * Consider splitting long lists of jobs into chunks of 10,000 or so.
      * 
      * @param queue
      *            the queue to add the Job to
@@ -50,6 +49,8 @@ public interface Client {
      *            the jobs to be enqueued
      * @throws IllegalArgumentException
      *             if the queue is null or empty or if the list of jobs is null
+     * @see <a href="https://redis.io/topics/pipelining">Redis Pipelining</a>
+     * @see <a href="https://redis.io/topics/pipelining#redis-pipelining">Important Note: Split at 10k jobs</a>
      */
     void batchEnqueue(String queue, List<Job> jobs);
 

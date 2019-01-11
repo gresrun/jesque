@@ -35,7 +35,7 @@ public interface FailQueueStrategy {
 
     /**
      * Determine the max number of items to keep in the failure queue.
-     * Returning a value <1 means that there is no limit.
+     * Returning a value less than 1 means that there is no limit.
      * @param curQueue the queue the Job came from
      * @return the max number of items to keep for the failure queue
      */
