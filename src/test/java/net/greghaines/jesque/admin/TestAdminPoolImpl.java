@@ -4,6 +4,8 @@ import static net.greghaines.jesque.utils.JesqueUtils.entry;
 import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.JesqueUtils.set;
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
+import static org.mockito.Mockito.when;
+
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.admin.commands.PauseCommand;
@@ -12,16 +14,13 @@ import net.greghaines.jesque.worker.ExceptionHandler;
 import net.greghaines.jesque.worker.JobExecutor;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.RecoveryStrategy;
-import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
-
-import static org.mockito.Mockito.when;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.util.Pool;
 
 public class TestAdminPoolImpl {
     

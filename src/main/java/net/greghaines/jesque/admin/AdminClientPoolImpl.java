@@ -19,7 +19,7 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
+import redis.clients.jedis.util.Pool;
 
 /**
  * AdminClientPoolImpl publishes jobs to channels using a connection pool.

@@ -10,7 +10,7 @@ import org.mockito.MockitoAnnotations;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
 import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
+import redis.clients.jedis.util.Pool;
 
 public class TestAdminClientPoolImpl {
     

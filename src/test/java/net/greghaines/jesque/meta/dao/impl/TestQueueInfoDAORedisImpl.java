@@ -36,7 +36,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Tuple;
-import redis.clients.util.Pool;
+import redis.clients.jedis.util.Pool;
 
 public class TestQueueInfoDAORedisImpl {
     

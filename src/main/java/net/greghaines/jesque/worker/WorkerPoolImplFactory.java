@@ -20,7 +20,7 @@ import java.util.concurrent.Callable;
 
 import net.greghaines.jesque.Config;
 import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
+import redis.clients.jedis.util.Pool;
 
 /**
  * WorkerPoolImplFactory is a factory for <code>WorkerPoolImpl</code>s. 

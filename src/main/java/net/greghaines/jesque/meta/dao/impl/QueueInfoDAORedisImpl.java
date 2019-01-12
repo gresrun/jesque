@@ -36,7 +36,7 @@ import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Tuple;
-import redis.clients.util.Pool;
+import redis.clients.jedis.util.Pool;
 
 /**
  * QueueInfoDAORedisImpl gets queue information from Redis.

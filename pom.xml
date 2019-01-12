@@ -1,10 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.greghaines</groupId>
     <artifactId>jesque</artifactId>
@@ -16,12 +11,12 @@
     <inceptionYear>2011</inceptionYear>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jedis.version>2.9.0</jedis.version>
+        <jedis.version>3.0.1</jedis.version>
         <jackson.version>2.9.8</jackson.version>
         <slf4j.version>1.7.25</slf4j.version>
         <logback.version>1.2.3</logback.version>
         <junit.version>4.12</junit.version>
-        <jmock.version>2.8.4</jmock.version>
+        <jmock.version>2.9.0</jmock.version>
         <github.global.server>github-jesque</github.global.server>
     </properties>
     <licenses>
@@ -44,9 +39,17 @@
     <ciManagement>
         <system>Travis</system>
         <url>https://travis-ci.org/gresrun/jesque</url>
-        <notifiers />
+        <notifiers/>
     </ciManagement>
     <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
         <site>
             <id>github-pages-site</id>
             <name>Deployment through GitHub's site deployment plugin</name>
@@ -59,7 +62,7 @@
             <name>Greg Haines</name>
             <email>gresrun@gmail.com</email>
             <url>http://greghaines.net/</url>
-            <timezone>America/New_York</timezone>
+            <timezone>America/Los_Angeles</timezone>
         </developer>
     </developers>
     <contributors>
@@ -126,6 +129,53 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.2.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.9.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.5</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
     <build>
         <plugins>
@@ -142,6 +192,12 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.5.3</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <useReleaseProfile>false</useReleaseProfile>
+                    <releaseProfiles>release</releaseProfiles>
+                    <goals>deploy</goals>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -190,6 +246,17 @@
                         <phase>site-deploy</phase>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -265,10 +332,10 @@
                     <links>
                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                         <link>http://www.slf4j.org/api/</link>
-                        <link>http://commons.apache.org/proper/commons-pool/api-2.2/</link>
-                        <link>http://fasterxml.github.io/jackson-annotations/javadoc/2.4/</link>
-                        <link>http://fasterxml.github.io/jackson-core/javadoc/2.4/</link>
-                        <link>http://fasterxml.github.io/jackson-databind/javadoc/2.4/</link>
+                        <link>http://commons.apache.org/proper/commons-pool/api-2.6.0/</link>
+                        <link>http://fasterxml.github.io/jackson-annotations/javadoc/2.9/</link>
+                        <link>http://fasterxml.github.io/jackson-core/javadoc/2.9/</link>
+                        <link>http://fasterxml.github.io/jackson-databind/javadoc/2.9/</link>
                     </links>
                 </configuration>
             </plugin>
