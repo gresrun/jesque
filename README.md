@@ -23,7 +23,7 @@ Or, to use it in your Maven project, add it as a dependency:
 <dependency>
   <groupId>net.greghaines</groupId>
   <artifactId>jesque</artifactId>
-  <version>2.1.2</version>
+  <version>2.1.3</version>
 </dependency>
 ```
 
@@ -182,7 +182,7 @@ Boom! Ready to go!
 
 ## License
 
-Copyright 2015 Greg Haines
+Copyright 2019 Greg Haines
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
