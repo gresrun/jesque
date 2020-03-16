@@ -1,7 +1,7 @@
 language: java
 jdk:
-  - oraclejdk8
   - oraclejdk9
+  - oraclejdk11
 services:
   - redis-server
 after_success:
