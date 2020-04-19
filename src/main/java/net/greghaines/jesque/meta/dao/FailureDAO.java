@@ -28,9 +28,14 @@ import net.greghaines.jesque.JobFailure;
 public interface FailureDAO {
     
     /**
-     * @return total number of failures
+     * @return total number of jobs that failed
      */
     long getCount();
+
+    /**
+     * @return number of jobs in the fail queue
+     */
+    long getFailQueueJobCount();
 
     /**
      * @param offset offset into the failures

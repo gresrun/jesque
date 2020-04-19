@@ -18,6 +18,7 @@ package net.greghaines.jesque.meta.dao.impl;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
+import static net.greghaines.jesque.utils.ResqueConstants.STAT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -67,6 +68,23 @@ public class FailureDAORedisImpl implements FailureDAO {
      */
     @Override
     public long getCount() {
+        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            public Long doWork(final Jedis jedis) throws Exception {
+                final String failedStr = jedis.get(key(STAT, FAILED));
+                return (failedStr == null) ? 0L : Long.parseLong(failedStr);
+            }
+        });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getFailQueueJobCount() {
         return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
             /**
              * {@inheritDoc}
