@@ -755,15 +755,10 @@ public class WorkerPoolImpl implements Worker {
                     if (failQueueKey != null) {
                         final int failQueueMaxItems = strategy.getFailQueueMaxItems(curQueue);
                         if (failQueueMaxItems > 0) {
-                            Long currentItems = jedis.llen(failQueueKey);
-                            if (currentItems >= failQueueMaxItems) {
-                                Transaction tx = jedis.multi();
-                                tx.ltrim(failQueueKey, 1, -1);
-                                tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
-                                tx.exec();
-                            } else {
-                                jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
-                            }
+                            Transaction tx = jedis.multi();
+                            tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+                            tx.ltrim(failQueueKey, -failQueueMaxItems, -1);
+                            tx.exec();
                         } else {
                             jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
                         }
