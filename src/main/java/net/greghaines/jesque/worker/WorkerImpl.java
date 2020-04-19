@@ -689,15 +689,10 @@ public class WorkerImpl implements Worker {
             if (failQueueKey != null) {
                 final int failQueueMaxItems = strategy.getFailQueueMaxItems(curQueue);
                 if (failQueueMaxItems > 0) {
-                    Long currentItems = this.jedis.llen(failQueueKey);
-                    if (currentItems >= failQueueMaxItems) {
-                        Transaction tx = this.jedis.multi();
-                        tx.ltrim(failQueueKey, 1, -1);
-                        tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
-                        tx.exec();
-                    } else {
-                        this.jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
-                    }
+                    Transaction tx = this.jedis.multi();
+                    tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+                    tx.ltrim(failQueueKey, -failQueueMaxItems, -1);
+                    tx.exec();
                 } else {
                     this.jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
                 }
