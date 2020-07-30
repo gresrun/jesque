@@ -35,7 +35,7 @@ public class DefaultPoolExceptionHandler implements ExceptionHandler {
 	public RecoveryStrategy onException(final JobExecutor jobExecutor, final Exception exception,
 	        final String curQueue) {
 		final boolean isLoadingDataset = exception instanceof JedisDataException
-				&& exception.getMessage().equals("LOADING Redis is loading the dataset in memory");
+				&& exception.getMessage().startsWith("LOADING Redis is loading the dataset in memory");
 
 		if (exception instanceof JedisConnectionException
 				|| exception instanceof JedisNoScriptException
