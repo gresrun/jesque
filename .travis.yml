@@ -6,3 +6,7 @@ services:
   - redis-server
 after_success:
   - mvn clean test jacoco:report coveralls:report
+
+cache:
+  directories:
+  - $HOME/.m2
