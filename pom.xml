@@ -219,7 +219,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
-                <version>3.6</version>
+                <version>3.10.0</version>
                 <dependencies>
                     <dependency>
                         <!-- Allows markdown syntax for site generation. To use it place files below src/site/markdown/[filename].md -->
