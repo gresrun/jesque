@@ -10,7 +10,7 @@ import java.util.Collections;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JUnit4Mockery;
 import org.jmock.internal.InvocationExpectation;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -90,7 +90,7 @@ public class TestWorkerImpl {
 
     private Jedis getJedis() {
         final Mockery mockCtx = new JUnit4Mockery();
-        mockCtx.setImposteriser(ClassImposteriser.INSTANCE);
+        mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
         final Jedis jedis = mockCtx.mock(Jedis.class);
         mockCtx.addExpectation(new InvocationExpectation());
         return jedis;

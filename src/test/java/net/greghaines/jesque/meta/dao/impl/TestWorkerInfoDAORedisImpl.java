@@ -18,7 +18,7 @@ import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JUnit4Mockery;
 import org.jmock.lib.concurrent.Synchroniser;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,7 +40,7 @@ public class TestWorkerInfoDAORedisImpl {
     @Before
     public void setUp() {
         this.mockCtx = new JUnit4Mockery();
-        this.mockCtx.setImposteriser(ClassImposteriser.INSTANCE);
+        this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
         this.mockCtx.setThreadingPolicy(new Synchroniser());
         this.pool = this.mockCtx.mock(Pool.class);
         this.jedis = this.mockCtx.mock(Jedis.class);

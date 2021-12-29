@@ -1,11 +1,12 @@
 package net.greghaines.jesque.admin;
 
-import static org.mockito.Mockito.*;
-
+import org.jmock.Expectations;
+import org.jmock.Mockery;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
+import org.jmock.integration.junit4.JUnit4Mockery;
+import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
@@ -16,16 +17,23 @@ public class TestAdminClientPoolImpl {
     
     private static final Config CONFIG = new ConfigBuilder().build();
 
-    @Mock
+    private Mockery mockCtx;
     private Pool<Jedis> jedisPool;
-    @Mock
     private Jedis jedis;
     private AdminClientPoolImpl adminClient;
 
+    @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-        when(this.jedisPool.getResource()).thenReturn(this.jedis);
+        this.mockCtx = new JUnit4Mockery();
+        this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
+        this.mockCtx.setThreadingPolicy(new Synchroniser());
+        this.jedisPool = this.mockCtx.mock(Pool.class);
+        this.jedis = this.mockCtx.mock(Jedis.class);
+        this.mockCtx.checking(new Expectations(){{
+            oneOf(jedisPool).getResource(); will(returnValue(jedis));
+            oneOf(jedis).close();
+        }});
         this.adminClient = new AdminClientPoolImpl(CONFIG, this.jedisPool);
     }
 
@@ -41,8 +49,10 @@ public class TestAdminClientPoolImpl {
 
     @Test
     public void testShutdownWorkers() {
+        this.mockCtx.checking(new Expectations(){{
+            oneOf(jedis).publish("resque:channel:admin", 
+                "{\"class\":\"ShutdownCommand\",\"args\":[true],\"vars\":null}"); will(returnValue(0L));
+        }});
         this.adminClient.shutdownWorkers(true);
-        verify(this.jedis).publish("resque:channel:admin", 
-                "{\"class\":\"ShutdownCommand\",\"args\":[true],\"vars\":null}");
     }
 }

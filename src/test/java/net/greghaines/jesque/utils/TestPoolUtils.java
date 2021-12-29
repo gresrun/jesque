@@ -10,7 +10,7 @@ import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JUnit4Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -32,7 +32,7 @@ public class TestPoolUtils {
     @Before
     public void setUp() {
         this.mockCtx = new JUnit4Mockery();
-        this.mockCtx.setImposteriser(ClassImposteriser.INSTANCE);
+        this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
         this.pool = this.mockCtx.mock(Pool.class);
         this.work = this.mockCtx.mock(PoolWork.class);
         this.resource = this.mockCtx.mock(Jedis.class);
