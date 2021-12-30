@@ -22,7 +22,7 @@ public class Issue56Test {
 
     private static final Logger LOG = LoggerFactory.getLogger(Issue56Test.class);
     private static final Config CONFIG = new ConfigBuilder().build();
-    private static final Client CLIENT = new ClientPoolImpl(CONFIG, new JedisPool("localhost"));
+    private static final Client CLIENT = new ClientPoolImpl(CONFIG, new JedisPool());
     private static final String QUEUE = "default";
 
     @Test
