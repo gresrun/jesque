@@ -105,7 +105,7 @@
             <id>github-ci</id>
             <activation>
                 <property>
-                    <name>env.GITHUB-CI</name>
+                    <name>github</name>
                     <value>true</value>
                 </property>
             </activation>
