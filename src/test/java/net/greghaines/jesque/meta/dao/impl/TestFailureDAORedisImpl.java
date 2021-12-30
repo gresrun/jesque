@@ -4,6 +4,7 @@ import static net.greghaines.jesque.ConfigBuilder.DEFAULT_NAMESPACE;
 import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
+import static net.greghaines.jesque.utils.ResqueConstants.STAT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 public class TestFailureDAORedisImpl {
     
     private static final String FAILED_KEY = DEFAULT_NAMESPACE + COLON + FAILED;
+    private static final String FAILED_STAT_KEY = DEFAULT_NAMESPACE + COLON + STAT + COLON + FAILED;
     private static final String QUEUES_KEY = DEFAULT_NAMESPACE + COLON + QUEUES;
     
     private Mockery mockCtx;
@@ -71,16 +73,28 @@ public class TestFailureDAORedisImpl {
     
     @Test
     public void testGetCount() {
-        final long failCount = 12;
+        final String failCount = "12";
         this.mockCtx.checking(new Expectations(){{
             oneOf(pool).getResource(); will(returnValue(jedis));
-            oneOf(jedis).llen(FAILED_KEY); will(returnValue(failCount));
+            oneOf(jedis).get(FAILED_STAT_KEY); will(returnValue(failCount));
             oneOf(jedis).close();
         }});
         final long count = this.failureDAO.getCount();
-        Assert.assertEquals(failCount, count);
+        Assert.assertEquals(Long.parseLong(failCount), count);
     }
-    
+
+    @Test
+    public void testGetFailQueueJobCount() {
+        final long failQueueJobCount = 12;
+        this.mockCtx.checking(new Expectations(){{
+            oneOf(pool).getResource(); will(returnValue(jedis));
+            oneOf(jedis).llen(FAILED_KEY); will(returnValue(failQueueJobCount));
+            oneOf(jedis).close();
+        }});
+        final long count = this.failureDAO.getFailQueueJobCount();
+        Assert.assertEquals(failQueueJobCount, count);
+    }
+
     @Test
     public void testClear() {
         this.mockCtx.checking(new Expectations(){{
