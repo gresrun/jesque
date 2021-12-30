@@ -36,8 +36,8 @@
         <url>https://github.com/gresrun/jesque/issues</url>
     </issueManagement>
     <ciManagement>
-        <system>Travis</system>
-        <url>https://travis-ci.org/gresrun/jesque</url>
+        <system>GitHub</system>
+        <url>https://github.com/gresrun/jesque/actions/workflows/ci.yml</url>
         <notifiers />
     </ciManagement>
     <distributionManagement>
