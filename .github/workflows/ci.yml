@@ -29,4 +29,12 @@ jobs:
       uses: supercharge/redis-github-action@1.4.0
 
     - name: Run Tests
-      run: mvn clean test jacoco:report coveralls:report -Dgithub=true
+      run: mvn clean test jacoco:report -Dgithub=true
+
+    - name: Upload Test Coverage Report
+      uses: codecov/codecov-action@v2
+      with:
+        files: ./target/site/jacoco/jacoco.xml
+        flags: unit-tests
+        fail_ci_if_error: true
+        verbose: true
