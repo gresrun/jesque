@@ -82,8 +82,8 @@ public final class PoolUtils {
      * maxIdle=10, minIdle=1, testOnBorrow=true,
      * blockWhenExhausted=false
      */
-    public static GenericObjectPoolConfig getDefaultPoolConfig() {
-        final GenericObjectPoolConfig cfg = new GenericObjectPoolConfig();
+    public static GenericObjectPoolConfig<Jedis> getDefaultPoolConfig() {
+        final GenericObjectPoolConfig<Jedis> cfg = new GenericObjectPoolConfig<>();
         cfg.setMaxTotal(-1); // Infinite
         cfg.setMaxIdle(10);
         cfg.setMinIdle(1);
@@ -111,7 +111,7 @@ public final class PoolUtils {
      * @param poolConfig   the config used to create the pool
      * @return a configured Pool of Jedis connections
      */
-    public static Pool<Jedis> createJedisPool(final Config jesqueConfig, final GenericObjectPoolConfig poolConfig) {
+    public static Pool<Jedis> createJedisPool(final Config jesqueConfig, final GenericObjectPoolConfig<Jedis> poolConfig) {
         if (jesqueConfig == null) {
             throw new IllegalArgumentException("jesqueConfig must not be null");
         }
