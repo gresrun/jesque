@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.greghaines</groupId>
     <artifactId>jesque</artifactId>
-    <version>2.2.1-SNAPSHOT</version>
+    <version>2.3.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Jesque</name>
     <description>An implementation of Resque in Java</description>
@@ -11,11 +11,7 @@
     <inceptionYear>2011</inceptionYear>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jedis.version>3.6.0</jedis.version>
         <jackson.version>2.13.1</jackson.version>
-        <slf4j.version>1.7.32</slf4j.version>
-        <logback.version>1.2.10</logback.version>
-        <junit.version>4.13.1</junit.version>
         <github.global.server>github-jesque</github.global.server>
     </properties>
     <licenses>
@@ -182,8 +178,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -208,6 +204,11 @@
                 <version>2.10.4</version>
                 <configuration>
                     <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
+                    <links>
+                        <link>https://javadoc.io/doc/redis.clients/jedis/3.8.0</link>
+                        <link>https://javadoc.io/doc/org.apache.commons/commons-pool2/2.11.1</link>
+                        <link>https://javadoc.io/doc/com.fasterxml.jackson.core/jackson-databind/2.13.1</link>
+                    </links>
                 </configuration>
             </plugin>
             <plugin>
@@ -262,7 +263,7 @@
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>${jedis.version}</version>
+            <version>3.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -272,7 +273,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
+            <version>1.7.32</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -287,7 +288,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
+            <version>1.2.10</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -299,7 +300,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
+            <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -320,16 +321,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <links>
-                        <link>http://docs.oracle.com/javase/7/docs/api/</link>
-                        <link>http://www.slf4j.org/api/</link>
-                        <link>http://commons.apache.org/proper/commons-pool/api-2.6.0/</link>
-                        <link>http://fasterxml.github.io/jackson-annotations/javadoc/2.9/</link>
-                        <link>http://fasterxml.github.io/jackson-core/javadoc/2.9/</link>
-                        <link>http://fasterxml.github.io/jackson-databind/javadoc/2.9/</link>
-                    </links>
-                </configuration>
             </plugin>
         </plugins>
     </reporting>
