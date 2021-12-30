@@ -11,6 +11,8 @@ on:
 
 jobs:
   build:
+    env:
+      GITHUB-CI: true
 
     runs-on: ubuntu-latest
 
