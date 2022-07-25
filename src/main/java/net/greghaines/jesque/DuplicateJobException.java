@@ -7,6 +7,7 @@ package net.greghaines.jesque;
 public class DuplicateJobException extends RuntimeException{
 
     public DuplicateJobException(final String message) {
+
         super(message);
     }
 }
