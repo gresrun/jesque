@@ -11,7 +11,7 @@
     <inceptionYear>2011</inceptionYear>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jackson.version>2.13.1</jackson.version>
+        <jackson.version>2.13.2.1</jackson.version>
         <github.global.server>github-jesque</github.global.server>
     </properties>
     <licenses>
