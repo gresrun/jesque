@@ -220,7 +220,7 @@
                         <!-- Allows markdown syntax for site generation. To use it place files below src/site/markdown/[filename].md -->
                         <groupId>org.apache.maven.doxia</groupId>
                         <artifactId>doxia-module-markdown</artifactId>
-                        <version>1.11.1</version>
+                        <version>1.12.0</version>
                     </dependency>
                 </dependencies>
                 <configuration>
