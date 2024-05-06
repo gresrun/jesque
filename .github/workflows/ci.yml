@@ -34,6 +34,7 @@ jobs:
     - name: Upload Test Coverage Report
       uses: codecov/codecov-action@v3
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
         files: ./target/site/jacoco/jacoco.xml
         flags: unit-tests
         fail_ci_if_error: true
