@@ -56,11 +56,8 @@ public class ClientBeforeWorkerTest {
         // Enqueue the job before worker is created and started
         final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
         TestUtils.enqueueJobs(testQueue, Arrays.asList(job), config);
-        Jedis jedis = createJedis(config);
-        try { // Assert that we enqueued the job
-            Assert.assertEquals(Long.valueOf(1), jedis.llen(createKey(config.getNamespace(), QUEUE, testQueue)));
-        } finally {
-            jedis.quit();
+        try (Jedis jedis = createJedis(config)) { // Assert that we enqueued the job
+            Assert.assertEquals(1L, jedis.llen(createKey(config.getNamespace(), QUEUE, testQueue)));
         }
 
         // Create and start worker
@@ -75,13 +72,10 @@ public class ClientBeforeWorkerTest {
         }
 
         // Assert that the job was run by the worker
-        jedis = createJedis(config);
-        try {
+        try (Jedis jedis = createJedis(config)) {
             Assert.assertEquals("1", jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
             Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-            Assert.assertEquals(Long.valueOf(0), jedis.llen(createKey(config.getNamespace(), QUEUE, testQueue)));
-        } finally {
-            jedis.quit();
+            Assert.assertEquals(0L, jedis.llen(createKey(config.getNamespace(), QUEUE, testQueue)));
         }
     }
 }

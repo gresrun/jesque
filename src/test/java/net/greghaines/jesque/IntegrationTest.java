@@ -173,13 +173,10 @@ public class IntegrationTest {
             }
         }, JOB_FAILURE);
 
-        final Jedis jedis = createJedis(CONFIG);
-        try {
+        try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertTrue(didFailWithUnpermittedJob.get());
             Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
             Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
-        } finally {
-            jedis.quit();
         }
     }
 
@@ -188,12 +185,9 @@ public class IntegrationTest {
 
         doWork(Arrays.asList(job), map(entry("TestAction", TestAction.class)), listener, events);
 
-        final Jedis jedis = createJedis(CONFIG);
-        try {
+        try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
             Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
-        } finally {
-            jedis.quit();
         }
     }
 
@@ -202,12 +196,9 @@ public class IntegrationTest {
 
         doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)), listener, events);
 
-        final Jedis jedis = createJedis(CONFIG);
-        try {
+        try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
             Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
-        } finally {
-            jedis.quit();
         }
     }
 
@@ -220,12 +211,9 @@ public class IntegrationTest {
         doWork(Arrays.asList(job1, job2, job3, job4),
                 map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)), listener, events);
 
-        final Jedis jedis = createJedis(CONFIG);
-        try {
+        try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
             Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
-        } finally {
-            jedis.quit();
         }
     }
 
@@ -238,12 +226,9 @@ public class IntegrationTest {
         doBatchWork(Arrays.asList(job1, job2, job3, job4),
                 map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)), listener, events);
 
-        final Jedis jedis = createJedis(CONFIG);
-        try {
+        try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
             Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
-        } finally {
-            jedis.quit();
         }
     }
 

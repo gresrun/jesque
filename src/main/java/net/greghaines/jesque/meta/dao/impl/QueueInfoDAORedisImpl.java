@@ -23,7 +23,6 @@ import static net.greghaines.jesque.utils.ResqueConstants.STAT;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
@@ -35,7 +34,7 @@ import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.Tuple;
+import redis.clients.jedis.resps.Tuple;
 import redis.clients.jedis.util.Pool;
 
 /**
@@ -245,7 +244,7 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
         final String key = key(QUEUE, queueName);
         final List<Job> jobs = new ArrayList<>();
         if (JedisUtils.isDelayedQueue(jedis, key)) { // If delayed queue, use ZRANGEWITHSCORES
-            final Set<Tuple> elements = jedis.zrangeWithScores(key, jobOffset, jobOffset + jobCount - 1);
+            final List<Tuple> elements = jedis.zrangeWithScores(key, jobOffset, jobOffset + jobCount - 1);
             for (final Tuple elementWithScore : elements) {
                 final Job job = ObjectMapperFactory.get().readValue(elementWithScore.getElement(), Job.class);
                 job.setRunAt(elementWithScore.getScore());

@@ -13,14 +13,13 @@ import org.junit.Test;
 import redis.clients.jedis.Jedis;
 
 import java.util.Arrays;
-import java.util.Set;
+import java.util.List;
 
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
 import static net.greghaines.jesque.utils.JesqueUtils.entry;
 import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.ResqueConstants.*;
-import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 
 /**
  * Created by Karthik (@argvk) on 6/3/15.
@@ -45,17 +44,14 @@ public class RecurringQueueTest {
         Job job = new Job("TestAction", new Object[]{1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
         client.recurringEnqueue(recurringTestQueue, job, System.currentTimeMillis() + recurringFrequency, recurringFrequency);
 
-        Jedis jedis = createJedis(config);
-        try { // Assert that we enqueued the job
-            Assert.assertEquals(Long.valueOf(1),
+        try (Jedis jedis = createJedis(config)) { // Assert that we enqueued the job
+            Assert.assertEquals(1L,
                     jedis.zcount(queueKey, "-inf", "+inf"));
-            Set<String> jobSet = jedis.zrangeByScore(queueKey, "-inf", "+inf", 0, 1);
+            List<String> jobSet = jedis.zrangeByScore(queueKey, "-inf", "+inf", 0, 1);
 
             String jobString = jobSet.iterator().next();
             Assert.assertEquals(String.valueOf(recurringFrequency),
                     jedis.hget(hashKey, jobString));
-        } finally {
-            jedis.quit();
         }
 
         // Create and mark the start worker
@@ -79,8 +75,7 @@ public class RecurringQueueTest {
         Long times = ((endMillis - startMillis)/recurringFrequency);
 
         // Assert that the job was run by the worker
-        jedis = createJedis(config);
-        try {
+        try (Jedis jedis = createJedis(config)) {
             Long processedTimes = Long.valueOf(jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
 
             // allowing for off by one error
@@ -88,11 +83,9 @@ public class RecurringQueueTest {
 
             Assert.assertTrue(oneOrZero == 0 || oneOrZero == 1);
             Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-            Assert.assertEquals(Long.valueOf(0),
+            Assert.assertEquals(0L,
                     jedis.zcount(createKey(config.getNamespace(), QUEUE, recurringTestQueue), "-inf", "+inf"));
-            Assert.assertEquals(Long.valueOf(0), jedis.hlen(hashKey));
-        } finally {
-            jedis.quit();
+            Assert.assertEquals(0L, jedis.hlen(hashKey));
         }
     }
 

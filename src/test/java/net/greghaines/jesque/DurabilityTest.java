@@ -53,7 +53,7 @@ public class DurabilityTest {
 
         final Jedis jedis = TestUtils.createJedis(config);
         Assert.assertEquals("In-flight list should have length one when running the job",
-                jedis.llen(inFlightKey(worker, queue)), (Long)1L);
+                1L, jedis.llen(inFlightKey(worker, queue)));
         Assert.assertEquals("Object on the in-flight list should be the first job",
                 ObjectMapperFactory.get().writeValueAsString(sleepJob), 
                 jedis.lindex(inFlightKey(worker, queue), 0));
@@ -63,7 +63,7 @@ public class DurabilityTest {
         Assert.assertTrue("The job should not be requeued after succesful processing",
                 jedis.llen(JesqueUtils.createKey(config.getNamespace(), QUEUE, queue)) == 0L);
         Assert.assertEquals("In-flight list should be empty when finishing a job", 
-                jedis.llen(inFlightKey(worker, queue)), (Long)0L);
+                0L, jedis.llen(inFlightKey(worker, queue)));
     }
 
     @Test
@@ -123,7 +123,7 @@ public class DurabilityTest {
         TestUtils.stopWorker(worker, workerThread, false);
 
         Assert.assertEquals("In-flight list should have length zero if the worker failed during JSON deserialization",
-                jedis.llen(inFlightKey(worker, queue)), (Long) 0L);
+                0L, jedis.llen(inFlightKey(worker, queue)));
     }
 
     private static String inFlightKey(final Worker worker, final String queue) {

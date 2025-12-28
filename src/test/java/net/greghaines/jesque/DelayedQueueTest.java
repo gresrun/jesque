@@ -52,12 +52,9 @@ public class DelayedQueueTest {
         }
         TestUtils.enqueueJobs(testQueue, jobs, config);
 
-        Jedis jedis = createJedis(config);
-        try { // Assert that we enqueued the job
-            Assert.assertEquals(Long.valueOf(10),
+        try (Jedis jedis = createJedis(config)) { // Assert that we enqueued the job
+            Assert.assertEquals(10L,
                     jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
-        } finally {
-            jedis.quit();
         }
 
         // Create and start worker
@@ -79,14 +76,11 @@ public class DelayedQueueTest {
         }
 
         // Assert that the job was run by the worker
-        jedis = createJedis(config);
-        try {
+        try (Jedis jedis = createJedis(config)) {
             Assert.assertEquals(String.valueOf(20), jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
             Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-            Assert.assertEquals(Long.valueOf(0),
+            Assert.assertEquals(0L,
                     jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
-        } finally {
-            jedis.quit();
         }
     }
 }

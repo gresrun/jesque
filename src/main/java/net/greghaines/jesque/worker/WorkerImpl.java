@@ -227,7 +227,7 @@ public class WorkerImpl implements Worker {
                 this.jedis.srem(key(WORKERS), this.name);
                 this.jedis.del(key(WORKER, this.name), key(WORKER, this.name, STARTED), key(STAT, FAILED, this.name),
                         key(STAT, PROCESSED, this.name));
-                this.jedis.quit();
+                this.jedis.close();
                 this.threadRef.set(null);
             }
         } else if (RUNNING.equals(this.state.get())) {

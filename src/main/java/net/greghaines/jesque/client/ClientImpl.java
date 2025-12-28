@@ -146,7 +146,7 @@ public class ClientImpl extends AbstractClient {
         if (this.keepAliveService != null) {
             this.keepAliveService.shutdownNow();
         }
-        this.jedis.quit();
+        this.jedis.close();
     }
 
     /**

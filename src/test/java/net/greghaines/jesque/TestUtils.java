@@ -44,12 +44,9 @@ public final class TestUtils {
      *            the location of the Redis server
      */
     public static void resetRedis(final Config config) {
-        final Jedis jedis = createJedis(config);
-        try {
+        try (Jedis jedis = createJedis(config)) {
             log.info("Resetting Redis for next test...");
             jedis.flushDB();
-        } finally {
-            jedis.quit();
         }
     }
 

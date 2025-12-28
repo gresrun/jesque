@@ -35,7 +35,7 @@ import org.junit.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.Tuple;
+import redis.clients.jedis.resps.Tuple;
 import redis.clients.jedis.util.Pool;
 
 public class TestQueueInfoDAORedisImpl {
@@ -217,7 +217,7 @@ public class TestQueueInfoDAORedisImpl {
         final long jobOffset = 1;
         final long jobCount = 2;
         final long size = 4;
-        final Set<Tuple> payloads = new HashSet<>();
+        final List<Tuple> payloads = new ArrayList<>(2);
         payloads.add(new Tuple(ObjectMapperFactory.get().writeValueAsString(new Job("foo")), 1d));
         payloads.add(new Tuple(ObjectMapperFactory.get().writeValueAsString(new Job("bar")), 1d));
         this.mockCtx.checking(new Expectations(){{

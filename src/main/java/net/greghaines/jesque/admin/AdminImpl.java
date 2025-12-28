@@ -139,7 +139,7 @@ public class AdminImpl implements Admin {
                 }
             } finally {
                 LOG.debug("AdminImpl shutting down");
-                this.jedis.quit();
+                this.jedis.close();
                 this.threadRef.set(null);
             }
         } else {

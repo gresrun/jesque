@@ -55,12 +55,9 @@ public class Issue46 {
         } finally {
             TestUtils.stopWorker(worker, workerThread);
         }
-        final Jedis jedis = createJedis(CONFIG);
-        try {
+        try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
             Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
-        } finally {
-            jedis.quit();
         }
     }
 

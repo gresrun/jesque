@@ -51,12 +51,9 @@ public class RemoveDelayedQueueTest {
         final List<Job> jobsToRemove = jobs.subList(0,5);
         TestUtils.removeDelayEnqueueJobs(delayTestQueue, jobsToRemove, config);
 
-        Jedis jedis = createJedis(config);
-        try { // Assert that we removed jobs are not queued
-            Assert.assertEquals(Long.valueOf(5),
+        try (Jedis jedis = createJedis(config)) { // Assert that we removed jobs are not queued
+            Assert.assertEquals(5L,
                     jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
-        } finally {
-            jedis.quit();
         }
 
         // Create and start worker
@@ -78,14 +75,11 @@ public class RemoveDelayedQueueTest {
         }
 
         // Assert that the job was run by the worker
-        jedis = createJedis(config);
-        try {
+        try (Jedis jedis = createJedis(config)) {
             Assert.assertEquals(String.valueOf(5), jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
             Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-            Assert.assertEquals(Long.valueOf(0),
+            Assert.assertEquals(0L,
                     jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
-        } finally {
-            jedis.quit();
         }
     }
 }

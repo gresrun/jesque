@@ -48,7 +48,7 @@ public final class JedisUtils {
         final boolean jedisOK = testJedisConnection(jedis);
         if (!jedisOK) {
             try {
-                jedis.quit();
+                jedis.close();
             } catch (Exception e) {
             } // Ignore
             try {

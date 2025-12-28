@@ -212,7 +212,7 @@ public class TestKeysDAORedisImpl {
     @Test
     public void testDoWork_HandleZSet_ArrayValue() throws Exception {
         final String key = "foo:bar";
-        final Set<String> value = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
+        final List<String> value = Arrays.asList("foo", "bar", "baz");
         final long size = 8;
         final int offset = 1;
         final int count = value.size();

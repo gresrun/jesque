@@ -120,7 +120,7 @@ public class AdminClientImpl extends AbstractAdminClient {
         if (this.keepAliveService != null) {
             this.keepAliveService.shutdownNow();
         }
-        this.jedis.quit();
+        this.jedis.close();
     }
 
     private void authenticateAndSelectDB() {
