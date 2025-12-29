@@ -27,8 +27,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -39,19 +38,16 @@ public class TestFailureDAORedisImpl {
     private static final String QUEUES_KEY = DEFAULT_NAMESPACE + COLON + QUEUES;
 
     private Mockery mockCtx;
-    private Pool<Jedis> pool;
-    private Jedis jedis;
+    private UnifiedJedis jedisPool;
     private FailureDAORedisImpl failureDAO;
 
-    @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
         this.mockCtx = new JUnit4Mockery();
         this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
         this.mockCtx.setThreadingPolicy(new Synchroniser());
-        this.pool = this.mockCtx.mock(Pool.class);
-        this.jedis = this.mockCtx.mock(Jedis.class);
-        this.failureDAO = new FailureDAORedisImpl(Config.getDefaultConfig(), this.pool);
+        this.jedisPool = this.mockCtx.mock(UnifiedJedis.class);
+        this.failureDAO = new FailureDAORedisImpl(Config.getDefaultConfig(), this.jedisPool);
     }
 
     @After
@@ -75,11 +71,8 @@ public class TestFailureDAORedisImpl {
         final String failCount = "12";
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).get(FAILED_STAT_KEY);
+                oneOf(jedisPool).get(FAILED_STAT_KEY);
                 will(returnValue(failCount));
-                oneOf(jedis).close();
             }
         });
         final long count = this.failureDAO.getCount();
@@ -91,11 +84,8 @@ public class TestFailureDAORedisImpl {
         final long failQueueJobCount = 12;
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).llen(FAILED_KEY);
+                oneOf(jedisPool).llen(FAILED_KEY);
                 will(returnValue(failQueueJobCount));
-                oneOf(jedis).close();
             }
         });
         final long count = this.failureDAO.getFailQueueJobCount();
@@ -106,10 +96,7 @@ public class TestFailureDAORedisImpl {
     public void testClear() {
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).del(FAILED_KEY);
-                oneOf(jedis).close();
+                oneOf(jedisPool).del(FAILED_KEY);
             }
         });
         this.failureDAO.clear();
@@ -133,11 +120,8 @@ public class TestFailureDAORedisImpl {
         origJsons.add(UUID.randomUUID().toString());
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).lrange(FAILED_KEY, offset, offset + count - 1);
+                oneOf(jedisPool).lrange(FAILED_KEY, offset, offset + count - 1);
                 will(returnValue(origJsons));
-                oneOf(jedis).close();
             }
         });
         final List<JobFailure> fails = this.failureDAO.getFailures(offset, count);
@@ -151,13 +135,10 @@ public class TestFailureDAORedisImpl {
         final long index = 8;
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).lset(with(equal(FAILED_KEY)), with(equal(index)),
+                oneOf(jedisPool).lset(with(equal(FAILED_KEY)), with(equal(index)),
                         with(any(String.class)));
-                oneOf(jedis).lrem(with(equal(FAILED_KEY)), with(equal(1L)),
+                oneOf(jedisPool).lrem(with(equal(FAILED_KEY)), with(equal(1L)),
                         with(any(String.class)));
-                oneOf(jedis).close();
             }
         });
         this.failureDAO.remove(index);
@@ -170,31 +151,31 @@ public class TestFailureDAORedisImpl {
         final String jobJson = ObjectMapperFactory.get().writeValueAsString(job);
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(jedis).sadd(QUEUES_KEY, queue);
-                oneOf(jedis).rpush("resque:queue:" + queue, jobJson);
+                oneOf(jedisPool).sadd(QUEUES_KEY, queue);
+                oneOf(jedisPool).rpush("resque:queue:" + queue, jobJson);
             }
         });
-        this.failureDAO.enqueue(this.jedis, queue, job);
+        this.failureDAO.enqueue(this.jedisPool, queue, job);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testEnqueue_NullQueue() throws IOException {
-        this.failureDAO.enqueue(this.jedis, null, new Job("foo"));
+        this.failureDAO.enqueue(this.jedisPool, null, new Job("foo"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testEnqueue_EmptyQueue() throws IOException {
-        this.failureDAO.enqueue(this.jedis, "", new Job("foo"));
+        this.failureDAO.enqueue(this.jedisPool, "", new Job("foo"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testEnqueue_NullJob() throws IOException {
-        this.failureDAO.enqueue(this.jedis, "foo", null);
+        this.failureDAO.enqueue(this.jedisPool, "foo", null);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testEnqueue_InvalidJob() throws IOException {
-        this.failureDAO.enqueue(this.jedis, "foo", new Job());
+        this.failureDAO.enqueue(this.jedisPool, "foo", new Job());
     }
 
     @Test
@@ -216,15 +197,12 @@ public class TestFailureDAORedisImpl {
         final String jobJson = ObjectMapperFactory.get().writeValueAsString(job);
         this.mockCtx.checking(new Expectations() {
             {
-                exactly(2).of(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).lrange(FAILED_KEY, index, index + count - 1);
+                oneOf(jedisPool).lrange(FAILED_KEY, index, index + count - 1);
                 will(returnValue(origJsons));
-                oneOf(jedis).lset(with(equal(FAILED_KEY)), with(equal(index)),
+                oneOf(jedisPool).lset(with(equal(FAILED_KEY)), with(equal(index)),
                         with(any(String.class)));
-                oneOf(jedis).sadd(QUEUES_KEY, queue);
-                oneOf(jedis).rpush("resque:queue:" + queue, jobJson);
-                exactly(2).of(jedis).close();
+                oneOf(jedisPool).sadd(QUEUES_KEY, queue);
+                oneOf(jedisPool).rpush("resque:queue:" + queue, jobJson);
             }
         });
         final Date requeuedAt = this.failureDAO.requeue(index);

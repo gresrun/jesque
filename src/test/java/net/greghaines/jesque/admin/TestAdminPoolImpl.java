@@ -5,7 +5,6 @@ import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.JesqueUtils.set;
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
 
-import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.jmock.integration.junit4.JUnit4Mockery;
@@ -21,32 +20,21 @@ import net.greghaines.jesque.worker.RecoveryStrategy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
 
 public class TestAdminPoolImpl {
 
     private static final Config CONFIG = Config.getDefaultConfig();
 
     private Mockery mockCtx;
-    private Pool<Jedis> jedisPool;
-    private Jedis jedis;
+    private UnifiedJedis jedisPool;
 
-    @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
         this.mockCtx = new JUnit4Mockery();
         this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
         this.mockCtx.setThreadingPolicy(new Synchroniser());
-        this.jedisPool = this.mockCtx.mock(Pool.class);
-        this.jedis = this.mockCtx.mock(Jedis.class);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).close();
-            }
-        });
+        this.jedisPool = this.mockCtx.mock(UnifiedJedis.class);
     }
 
     @Test(expected = IllegalArgumentException.class)

@@ -36,9 +36,7 @@ import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.ConcurrentHashSet;
 import net.greghaines.jesque.utils.ConcurrentSet;
 import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.ResqueConstants;
-import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 import net.greghaines.jesque.worker.DefaultExceptionHandler;
 import net.greghaines.jesque.worker.ExceptionHandler;
 import net.greghaines.jesque.worker.JobFactory;
@@ -50,9 +48,8 @@ import net.greghaines.jesque.worker.WorkerAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
 
 /**
  * AdminPoolImpl receives administrative jobs for a worker using a connection pool.
@@ -63,7 +60,7 @@ public class AdminPoolImpl implements Admin {
 
     private static final Logger LOG = LoggerFactory.getLogger(AdminPoolImpl.class);
 
-    protected final Pool<Jedis> jedisPool;
+    protected final UnifiedJedis jedisPool;
     protected final String namespace;
     private final JobFactory jobFactory;
     private final ConcurrentSet<String> channels = new ConcurrentHashSet<String>();
@@ -82,7 +79,7 @@ public class AdminPoolImpl implements Admin {
      * @param config the Jesque configuration
      * @param jedisPool the Redis connection pool
      */
-    public AdminPoolImpl(final Config config, final Pool<Jedis> jedisPool) {
+    public AdminPoolImpl(final Config config, final UnifiedJedis jedisPool) {
         this(config, set(ADMIN_CHANNEL),
                 new MapBasedJobFactory(map(entry("PauseCommand", PauseCommand.class),
                         entry("ShutdownCommand", ShutdownCommand.class))),
@@ -98,7 +95,7 @@ public class AdminPoolImpl implements Admin {
      * @param jedisPool the Redis connection pool
      */
     public AdminPoolImpl(final Config config, final Set<String> channels,
-            final JobFactory jobFactory, final Pool<Jedis> jedisPool) {
+            final JobFactory jobFactory, final UnifiedJedis jedisPool) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -124,16 +121,7 @@ public class AdminPoolImpl implements Admin {
                 LOG.debug("AdminImpl starting up");
                 this.threadRef.set(Thread.currentThread());
                 while (!isShutdown()) {
-                    PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-                        /**
-                         * {@inheritDoc}
-                         */
-                        @Override
-                        public Void doWork(final Jedis jedis) {
-                            jedis.subscribe(jedisPubSub, createFullChannels());
-                            return null;
-                        }
-                    });
+                    this.jedisPool.subscribe(jedisPubSub, createFullChannels());
                 }
             } finally {
                 LOG.debug("AdminImpl shutting down");

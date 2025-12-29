@@ -14,10 +14,7 @@
 package net.greghaines.jesque.admin;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.utils.PoolUtils;
-import net.greghaines.jesque.utils.PoolUtils.PoolWork;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
 
 /**
  * AdminClientPoolImpl publishes jobs to channels using a connection pool.
@@ -26,7 +23,7 @@ import redis.clients.jedis.util.Pool;
  */
 public class AdminClientPoolImpl extends AbstractAdminClient {
 
-    private final Pool<Jedis> jedisPool;
+    private final UnifiedJedis jedisPool;
 
     /**
      * Create a new AdminClientPoolImpl using the supplied configuration and connection pool.
@@ -34,7 +31,7 @@ public class AdminClientPoolImpl extends AbstractAdminClient {
      * @param config used to create a connection to Redis
      * @param jedisPool the Redis connection pool
      */
-    public AdminClientPoolImpl(final Config config, final Pool<Jedis> jedisPool) {
+    public AdminClientPoolImpl(final Config config, final UnifiedJedis jedisPool) {
         super(config);
         if (jedisPool == null) {
             throw new IllegalArgumentException("jedisPool must not be null");
@@ -47,16 +44,7 @@ public class AdminClientPoolImpl extends AbstractAdminClient {
      */
     @Override
     protected void doPublish(final String channel, final String jobJson) throws Exception {
-        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) {
-                doPublish(jedis, getNamespace(), channel, jobJson);
-                return null;
-            }
-        });
+        doPublish(this.jedisPool::publish, getNamespace(), channel, jobJson);
     }
 
     /**

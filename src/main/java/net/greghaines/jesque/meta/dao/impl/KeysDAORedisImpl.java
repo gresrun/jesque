@@ -28,11 +28,8 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.meta.KeyInfo;
 import net.greghaines.jesque.meta.KeyType;
 import net.greghaines.jesque.meta.dao.KeysDAO;
-import net.greghaines.jesque.utils.PoolUtils;
-import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
 
 /**
  * KeysDAORedisImpl gets key information from Redis.
@@ -45,7 +42,7 @@ public class KeysDAORedisImpl implements KeysDAO {
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
 
     private final Config config;
-    private final Pool<Jedis> jedisPool;
+    private final UnifiedJedis jedisPool;
 
     /**
      * Constructor.
@@ -53,7 +50,7 @@ public class KeysDAORedisImpl implements KeysDAO {
      * @param config the Jesque configuration
      * @param jedisPool the pool of Jedis connections
      */
-    public KeysDAORedisImpl(final Config config, final Pool<Jedis> jedisPool) {
+    public KeysDAORedisImpl(final Config config, final UnifiedJedis jedisPool) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -69,7 +66,13 @@ public class KeysDAORedisImpl implements KeysDAO {
      */
     @Override
     public KeyInfo getKeyInfo(final String key) {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new KeyDAOPoolWork(key));
+        try {
+            return new KeyDAOWork(key).doWork(this.jedisPool);
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -77,7 +80,13 @@ public class KeysDAORedisImpl implements KeysDAO {
      */
     @Override
     public KeyInfo getKeyInfo(final String key, final int offset, final int count) {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new KeyDAOPoolWork(key, offset, count));
+        try {
+            return new KeyDAOWork(key, offset, count).doWork(this.jedisPool);
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -85,22 +94,20 @@ public class KeysDAORedisImpl implements KeysDAO {
      */
     @Override
     public List<KeyInfo> getKeyInfos() {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<KeyInfo>>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public List<KeyInfo> doWork(final Jedis jedis) throws Exception {
-                final Set<String> keys =
-                        jedis.keys(KeysDAORedisImpl.this.config.getNamespace() + COLON + "*");
-                final List<KeyInfo> keyInfos = new ArrayList<KeyInfo>(keys.size());
-                for (final String key : keys) {
-                    keyInfos.add(new KeyDAOPoolWork(key).doWork(jedis));
-                }
-                Collections.sort(keyInfos);
-                return keyInfos;
+        try {
+            final Set<String> keys =
+                    this.jedisPool.keys(KeysDAORedisImpl.this.config.getNamespace() + COLON + "*");
+            final List<KeyInfo> keyInfos = new ArrayList<>(keys.size());
+            for (final String key : keys) {
+                keyInfos.add(new KeyDAOWork(key).doWork(this.jedisPool));
             }
-        });
+            Collections.sort(keyInfos);
+            return keyInfos;
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -108,57 +115,48 @@ public class KeysDAORedisImpl implements KeysDAO {
      */
     @Override
     public Map<String, String> getRedisInfo() {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool,
-                new PoolWork<Jedis, Map<String, String>>() {
-                    /**
-                     * {@inheritDoc}
-                     */
-                    @Override
-                    public Map<String, String> doWork(final Jedis jedis) throws Exception {
-                        final Map<String, String> infoMap = new TreeMap<String, String>();
-                        final String infoStr = jedis.info();
-                        final String[] keyValueStrs = NEW_LINE_PATTERN.split(infoStr);
-                        for (final String keyValueStr : keyValueStrs) {
-                            if (!keyValueStr.isEmpty() && keyValueStr.charAt(0) != '#') { // Ignore
-                                                                                          // categories
-                                                                                          // for now
-                                final String[] keyAndValue = COLON_PATTERN.split(keyValueStr, 2);
-                                final String value =
-                                        (keyAndValue.length == 1) ? null : keyAndValue[1];
-                                infoMap.put(keyAndValue[0], value);
-                            }
-                        }
-                        return new LinkedHashMap<String, String>(infoMap);
-                    }
-                });
+        try {
+            final Map<String, String> infoMap = new TreeMap<>();
+            final String infoStr = this.jedisPool.info();
+            final String[] keyValueStrs = NEW_LINE_PATTERN.split(infoStr);
+            for (final String keyValueStr : keyValueStrs) {
+                if (!keyValueStr.isEmpty() && keyValueStr.charAt(0) != '#') {
+                    // Ignore categories for now
+                    final String[] keyAndValue = COLON_PATTERN.split(keyValueStr, 2);
+                    final String value = (keyAndValue.length == 1) ? null : keyAndValue[1];
+                    infoMap.put(keyAndValue[0], value);
+                }
+            }
+            return new LinkedHashMap<>(infoMap);
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    protected static final class KeyDAOPoolWork implements PoolWork<Jedis, KeyInfo> {
+    protected static final class KeyDAOWork {
 
         private final String key;
         private final int offset;
         private final int count;
         private final boolean doArrayValue;
 
-        protected KeyDAOPoolWork(final String key) {
+        protected KeyDAOWork(final String key) {
             this.key = key;
             this.offset = -1;
             this.count = -1;
             this.doArrayValue = false;
         }
 
-        protected KeyDAOPoolWork(final String key, final int offset, final int count) {
+        protected KeyDAOWork(final String key, final int offset, final int count) {
             this.key = key;
             this.offset = offset;
             this.count = count;
             this.doArrayValue = true;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public KeyInfo doWork(final Jedis jedis) throws Exception {
+        public KeyInfo doWork(final UnifiedJedis jedis) throws Exception {
             final KeyInfo keyInfo;
             final KeyType type = KeyType.getKeyTypeByValue(jedis.type(this.key));
             if (type == null) {
@@ -188,7 +186,7 @@ public class KeysDAORedisImpl implements KeysDAO {
             return keyInfo;
         }
 
-        protected KeyInfo handleZSet(final Jedis jedis) {
+        protected KeyInfo handleZSet(final UnifiedJedis jedis) {
             final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.ZSET);
             keyInfo.setSize(jedis.zcard(this.key));
             if (this.doArrayValue) {
@@ -198,7 +196,7 @@ public class KeysDAORedisImpl implements KeysDAO {
             return keyInfo;
         }
 
-        protected KeyInfo handleString(final Jedis jedis) {
+        protected KeyInfo handleString(final UnifiedJedis jedis) {
             final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.STRING);
             keyInfo.setSize(jedis.strlen(this.key));
             if (this.doArrayValue) {
@@ -209,7 +207,7 @@ public class KeysDAORedisImpl implements KeysDAO {
             return keyInfo;
         }
 
-        protected KeyInfo handleSet(final Jedis jedis) {
+        protected KeyInfo handleSet(final UnifiedJedis jedis) {
             final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.SET);
             keyInfo.setSize(jedis.scard(this.key));
             if (this.doArrayValue) {
@@ -227,7 +225,7 @@ public class KeysDAORedisImpl implements KeysDAO {
             return keyInfo;
         }
 
-        protected KeyInfo handleList(final Jedis jedis) {
+        protected KeyInfo handleList(final UnifiedJedis jedis) {
             final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.LIST);
             keyInfo.setSize(jedis.llen(this.key));
             if (this.doArrayValue) {
@@ -237,7 +235,7 @@ public class KeysDAORedisImpl implements KeysDAO {
             return keyInfo;
         }
 
-        protected KeyInfo handleHash(final Jedis jedis) {
+        protected KeyInfo handleHash(final UnifiedJedis jedis) {
             final KeyInfo keyInfo = new KeyInfo(this.key, KeyType.HASH);
             keyInfo.setSize(jedis.hlen(this.key));
             if (this.doArrayValue) {

@@ -18,13 +18,12 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.Transaction;
-
+import redis.clients.jedis.AbstractPipeline;
+import redis.clients.jedis.AbstractTransaction;
+import redis.clients.jedis.commands.JedisCommands;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.function.Supplier;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 
@@ -193,8 +192,8 @@ public abstract class AbstractClient implements Client {
      * @param queue the Resque queue name
      * @param jobJson the job serialized as JSON
      */
-    public static void doEnqueue(final Jedis jedis, final String namespace, final String queue,
-            final String jobJson) {
+    public static void doEnqueue(final JedisCommands jedis, final String namespace,
+            final String queue, final String jobJson) {
         jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
         jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
     }
@@ -207,9 +206,10 @@ public abstract class AbstractClient implements Client {
      * @param queue the Resque queue name
      * @param jobJsons a list of jobs serialized as JSON
      */
-    public static void doBatchEnqueue(final Jedis jedis, final String namespace, final String queue,
-            final List<String> jobJsons) {
-        Pipeline pipelined = jedis.pipelined();
+    public static void doBatchEnqueue(final JedisCommands jedis,
+            final Supplier<AbstractPipeline> makePipeline, final String namespace,
+            final String queue, final List<String> jobJsons) {
+        AbstractPipeline pipelined = makePipeline.get(); // jedis.pipelined();
         pipelined.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
         for (String jobJson : jobJsons) {
             pipelined.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
@@ -225,7 +225,7 @@ public abstract class AbstractClient implements Client {
      * @param queue the Resque queue name
      * @param jobJson the job serialized as JSON
      */
-    public static void doPriorityEnqueue(final Jedis jedis, final String namespace,
+    public static void doPriorityEnqueue(final JedisCommands jedis, final String namespace,
             final String queue, final String jobJson) {
         jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
         jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
@@ -243,7 +243,7 @@ public abstract class AbstractClient implements Client {
      *        both acquisition, and extension
      * @return Whether or not the lock was acquired.
      */
-    public static boolean doAcquireLock(final Jedis jedis, final String namespace,
+    public static boolean doAcquireLock(final JedisCommands jedis, final String namespace,
             final String lockName, final String lockHolder, final int timeout) {
         final String key = JesqueUtils.createKey(namespace, lockName);
         // If lock already exists, extend it
@@ -299,7 +299,7 @@ public abstract class AbstractClient implements Client {
         return false;
     }
 
-    public static void doDelayedEnqueue(final Jedis jedis, final String namespace,
+    public static void doDelayedEnqueue(final JedisCommands jedis, final String namespace,
             final String queue, final String jobJson, final long future) {
         final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
         // Add task only if this queue is either delayed or unused
@@ -329,7 +329,7 @@ public abstract class AbstractClient implements Client {
         }
     }
 
-    public static void doRemoveDelayedEnqueue(final Jedis jedis, final String namespace,
+    public static void doRemoveDelayedEnqueue(final JedisCommands jedis, final String namespace,
             final String queue, final String jobJson) {
         final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
         // remove task only if this queue is either delayed or unused
@@ -357,13 +357,14 @@ public abstract class AbstractClient implements Client {
         }
     }
 
-    public static void doRecurringEnqueue(final Jedis jedis, final String namespace,
+    public static void doRecurringEnqueue(final JedisCommands jedis,
+            final Supplier<AbstractTransaction> makeTransaction, final String namespace,
             final String queue, final String jobJson, final long future, final long frequency) {
         final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
         final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
         if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
-            Transaction transaction = jedis.multi();
+            AbstractTransaction transaction = makeTransaction.get();// jedis.multi();
             transaction.zadd(queueKey, future, jobJson);
             transaction.hset(hashKey, jobJson, String.valueOf(frequency));
             if (transaction.exec() == null) {
@@ -394,13 +395,14 @@ public abstract class AbstractClient implements Client {
         }
     }
 
-    public static void doRemoveRecurringEnqueue(final Jedis jedis, final String namespace,
+    public static void doRemoveRecurringEnqueue(final JedisCommands jedis,
+            final Supplier<AbstractTransaction> makeTransaction, final String namespace,
             final String queue, final String jobJson) {
         final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
         final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
         if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
-            Transaction transaction = jedis.multi();
+            AbstractTransaction transaction = makeTransaction.get(); // jedis.multi();
             transaction.hdel(hashKey, jobJson);
             transaction.zrem(queueKey, jobJson);
             if (transaction.exec() == null) {

@@ -16,11 +16,9 @@ package net.greghaines.jesque.utils;
 import net.greghaines.jesque.Config;
 
 import redis.clients.jedis.ConnectionPoolConfig;
-import redis.clients.jedis.Jedis;
 import redis.clients.jedis.RedisClient;
 import redis.clients.jedis.RedisSentinelClient;
 import redis.clients.jedis.UnifiedJedis;
-import redis.clients.jedis.util.Pool;
 
 /**
  * Convenience methods for doing work with pooled Jedis connections.
@@ -28,49 +26,6 @@ import redis.clients.jedis.util.Pool;
  * @author Greg Haines
  */
 public final class PoolUtils {
-
-    /**
-     * Perform the given work with a Jedis connection from the given pool.
-     * 
-     * @param pool the resource pool
-     * @param work the work to perform
-     * @param <V> the result type
-     * @return the result of the given work
-     * @throws Exception if something went wrong
-     */
-    public static <V> V doWorkInPool(final Pool<Jedis> pool, final PoolWork<Jedis, V> work)
-            throws Exception {
-        if (pool == null) {
-            throw new IllegalArgumentException("pool must not be null");
-        }
-        if (work == null) {
-            throw new IllegalArgumentException("work must not be null");
-        }
-        try (Jedis poolResource = pool.getResource()) {
-            return work.doWork(poolResource);
-        }
-    }
-
-    /**
-     * Perform the given work with a Jedis connection from the given pool. Wraps any thrown checked
-     * exceptions in a RuntimeException.
-     * 
-     * @param pool the resource pool
-     * @param work the work to perform
-     * @param <V> the result type
-     * @return the result of the given work
-     */
-    public static <V> V doWorkInPoolNicely(final Pool<Jedis> pool, final PoolWork<Jedis, V> work) {
-        final V result;
-        try {
-            result = doWorkInPool(pool, work);
-        } catch (RuntimeException re) {
-            throw re;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return result;
-    }
 
     /**
      * @return a ConnectionPoolConfig configured with: maxActive=-1, maxIdle=10, minIdle=1,
@@ -118,37 +73,11 @@ public final class PoolUtils {
             return RedisSentinelClient.builder().masterName(jesqueConfig.getMasterName())
                     .sentinels(jesqueConfig.getSentinels()).poolConfig(poolConfig)
                     .clientConfig(jesqueConfig.getJedisClientConfig()).build();
-            // return new JedisSentinelPool(jesqueConfig.getMasterName(),
-            // jesqueConfig.getSentinels(), poolConfig,
-            // jesqueConfig.getTimeout(), jesqueConfig.getPassword(),
-            // jesqueConfig.getDatabase());
         } else {
             return RedisClient.builder().hostAndPort(jesqueConfig.getHostAndPort())
                     .poolConfig(poolConfig).clientConfig(jesqueConfig.getJedisClientConfig())
                     .build();
-            // return new JedisPool(poolConfig, jesqueConfig.getHost(),
-            // jesqueConfig.getPort(),
-            // jesqueConfig.getTimeout(), jesqueConfig.getPassword(),
-            // jesqueConfig.getDatabase());
         }
-    }
-
-    /**
-     * A unit of work that utilizes a pooled resource.
-     *
-     * @param <T> the kind of pooled resource used
-     * @param <V> the kind of result returned
-     * @author Greg Haines
-     */
-    public interface PoolWork<T, V> {
-        /**
-         * Do work with a pooled resource and return a result.
-         *
-         * @param poolResource the pooled resource
-         * @return the result of the work done
-         * @throws Exception in case something goes wrong
-         */
-        V doWork(T poolResource) throws Exception;
     }
 
     private PoolUtils() {

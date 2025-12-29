@@ -106,7 +106,7 @@ public class ClientImpl extends AbstractClient {
     @Override
     protected void doBatchEnqueue(final String queue, final List<String> jobsJson) {
         ensureJedisConnection();
-        doBatchEnqueue(this.jedis, getNamespace(), queue, jobsJson);
+        doBatchEnqueue(this.jedis, () -> this.jedis.pipelined(), getNamespace(), queue, jobsJson);
     }
 
     /**
@@ -166,7 +166,8 @@ public class ClientImpl extends AbstractClient {
     protected void doRecurringEnqueue(final String queue, final String msg, final long future,
             final long frequency) throws Exception {
         ensureJedisConnection();
-        doRecurringEnqueue(this.jedis, getNamespace(), queue, msg, future, frequency);
+        doRecurringEnqueue(this.jedis, () -> this.jedis.multi(), getNamespace(), queue, msg, future,
+                frequency);
     }
 
     /**
@@ -175,7 +176,7 @@ public class ClientImpl extends AbstractClient {
     @Override
     protected void doRemoveRecurringEnqueue(final String queue, final String msg) throws Exception {
         ensureJedisConnection();
-        doRemoveRecurringEnqueue(this.jedis, getNamespace(), queue, msg);
+        doRemoveRecurringEnqueue(this.jedis, () -> this.jedis.multi(), getNamespace(), queue, msg);
     }
 
     private void authenticateAndSelectDB() {

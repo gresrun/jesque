@@ -4,110 +4,17 @@ import java.util.Collections;
 import java.util.HashSet;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 
-import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.jmock.integration.junit4.JUnit4Mockery;
-import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.Jedis;
 import redis.clients.jedis.RedisClient;
 import redis.clients.jedis.RedisSentinelClient;
 import redis.clients.jedis.UnifiedJedis;
-import redis.clients.jedis.util.Pool;
 
 public class TestPoolUtils {
-
-    private Mockery mockCtx;
-    private Jedis resource;
-    private Pool<Jedis> pool;
-    private PoolWork<Jedis, String> work;
-
-    @SuppressWarnings("unchecked")
-    @Before
-    public void setUp() {
-        this.mockCtx = new JUnit4Mockery();
-        this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
-        this.pool = this.mockCtx.mock(Pool.class);
-        this.work = this.mockCtx.mock(PoolWork.class);
-        this.resource = this.mockCtx.mock(Jedis.class);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testDoWorkInPool_NullPool() throws Exception {
-        PoolUtils.doWorkInPool(null, this.work);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testDoWorkInPool_NullWork() throws Exception {
-        PoolUtils.doWorkInPool(this.pool, null);
-    }
-
-    @Test
-    public void testDoWorkInPool() throws Exception {
-        final String result = "bar";
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(pool).getResource();
-                will(returnValue(resource));
-                oneOf(work).doWork(resource);
-                will(returnValue(result));
-                oneOf(resource).close();
-            }
-        });
-        Assert.assertEquals(result, PoolUtils.doWorkInPool(this.pool, this.work));
-    }
-
-    @Test
-    public void testDoWorkInPoolNicely() throws Exception {
-        final String result = "bar";
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(pool).getResource();
-                will(returnValue(resource));
-                oneOf(work).doWork(resource);
-                will(returnValue(result));
-                oneOf(resource).close();
-            }
-        });
-        Assert.assertEquals(result, PoolUtils.doWorkInPoolNicely(this.pool, this.work));
-    }
-
-    @Test(expected = RuntimeException.class)
-    public void testDoWorkInPoolNicely_ThrowRuntimeEx() throws Exception {
-        final RuntimeException rte = new RuntimeException("foo");
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(pool).getResource();
-                will(returnValue(resource));
-                oneOf(work).doWork(resource);
-                will(throwException(rte));
-                oneOf(resource).close();
-            }
-        });
-        PoolUtils.doWorkInPoolNicely(this.pool, this.work);
-    }
-
-    @Test(expected = RuntimeException.class)
-    public void testDoWorkInPoolNicely_ThrowEx() throws Exception {
-        final Exception ex = new Exception("foo");
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(pool).getResource();
-                will(returnValue(resource));
-                oneOf(work).doWork(resource);
-                will(throwException(ex));
-                oneOf(resource).close();
-            }
-        });
-        PoolUtils.doWorkInPoolNicely(this.pool, this.work);
-    }
 
     @Test
     public void testGetDefaultPoolConfig() {
@@ -140,7 +47,8 @@ public class TestPoolUtils {
     public void testCreateJedisSentinelPool() {
         final Config config = Config.newBuilder()
                 .withMasterNameAndSentinels("mymaster",
-                        new HashSet<>(Collections.singletonList(new HostAndPort("localhost", 26379))))
+                        new HashSet<>(
+                                Collections.singletonList(new HostAndPort("localhost", 26379))))
                 .build();
         final UnifiedJedis pool = PoolUtils.createJedisPool(config);
         Assert.assertNotNull(pool);

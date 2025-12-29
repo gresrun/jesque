@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientPoolImpl;
+import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.WorkerImplFactory;
 import net.greghaines.jesque.worker.WorkerPool;
@@ -16,13 +17,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import redis.clients.jedis.JedisPool;
-
 public class Issue56Test {
 
     private static final Logger LOG = LoggerFactory.getLogger(Issue56Test.class);
     private static final Config CONFIG = Config.getDefaultConfig();
-    private static final Client CLIENT = new ClientPoolImpl(CONFIG, new JedisPool());
+    private static final Client CLIENT =
+            new ClientPoolImpl(CONFIG, PoolUtils.createJedisPool(CONFIG));
     private static final String QUEUE = "default";
 
     @Test

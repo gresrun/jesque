@@ -38,19 +38,15 @@ import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.utils.ScriptUtils;
 import net.greghaines.jesque.utils.VersionUtils;
-import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.Transaction;
+import redis.clients.jedis.AbstractTransaction;
+import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.jedis.exceptions.JedisNoScriptException;
-import redis.clients.jedis.util.Pool;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -112,7 +108,7 @@ public class WorkerPoolImpl implements Worker {
     }
 
     protected final Config config;
-    protected final Pool<Jedis> jedisPool;
+    protected final UnifiedJedis jedisPool;
     protected final String namespace;
     protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<String>();
     private final String name;
@@ -145,7 +141,7 @@ public class WorkerPoolImpl implements Worker {
      * @throws IllegalArgumentException if either config, queues, jobFactory or jedis is null
      */
     public WorkerPoolImpl(final Config config, final Collection<String> queues,
-            final JobFactory jobFactory, final Pool<Jedis> jedisPool) {
+            final JobFactory jobFactory, final UnifiedJedis jedisPool) {
         this(config, queues, jobFactory, jedisPool, NextQueueStrategy.DRAIN_WHILE_MESSAGES_EXISTS);
     }
 
@@ -162,7 +158,7 @@ public class WorkerPoolImpl implements Worker {
      * @throws IllegalArgumentException if either config, queues, jobFactory or jedis is null
      */
     public WorkerPoolImpl(final Config config, final Collection<String> queues,
-            final JobFactory jobFactory, final Pool<Jedis> jedisPool,
+            final JobFactory jobFactory, final UnifiedJedis jedisPool,
             final NextQueueStrategy nextQueueStrategy) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
@@ -205,21 +201,12 @@ public class WorkerPoolImpl implements Worker {
             try {
                 renameThread("RUNNING");
                 this.threadRef.set(Thread.currentThread());
-                PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-                    /**
-                     * {@inheritDoc}
-                     */
-                    @Override
-                    public Void doWork(final Jedis jedis) throws IOException {
-                        jedis.sadd(key(WORKERS), name);
-                        jedis.set(key(WORKER, name, STARTED),
-                                new SimpleDateFormat(DATE_FORMAT).format(new Date()));
-                        listenerDelegate.fireEvent(WORKER_START, WorkerPoolImpl.this, null, null,
-                                null, null, null);
-                        loadRedisScripts(jedis);
-                        return null;
-                    }
-                });
+                this.jedisPool.sadd(key(WORKERS), name);
+                this.jedisPool.set(key(WORKER, name, STARTED),
+                        new SimpleDateFormat(DATE_FORMAT).format(new Date()));
+                listenerDelegate.fireEvent(WORKER_START, WorkerPoolImpl.this, null, null, null,
+                        null, null);
+                loadRedisScripts(this.jedisPool);
                 poll();
             } catch (Exception ex) {
                 LOG.error("Uncaught exception in worker run-loop!", ex);
@@ -227,18 +214,9 @@ public class WorkerPoolImpl implements Worker {
             } finally {
                 renameThread("STOPPING");
                 this.listenerDelegate.fireEvent(WORKER_STOP, this, null, null, null, null, null);
-                PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-                    /**
-                     * {@inheritDoc}
-                     */
-                    @Override
-                    public Void doWork(final Jedis jedis) {
-                        jedis.srem(key(WORKERS), name);
-                        jedis.del(key(WORKER, name), key(WORKER, name, STARTED),
-                                key(STAT, FAILED, name), key(STAT, PROCESSED, name));
-                        return null;
-                    }
-                });
+                this.jedisPool.srem(key(WORKERS), name);
+                this.jedisPool.del(key(WORKER, name), key(WORKER, name, STARTED),
+                        key(STAT, FAILED, name), key(STAT, PROCESSED, name));
                 this.threadRef.set(null);
             }
         } else if (RUNNING.equals(this.state.get())) {
@@ -373,16 +351,7 @@ public class WorkerPoolImpl implements Worker {
         this.queueNames.clear();
         if (queues == ALL_QUEUES) { // Using object equality on purpose
             // Like '*' in other clients
-            this.queueNames.addAll(PoolUtils.doWorkInPoolNicely(this.jedisPool,
-                    new PoolWork<Jedis, Set<String>>() {
-                        /**
-                         * {@inheritDoc}
-                         */
-                        @Override
-                        public Set<String> doWork(final Jedis jedis) {
-                            return jedis.smembers(key(QUEUES));
-                        }
-                    }));
+            this.queueNames.addAll(this.jedisPool.smembers(key(QUEUES)));
         } else {
             this.queueNames.addAll(queues);
         }
@@ -482,17 +451,7 @@ public class WorkerPoolImpl implements Worker {
                 }
             } catch (JsonParseException | JsonMappingException e) {
                 // If the job JSON is not deserializable, we never want to submit it again...
-                final String fCurQueue = curQueue;
-                PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-                    /**
-                     * {@inheritDoc}
-                     */
-                    @Override
-                    public Void doWork(final Jedis jedis) {
-                        removeInFlight(jedis, fCurQueue, true);
-                        return null;
-                    }
-                });
+                removeInFlight(this.jedisPool, curQueue, true);
                 recoverFromException(curQueue, e);
             } catch (Exception e) {
                 recoverFromException(curQueue, e);
@@ -536,24 +495,16 @@ public class WorkerPoolImpl implements Worker {
         final String key = key(QUEUE, curQueue);
         final String now = Long.toString(System.currentTimeMillis());
         final String inflightKey = key(INFLIGHT, this.name, curQueue);
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, String>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public String doWork(final Jedis jedis) {
-                switch (nextQueueStrategy) {
-                    case DRAIN_WHILE_MESSAGES_EXISTS:
-                        return (String) jedis.evalsha(popScriptHash.get(), 3, key, inflightKey,
-                                JesqueUtils.createRecurringHashKey(key), now);
-                    case RESET_TO_HIGHEST_PRIORITY:
-                        return (String) jedis.evalsha(multiPriorityQueuesScriptHash.get(), 3,
-                                curQueue, inflightKey, namespace, now);
-                    default:
-                        throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
-                }
-            }
-        });
+        switch (nextQueueStrategy) {
+            case DRAIN_WHILE_MESSAGES_EXISTS:
+                return (String) this.jedisPool.evalsha(popScriptHash.get(), 3, key, inflightKey,
+                        JesqueUtils.createRecurringHashKey(key), now);
+            case RESET_TO_HIGHEST_PRIORITY:
+                return (String) this.jedisPool.evalsha(multiPriorityQueuesScriptHash.get(), 3,
+                        curQueue, inflightKey, namespace, now);
+            default:
+                throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
+        }
     }
 
     /**
@@ -605,16 +556,7 @@ public class WorkerPoolImpl implements Worker {
         if (this.paused.get()) {
             synchronized (this.paused) {
                 if (this.paused.get()) {
-                    PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-                        /**
-                         * {@inheritDoc}
-                         */
-                        @Override
-                        public Void doWork(final Jedis jedis) throws IOException {
-                            jedis.set(key(WORKER, name), pauseMsg());
-                            return null;
-                        }
-                    });
+                    this.jedisPool.set(key(WORKER, name), pauseMsg());
                 }
                 while (this.paused.get()) {
                     try {
@@ -623,16 +565,7 @@ public class WorkerPoolImpl implements Worker {
                         LOG.warn("Worker interrupted", ie);
                     }
                 }
-                PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-                    /**
-                     * {@inheritDoc}
-                     */
-                    @Override
-                    public Void doWork(final Jedis jedis) {
-                        jedis.del(key(WORKER, name));
-                        return null;
-                    }
-                });
+                this.jedisPool.del(key(WORKER, name));
             }
         }
     }
@@ -651,16 +584,7 @@ public class WorkerPoolImpl implements Worker {
                 renameThread("Processing " + curQueue + " since " + System.currentTimeMillis());
             }
             this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null);
-            PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-                /**
-                 * {@inheritDoc}
-                 */
-                @Override
-                public Void doWork(final Jedis jedis) throws IOException {
-                    jedis.set(key(WORKER, name), statusMsg(curQueue, job));
-                    return null;
-                }
-            });
+            this.jedisPool.set(key(WORKER, name), statusMsg(curQueue, job));
             final Object instance = this.jobFactory.materializeJob(job);
             final Object result = execute(job, curQueue, instance);
             success(job, instance, result, curQueue);
@@ -668,23 +592,14 @@ public class WorkerPoolImpl implements Worker {
         } catch (Throwable thrwbl) {
             failure(thrwbl, job, curQueue);
         } finally {
-            final boolean skipReque = success;
-            PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-                /**
-                 * {@inheritDoc}
-                 */
-                @Override
-                public Void doWork(final Jedis jedis) {
-                    removeInFlight(jedis, curQueue, skipReque);
-                    jedis.del(key(WORKER, name));
-                    return null;
-                }
-            });
+            removeInFlight(this.jedisPool, curQueue, success);
+            this.jedisPool.del(key(WORKER, name));
             this.processingJob.set(false);
         }
     }
 
-    private void removeInFlight(final Jedis jedis, final String curQueue, boolean skipRequeue) {
+    private void removeInFlight(final UnifiedJedis jedis, final String curQueue,
+            boolean skipRequeue) {
         if (SHUTDOWN_IMMEDIATE.equals(this.state.get()) && !skipRequeue) {
             lpoplpush(jedis, key(INFLIGHT, this.name, curQueue), key(QUEUE, curQueue));
         } else {
@@ -731,17 +646,8 @@ public class WorkerPoolImpl implements Worker {
     protected void success(final Job job, final Object runner, final Object result,
             final String curQueue) {
         try {
-            PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-                /**
-                 * {@inheritDoc}
-                 */
-                @Override
-                public Void doWork(final Jedis jedis) {
-                    jedis.incr(key(STAT, PROCESSED));
-                    jedis.incr(key(STAT, PROCESSED, name));
-                    return null;
-                }
-            });
+            this.jedisPool.incr(key(STAT, PROCESSED));
+            this.jedisPool.incr(key(STAT, PROCESSED, name));
         } catch (JedisException je) {
             LOG.warn("Error updating success stats for job=" + job, je);
         } catch (Exception e) {
@@ -759,30 +665,21 @@ public class WorkerPoolImpl implements Worker {
      */
     protected void failure(final Throwable thrwbl, final Job job, final String curQueue) {
         try {
-            PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-                /**
-                 * {@inheritDoc}
-                 */
-                @Override
-                public Void doWork(final Jedis jedis) throws IOException {
-                    jedis.incr(key(STAT, FAILED));
-                    jedis.incr(key(STAT, FAILED, name));
-                    final FailQueueStrategy strategy = failQueueStrategyRef.get();
-                    final String failQueueKey = strategy.getFailQueueKey(thrwbl, job, curQueue);
-                    if (failQueueKey != null) {
-                        final int failQueueMaxItems = strategy.getFailQueueMaxItems(curQueue);
-                        if (failQueueMaxItems > 0) {
-                            Transaction tx = jedis.multi();
-                            tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
-                            tx.ltrim(failQueueKey, -failQueueMaxItems, -1);
-                            tx.exec();
-                        } else {
-                            jedis.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
-                        }
-                    }
-                    return null;
+            this.jedisPool.incr(key(STAT, FAILED));
+            this.jedisPool.incr(key(STAT, FAILED, name));
+            final FailQueueStrategy strategy = failQueueStrategyRef.get();
+            final String failQueueKey = strategy.getFailQueueKey(thrwbl, job, curQueue);
+            if (failQueueKey != null) {
+                final int failQueueMaxItems = strategy.getFailQueueMaxItems(curQueue);
+                if (failQueueMaxItems > 0) {
+                    AbstractTransaction tx = this.jedisPool.multi();
+                    tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+                    tx.ltrim(failQueueKey, -failQueueMaxItems, -1);
+                    tx.exec();
+                } else {
+                    this.jedisPool.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
                 }
-            });
+            }
         } catch (JedisException je) {
             LOG.warn("Error updating failure stats for throwable=" + thrwbl + " job=" + job, je);
         } catch (IOException ioe) {
@@ -882,11 +779,11 @@ public class WorkerPoolImpl implements Worker {
         Thread.currentThread().setName(this.threadNameBase + msg);
     }
 
-    protected String lpoplpush(final Jedis jedis, final String from, final String to) {
+    protected String lpoplpush(final UnifiedJedis jedis, final String from, final String to) {
         return (String) jedis.evalsha(this.lpoplpushScriptHash.get(), 2, from, to);
     }
 
-    protected void loadRedisScripts(Jedis jedis) throws IOException {
+    protected void loadRedisScripts(final UnifiedJedis jedis) throws IOException {
         popScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
         lpoplpushScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
         multiPriorityQueuesScriptHash
@@ -894,16 +791,13 @@ public class WorkerPoolImpl implements Worker {
     }
 
     protected void loadRedisScripts() {
-        PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) throws IOException {
-                loadRedisScripts(jedis);
-                return null;
-            }
-        });
+        try {
+            loadRedisScripts(this.jedisPool);
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

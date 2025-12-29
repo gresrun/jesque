@@ -29,11 +29,8 @@ import net.greghaines.jesque.meta.QueueInfo;
 import net.greghaines.jesque.meta.dao.QueueInfoDAO;
 import net.greghaines.jesque.utils.JedisUtils;
 import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.utils.PoolUtils;
-import net.greghaines.jesque.utils.PoolUtils.PoolWork;
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.resps.Tuple;
-import redis.clients.jedis.util.Pool;
 
 /**
  * QueueInfoDAORedisImpl gets queue information from Redis.
@@ -44,7 +41,7 @@ import redis.clients.jedis.util.Pool;
 public class QueueInfoDAORedisImpl implements QueueInfoDAO {
 
     private final Config config;
-    private final Pool<Jedis> jedisPool;
+    private final UnifiedJedis jedisPool;
 
     /**
      * Constructor.
@@ -52,7 +49,7 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
      * @param config the Jesque configuration
      * @param jedisPool the pool of Jedis connections
      */
-    public QueueInfoDAORedisImpl(final Config config, final Pool<Jedis> jedisPool) {
+    public QueueInfoDAORedisImpl(final Config config, final UnifiedJedis jedisPool) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -68,17 +65,9 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
      */
     @Override
     public List<String> getQueueNames() {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<String>>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public List<String> doWork(final Jedis jedis) throws Exception {
-                final List<String> queueNames = new ArrayList<String>(jedis.smembers(key(QUEUES)));
-                Collections.sort(queueNames);
-                return queueNames;
-            }
-        });
+        final List<String> queueNames = new ArrayList<String>(this.jedisPool.smembers(key(QUEUES)));
+        Collections.sort(queueNames);
+        return queueNames;
     }
 
     /**
@@ -87,19 +76,11 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
     @Override
     public long getPendingCount() {
         final List<String> queueNames = getQueueNames();
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Long doWork(final Jedis jedis) throws Exception {
-                long pendingCount = 0L;
-                for (final String queueName : queueNames) {
-                    pendingCount += size(jedis, queueName);
-                }
-                return pendingCount;
-            }
-        });
+        long pendingCount = 0L;
+        for (final String queueName : queueNames) {
+            pendingCount += size(this.jedisPool, queueName);
+        }
+        return pendingCount;
     }
 
     /**
@@ -107,16 +88,8 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
      */
     @Override
     public long getProcessedCount() {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Long doWork(final Jedis jedis) throws Exception {
-                final String processedStr = jedis.get(key(STAT, PROCESSED));
-                return (processedStr == null) ? 0L : Long.parseLong(processedStr);
-            }
-        });
+        final String processedStr = this.jedisPool.get(key(STAT, PROCESSED));
+        return (processedStr == null) ? 0L : Long.parseLong(processedStr);
     }
 
     /**
@@ -125,27 +98,19 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
     @Override
     public List<QueueInfo> getQueueInfos() {
         final List<String> queueNames = getQueueNames();
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<QueueInfo>>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public List<QueueInfo> doWork(final Jedis jedis) throws Exception {
-                final List<QueueInfo> queueInfos = new ArrayList<QueueInfo>(queueNames.size());
-                for (final String queueName : queueNames) {
-                    final QueueInfo queueInfo = new QueueInfo();
-                    queueInfo.setName(queueName);
-                    queueInfo.setSize(size(jedis, queueName));
-                    queueInfo.setDelayed(delayed(jedis, queueName));
-                    if (queueInfo.isDelayed()) {
-                        queueInfo.setPending(pending(jedis, queueName));
-                    }
-                    queueInfos.add(queueInfo);
-                }
-                Collections.sort(queueInfos);
-                return queueInfos;
+        final List<QueueInfo> queueInfos = new ArrayList<>(queueNames.size());
+        for (final String queueName : queueNames) {
+            final QueueInfo queueInfo = new QueueInfo();
+            queueInfo.setName(queueName);
+            queueInfo.setSize(size(this.jedisPool, queueName));
+            queueInfo.setDelayed(delayed(this.jedisPool, queueName));
+            if (queueInfo.isDelayed()) {
+                queueInfo.setPending(pending(this.jedisPool, queueName));
             }
-        });
+            queueInfos.add(queueInfo);
+        }
+        Collections.sort(queueInfos);
+        return queueInfos;
     }
 
     /**
@@ -153,27 +118,24 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
      */
     @Override
     public QueueInfo getQueueInfo(final String name, final long jobOffset, final long jobCount) {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, QueueInfo>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public QueueInfo doWork(final Jedis jedis) throws Exception {
-                final QueueInfo queueInfo = new QueueInfo();
-                queueInfo.setName(name);
-                queueInfo.setSize(size(jedis, name));
-                queueInfo.setDelayed(delayed(jedis, name));
-                if (queueInfo.isDelayed()) {
-                    queueInfo.setPending(pending(jedis, name));
-                }
-                final List<Job> jobs = getJobs(jedis, name, jobOffset, jobCount);
-                queueInfo.setJobs(jobs);
-                return queueInfo;
+        try {
+            final QueueInfo queueInfo = new QueueInfo();
+            queueInfo.setName(name);
+            queueInfo.setSize(size(this.jedisPool, name));
+            queueInfo.setDelayed(delayed(this.jedisPool, name));
+            if (queueInfo.isDelayed()) {
+                queueInfo.setPending(pending(this.jedisPool, name));
             }
-        });
+            queueInfo.setJobs(getJobs(this.jedisPool, name, jobOffset, jobCount));
+            return queueInfo;
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private boolean delayed(Jedis jedis, String queueName) {
+    private boolean delayed(final UnifiedJedis jedis, final String queueName) {
         final String key = key(QUEUE, queueName);
         return JedisUtils.isDelayedQueue(jedis, key);
     }
@@ -183,17 +145,8 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
      */
     @Override
     public void removeQueue(final String name) {
-        PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) throws Exception {
-                jedis.srem(key(QUEUES), name);
-                jedis.del(key(QUEUE, name));
-                return null;
-            }
-        });
+        this.jedisPool.srem(key(QUEUES), name);
+        this.jedisPool.del(key(QUEUE, name));
     }
 
     /**
@@ -213,7 +166,7 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
      * @param queueName
      * @return
      */
-    private long size(final Jedis jedis, final String queueName) {
+    private long size(final UnifiedJedis jedis, final String queueName) {
         final String key = key(QUEUE, queueName);
         final long size;
         if (JedisUtils.isDelayedQueue(jedis, key)) { // If delayed queue, use ZCARD
@@ -224,7 +177,7 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
         return size;
     }
 
-    private long pending(final Jedis jedis, final String queueName) {
+    private long pending(final UnifiedJedis jedis, final String queueName) {
         final String key = key(QUEUE, queueName);
         return jedis.zcount(key, 0, System.currentTimeMillis());
     }
@@ -238,8 +191,8 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
      * @param jobCount
      * @return
      */
-    private List<Job> getJobs(final Jedis jedis, final String queueName, final long jobOffset,
-            final long jobCount) throws Exception {
+    private List<Job> getJobs(final UnifiedJedis jedis, final String queueName,
+            final long jobOffset, final long jobCount) throws Exception {
         final String key = key(QUEUE, queueName);
         final List<Job> jobs = new ArrayList<>();
         if (JedisUtils.isDelayedQueue(jedis, key)) { // If delayed queue, use ZRANGEWITHSCORES

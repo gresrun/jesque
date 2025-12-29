@@ -30,10 +30,8 @@ import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.meta.dao.FailureDAO;
 import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.utils.PoolUtils;
-import net.greghaines.jesque.utils.PoolUtils.PoolWork;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
+import redis.clients.jedis.commands.JedisCommands;
 
 /**
  * Accesses failure information about Jesque/Resque from Redis.
@@ -43,7 +41,7 @@ import redis.clients.jedis.util.Pool;
 public class FailureDAORedisImpl implements FailureDAO {
 
     private final Config config;
-    private final Pool<Jedis> jedisPool;
+    private final UnifiedJedis jedisPool;
 
     /**
      * Constructor.
@@ -51,7 +49,7 @@ public class FailureDAORedisImpl implements FailureDAO {
      * @param config the Jesque configuration
      * @param jedisPool the connection pool to Redis
      */
-    public FailureDAORedisImpl(final Config config, final Pool<Jedis> jedisPool) {
+    public FailureDAORedisImpl(final Config config, final UnifiedJedis jedisPool) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -67,16 +65,8 @@ public class FailureDAORedisImpl implements FailureDAO {
      */
     @Override
     public long getCount() {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Long doWork(final Jedis jedis) throws Exception {
-                final String failedStr = jedis.get(key(STAT, FAILED));
-                return (failedStr == null) ? 0L : Long.parseLong(failedStr);
-            }
-        });
+        final String failedStr = this.jedisPool.get(key(STAT, FAILED));
+        return (failedStr == null) ? 0L : Long.parseLong(failedStr);
     }
 
     /**
@@ -84,15 +74,7 @@ public class FailureDAORedisImpl implements FailureDAO {
      */
     @Override
     public long getFailQueueJobCount() {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Long doWork(final Jedis jedis) throws Exception {
-                return jedis.llen(key(FAILED));
-            }
-        });
+        return this.jedisPool.llen(key(FAILED));
     }
 
     /**
@@ -100,26 +82,21 @@ public class FailureDAORedisImpl implements FailureDAO {
      */
     @Override
     public List<JobFailure> getFailures(final long offset, final long count) {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool,
-                new PoolWork<Jedis, List<JobFailure>>() {
-                    /**
-                     * {@inheritDoc}
-                     */
-                    @Override
-                    public List<JobFailure> doWork(final Jedis jedis) throws Exception {
-                        final List<String> payloads =
-                                jedis.lrange(key(FAILED), offset, offset + count - 1);
-                        final List<JobFailure> failures =
-                                new ArrayList<JobFailure>(payloads.size());
-                        for (final String payload : payloads) {
-                            if (payload.charAt(0) == '{') { // Ignore non-JSON strings
-                                failures.add(ObjectMapperFactory.get().readValue(payload,
-                                        JobFailure.class));
-                            }
-                        }
-                        return failures;
-                    }
-                });
+        final List<String> payloads =
+                this.jedisPool.lrange(key(FAILED), offset, offset + count - 1);
+        final List<JobFailure> failures = new ArrayList<JobFailure>(payloads.size());
+        try {
+            for (final String payload : payloads) {
+                if (payload.charAt(0) == '{') { // Ignore non-JSON strings
+                    failures.add(ObjectMapperFactory.get().readValue(payload, JobFailure.class));
+                }
+            }
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return failures;
     }
 
     /**
@@ -127,16 +104,7 @@ public class FailureDAORedisImpl implements FailureDAO {
      */
     @Override
     public void clear() {
-        PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) throws Exception {
-                jedis.del(key(FAILED));
-                return null;
-            }
-        });
+        this.jedisPool.del(key(FAILED));
     }
 
     /**
@@ -147,21 +115,18 @@ public class FailureDAORedisImpl implements FailureDAO {
         Date retryDate = null;
         final List<JobFailure> failures = getFailures(index, 1);
         if (!failures.isEmpty()) {
-            retryDate = PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Date>() {
-                /**
-                 * {@inheritDoc}
-                 */
-                @Override
-                public Date doWork(final Jedis jedis) throws Exception {
-                    final Date retriedAt = new Date();
-                    final JobFailure failure = failures.get(0);
-                    failure.setRetriedAt(retriedAt);
-                    jedis.lset(key(FAILED), index,
-                            ObjectMapperFactory.get().writeValueAsString(failure));
-                    enqueue(jedis, failure.getQueue(), failure.getPayload());
-                    return retriedAt;
-                }
-            });
+            retryDate = new Date();
+            final JobFailure failure = failures.get(0);
+            failure.setRetriedAt(retryDate);
+            try {
+                this.jedisPool.lset(key(FAILED), index,
+                        ObjectMapperFactory.get().writeValueAsString(failure));
+                enqueue(this.jedisPool, failure.getQueue(), failure.getPayload());
+            } catch (RuntimeException re) {
+                throw re;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
         return retryDate;
     }
@@ -171,22 +136,13 @@ public class FailureDAORedisImpl implements FailureDAO {
      */
     @Override
     public void remove(final long index) {
-        PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) throws Exception {
-                final String failedKey = key(FAILED);
-                final String randId = UUID.randomUUID().toString();
-                jedis.lset(failedKey, index, randId);
-                jedis.lrem(failedKey, 1, randId);
-                return null;
-            }
-        });
+        final String failedKey = key(FAILED);
+        final String randId = UUID.randomUUID().toString();
+        this.jedisPool.lset(failedKey, index, randId);
+        this.jedisPool.lrem(failedKey, 1, randId);
     }
 
-    protected void enqueue(final Jedis jedis, final String queue, final Job job)
+    protected void enqueue(final JedisCommands jedis, final String queue, final Job job)
             throws IOException {
         if (queue == null || "".equals(queue)) {
             throw new IllegalArgumentException("queue must not be null or empty: " + queue);

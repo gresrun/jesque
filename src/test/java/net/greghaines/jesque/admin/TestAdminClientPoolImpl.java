@@ -9,33 +9,22 @@ import org.junit.Before;
 import org.junit.Test;
 
 import net.greghaines.jesque.Config;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
 
 public class TestAdminClientPoolImpl {
 
     private static final Config CONFIG = Config.getDefaultConfig();
 
     private Mockery mockCtx;
-    private Pool<Jedis> jedisPool;
-    private Jedis jedis;
+    private UnifiedJedis jedisPool;
     private AdminClientPoolImpl adminClient;
 
-    @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
         this.mockCtx = new JUnit4Mockery();
         this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
         this.mockCtx.setThreadingPolicy(new Synchroniser());
-        this.jedisPool = this.mockCtx.mock(Pool.class);
-        this.jedis = this.mockCtx.mock(Jedis.class);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).close();
-            }
-        });
+        this.jedisPool = this.mockCtx.mock(UnifiedJedis.class);
         this.adminClient = new AdminClientPoolImpl(CONFIG, this.jedisPool);
     }
 
@@ -53,7 +42,7 @@ public class TestAdminClientPoolImpl {
     public void testShutdownWorkers() {
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(jedis).publish("resque:channel:admin",
+                oneOf(jedisPool).publish("resque:channel:admin",
                         "{\"class\":\"ShutdownCommand\",\"args\":[true],\"vars\":null}");
                 will(returnValue(0L));
             }

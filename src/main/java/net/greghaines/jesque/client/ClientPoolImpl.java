@@ -14,10 +14,7 @@
 package net.greghaines.jesque.client;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.utils.PoolUtils;
-import net.greghaines.jesque.utils.PoolUtils.PoolWork;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
 
 import java.util.List;
 
@@ -28,7 +25,7 @@ import java.util.List;
  */
 public class ClientPoolImpl extends AbstractClient {
 
-    private final Pool<Jedis> jedisPool;
+    private final UnifiedJedis jedisPool;
 
     /**
      * Create a ClientPoolImpl.
@@ -36,7 +33,7 @@ public class ClientPoolImpl extends AbstractClient {
      * @param config used to get the namespace for key creation
      * @param jedisPool the connection pool
      */
-    public ClientPoolImpl(final Config config, final Pool<Jedis> jedisPool) {
+    public ClientPoolImpl(final Config config, final UnifiedJedis jedisPool) {
         super(config);
         if (jedisPool == null) {
             throw new IllegalArgumentException("jedisPool must not be null");
@@ -49,31 +46,14 @@ public class ClientPoolImpl extends AbstractClient {
      */
     @Override
     protected void doEnqueue(final String queue, final String jobJson) throws Exception {
-        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) {
-                doEnqueue(jedis, getNamespace(), queue, jobJson);
-                return null;
-            }
-        });
+        doEnqueue(this.jedisPool, getNamespace(), queue, jobJson);
     }
 
     @Override
     protected void doBatchEnqueue(final String queue, final List<String> jobsJson)
             throws Exception {
-        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) {
-                doBatchEnqueue(jedis, getNamespace(), queue, jobsJson);
-                return null;
-            }
-        });
+        doBatchEnqueue(this.jedisPool, () -> this.jedisPool.pipelined(), getNamespace(), queue,
+                jobsJson);
     }
 
     /**
@@ -81,16 +61,7 @@ public class ClientPoolImpl extends AbstractClient {
      */
     @Override
     protected void doPriorityEnqueue(final String queue, final String jobJson) throws Exception {
-        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) {
-                doPriorityEnqueue(jedis, getNamespace(), queue, jobJson);
-                return null;
-            }
-        });
+        doPriorityEnqueue(this.jedisPool, getNamespace(), queue, jobJson);
     }
 
     /**
@@ -99,15 +70,7 @@ public class ClientPoolImpl extends AbstractClient {
     @Override
     protected boolean doAcquireLock(final String lockName, final String lockHolder,
             final int timeout) throws Exception {
-        return PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Boolean>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Boolean doWork(final Jedis jedis) {
-                return doAcquireLock(jedis, getNamespace(), lockName, lockHolder, timeout);
-            }
-        });
+        return doAcquireLock(this.jedisPool, getNamespace(), lockName, lockHolder, timeout);
     }
 
     /**
@@ -124,16 +87,7 @@ public class ClientPoolImpl extends AbstractClient {
     @Override
     protected void doDelayedEnqueue(final String queue, final String msg, final long future)
             throws Exception {
-        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) {
-                doDelayedEnqueue(jedis, getNamespace(), queue, msg, future);
-                return null;
-            }
-        });
+        doDelayedEnqueue(this.jedisPool, getNamespace(), queue, msg, future);
     }
 
     /**
@@ -141,44 +95,19 @@ public class ClientPoolImpl extends AbstractClient {
      */
     @Override
     protected void doRemoveDelayedEnqueue(final String queue, final String msg) throws Exception {
-        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) {
-                doRemoveDelayedEnqueue(jedis, getNamespace(), queue, msg);
-                return null;
-            }
-        });
+        doRemoveDelayedEnqueue(this.jedisPool, getNamespace(), queue, msg);
     }
 
     @Override
     protected void doRecurringEnqueue(final String queue, final String msg, final long future,
             final long frequency) throws Exception {
-        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) {
-                doRecurringEnqueue(jedis, getNamespace(), queue, msg, future, frequency);
-                return null;
-            }
-        });
+        doRecurringEnqueue(this.jedisPool, () -> this.jedisPool.multi(), getNamespace(), queue, msg,
+                future, frequency);
     }
 
     @Override
     protected void doRemoveRecurringEnqueue(final String queue, final String msg) throws Exception {
-        PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) {
-                doRemoveRecurringEnqueue(jedis, getNamespace(), queue, msg);
-                return null;
-            }
-        });
+        doRemoveRecurringEnqueue(this.jedisPool, () -> this.jedisPool.multi(), getNamespace(),
+                queue, msg);
     }
 }

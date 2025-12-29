@@ -23,27 +23,23 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
 
 public class TestWorkerInfoDAORedisImpl {
 
     private static final String WORKERS_KEY = DEFAULT_NAMESPACE + COLON + WORKERS;
 
     private Mockery mockCtx;
-    private Pool<Jedis> pool;
-    private Jedis jedis;
+    private UnifiedJedis jedisPool;
     private WorkerInfoDAORedisImpl workerInfoDAO;
 
-    @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
         this.mockCtx = new JUnit4Mockery();
         this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
         this.mockCtx.setThreadingPolicy(new Synchroniser());
-        this.pool = this.mockCtx.mock(Pool.class);
-        this.jedis = this.mockCtx.mock(Jedis.class);
-        this.workerInfoDAO = new WorkerInfoDAORedisImpl(Config.getDefaultConfig(), this.pool);
+        this.jedisPool = this.mockCtx.mock(UnifiedJedis.class);
+        this.workerInfoDAO = new WorkerInfoDAORedisImpl(Config.getDefaultConfig(), this.jedisPool);
     }
 
     @After
@@ -67,11 +63,8 @@ public class TestWorkerInfoDAORedisImpl {
         final long workerCount = 12;
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).scard(WORKERS_KEY);
+                oneOf(jedisPool).scard(WORKERS_KEY);
                 will(returnValue(workerCount));
-                oneOf(jedis).close();
             }
         });
         final long count = this.workerInfoDAO.getWorkerCount();
@@ -83,13 +76,10 @@ public class TestWorkerInfoDAORedisImpl {
         final String workerName = "foo";
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).srem(WORKERS_KEY, workerName);
+                oneOf(jedisPool).srem(WORKERS_KEY, workerName);
                 will(returnValue(1L));
-                oneOf(jedis).del("resque:worker:foo", "resque:worker:foo:started",
+                oneOf(jedisPool).del("resque:worker:foo", "resque:worker:foo:started",
                         "resque:stat:failed:foo", "resque:stat:processed:foo");
-                oneOf(jedis).close();
             }
         });
         this.workerInfoDAO.removeWorker(workerName);
@@ -97,7 +87,7 @@ public class TestWorkerInfoDAORedisImpl {
 
     @Test
     public void testIsWorkerInState_NullState() throws IOException {
-        Assert.assertTrue(this.workerInfoDAO.isWorkerInState("foo", null, this.jedis));
+        Assert.assertTrue(this.workerInfoDAO.isWorkerInState("foo", null, this.jedisPool));
     }
 
     @Test
@@ -106,12 +96,12 @@ public class TestWorkerInfoDAORedisImpl {
         final String statusPayload = null;
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(jedis).get("resque:worker:" + workerName);
+                oneOf(jedisPool).get("resque:worker:" + workerName);
                 will(returnValue(statusPayload));
             }
         });
-        Assert.assertTrue(
-                this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.IDLE, this.jedis));
+        Assert.assertTrue(this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.IDLE,
+                this.jedisPool));
     }
 
     @Test
@@ -120,12 +110,12 @@ public class TestWorkerInfoDAORedisImpl {
         final String statusPayload = null;
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(jedis).get("resque:worker:" + workerName);
+                oneOf(jedisPool).get("resque:worker:" + workerName);
                 will(returnValue(statusPayload));
             }
         });
         Assert.assertTrue(this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.PAUSED,
-                this.jedis));
+                this.jedisPool));
     }
 
     @Test
@@ -134,12 +124,12 @@ public class TestWorkerInfoDAORedisImpl {
         final String statusPayload = "{\"paused\":false}";
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(jedis).get("resque:worker:" + workerName);
+                oneOf(jedisPool).get("resque:worker:" + workerName);
                 will(returnValue(statusPayload));
             }
         });
         Assert.assertFalse(this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.PAUSED,
-                this.jedis));
+                this.jedisPool));
     }
 
     @Test
@@ -148,12 +138,12 @@ public class TestWorkerInfoDAORedisImpl {
         final String statusPayload = null;
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(jedis).get("resque:worker:" + workerName);
+                oneOf(jedisPool).get("resque:worker:" + workerName);
                 will(returnValue(statusPayload));
             }
         });
         Assert.assertFalse(this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.WORKING,
-                this.jedis));
+                this.jedisPool));
     }
 
     @Test
@@ -162,17 +152,17 @@ public class TestWorkerInfoDAORedisImpl {
         final String statusPayload = "{\"paused\":false}";
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(jedis).get("resque:worker:" + workerName);
+                oneOf(jedisPool).get("resque:worker:" + workerName);
                 will(returnValue(statusPayload));
             }
         });
         Assert.assertTrue(this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.WORKING,
-                this.jedis));
+                this.jedisPool));
     }
 
     @Test(expected = ParseException.class)
     public void testCreateWorker_MalformedName() throws ParseException, IOException {
-        this.workerInfoDAO.createWorker("foo", this.jedis);
+        this.workerInfoDAO.createWorker("foo", this.jedisPool);
     }
 
     @Test
@@ -184,17 +174,17 @@ public class TestWorkerInfoDAORedisImpl {
         final String processedStr = "6";
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(jedis).get("resque:worker:" + workerName);
+                oneOf(jedisPool).get("resque:worker:" + workerName);
                 will(returnValue(statusPayload));
-                oneOf(jedis).get("resque:worker:" + workerName + COLON + STARTED);
+                oneOf(jedisPool).get("resque:worker:" + workerName + COLON + STARTED);
                 will(returnValue(startedStr));
-                oneOf(jedis).get("resque:stat:failed:" + workerName);
+                oneOf(jedisPool).get("resque:stat:failed:" + workerName);
                 will(returnValue(failedStr));
-                oneOf(jedis).get("resque:stat:processed:" + workerName);
+                oneOf(jedisPool).get("resque:stat:processed:" + workerName);
                 will(returnValue(processedStr));
             }
         });
-        final WorkerInfo workerInfo = this.workerInfoDAO.createWorker(workerName, this.jedis);
+        final WorkerInfo workerInfo = this.workerInfoDAO.createWorker(workerName, this.jedisPool);
         Assert.assertEquals(workerName, workerInfo.getName());
         Assert.assertEquals("123", workerInfo.getPid());
         Assert.assertNotNull(workerInfo.getQueues());
@@ -216,17 +206,17 @@ public class TestWorkerInfoDAORedisImpl {
         final String processedStr = null;
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(jedis).get("resque:worker:" + workerName);
+                oneOf(jedisPool).get("resque:worker:" + workerName);
                 will(returnValue(statusPayload));
-                oneOf(jedis).get("resque:worker:" + workerName + COLON + STARTED);
+                oneOf(jedisPool).get("resque:worker:" + workerName + COLON + STARTED);
                 will(returnValue(startedStr));
-                oneOf(jedis).get("resque:stat:failed:" + workerName);
+                oneOf(jedisPool).get("resque:stat:failed:" + workerName);
                 will(returnValue(failedStr));
-                oneOf(jedis).get("resque:stat:processed:" + workerName);
+                oneOf(jedisPool).get("resque:stat:processed:" + workerName);
                 will(returnValue(processedStr));
             }
         });
-        final WorkerInfo workerInfo = this.workerInfoDAO.createWorker(workerName, this.jedis);
+        final WorkerInfo workerInfo = this.workerInfoDAO.createWorker(workerName, this.jedisPool);
         Assert.assertEquals(workerName, workerInfo.getName());
         Assert.assertEquals("123", workerInfo.getPid());
         Assert.assertNotNull(workerInfo.getQueues());
@@ -249,17 +239,17 @@ public class TestWorkerInfoDAORedisImpl {
         final String processedStr = null;
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(jedis).get("resque:worker:" + workerName);
+                oneOf(jedisPool).get("resque:worker:" + workerName);
                 will(returnValue(statusPayload));
-                oneOf(jedis).get("resque:worker:" + workerName + COLON + STARTED);
+                oneOf(jedisPool).get("resque:worker:" + workerName + COLON + STARTED);
                 will(returnValue(startedStr));
-                oneOf(jedis).get("resque:stat:failed:" + workerName);
+                oneOf(jedisPool).get("resque:stat:failed:" + workerName);
                 will(returnValue(failedStr));
-                oneOf(jedis).get("resque:stat:processed:" + workerName);
+                oneOf(jedisPool).get("resque:stat:processed:" + workerName);
                 will(returnValue(processedStr));
             }
         });
-        final WorkerInfo workerInfo = this.workerInfoDAO.createWorker(workerName, this.jedis);
+        final WorkerInfo workerInfo = this.workerInfoDAO.createWorker(workerName, this.jedisPool);
         Assert.assertEquals(workerName, workerInfo.getName());
         Assert.assertEquals("123", workerInfo.getPid());
         Assert.assertNotNull(workerInfo.getQueues());

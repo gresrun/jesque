@@ -33,28 +33,24 @@ import org.junit.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.resps.Tuple;
-import redis.clients.jedis.util.Pool;
 
 public class TestQueueInfoDAORedisImpl {
 
     private static final String QUEUES_KEY = DEFAULT_NAMESPACE + COLON + QUEUES;
 
     private Mockery mockCtx;
-    private Pool<Jedis> pool;
-    private Jedis jedis;
+    private UnifiedJedis jedisPool;
     private QueueInfoDAORedisImpl qInfoDAO;
 
-    @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
         this.mockCtx = new JUnit4Mockery();
         this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
         this.mockCtx.setThreadingPolicy(new Synchroniser());
-        this.pool = this.mockCtx.mock(Pool.class);
-        this.jedis = this.mockCtx.mock(Jedis.class);
-        this.qInfoDAO = new QueueInfoDAORedisImpl(Config.getDefaultConfig(), this.pool);
+        this.jedisPool = this.mockCtx.mock(UnifiedJedis.class);
+        this.qInfoDAO = new QueueInfoDAORedisImpl(Config.getDefaultConfig(), this.jedisPool);
     }
 
     @After
@@ -80,11 +76,8 @@ public class TestQueueInfoDAORedisImpl {
         Collections.sort(origQueueNames);
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).smembers(QUEUES_KEY);
+                oneOf(jedisPool).smembers(QUEUES_KEY);
                 will(returnValue(queueSet));
-                oneOf(jedis).close();
             }
         });
         final List<String> queueNames = this.qInfoDAO.getQueueNames();
@@ -104,23 +97,20 @@ public class TestQueueInfoDAORedisImpl {
         queueTypeMap.put("queue2", KeyType.ZSET.toString());
         this.mockCtx.checking(new Expectations() {
             {
-                exactly(2).of(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).smembers(QUEUES_KEY);
+                oneOf(jedisPool).smembers(QUEUES_KEY);
                 will(returnValue(queueCountMap.keySet()));
                 for (final Entry<String, String> e : queueTypeMap.entrySet()) {
                     final String queueKey = "resque:queue:" + e.getKey();
-                    oneOf(jedis).type(queueKey);
+                    oneOf(jedisPool).type(queueKey);
                     will(returnValue(e.getValue()));
                     if (KeyType.ZSET.toString().equals(e.getValue())) {
-                        oneOf(jedis).zcard(queueKey);
+                        oneOf(jedisPool).zcard(queueKey);
                         will(returnValue(queueCountMap.get(e.getKey())));
                     } else {
-                        oneOf(jedis).llen(queueKey);
+                        oneOf(jedisPool).llen(queueKey);
                         will(returnValue(queueCountMap.get(e.getKey())));
                     }
                 }
-                exactly(2).of(jedis).close();
             }
         });
         final long pendingCount = this.qInfoDAO.getPendingCount();
@@ -132,11 +122,8 @@ public class TestQueueInfoDAORedisImpl {
         final Long count = 5L;
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).get("resque:stat:processed");
+                oneOf(jedisPool).get("resque:stat:processed");
                 will(returnValue(Long.toString(count)));
-                oneOf(jedis).close();
             }
         });
         final long processedCount = this.qInfoDAO.getProcessedCount();
@@ -147,11 +134,8 @@ public class TestQueueInfoDAORedisImpl {
     public void testGetProcessedCount_Null() {
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).get("resque:stat:processed");
+                oneOf(jedisPool).get("resque:stat:processed");
                 will(returnValue(null));
-                oneOf(jedis).close();
             }
         });
         final long processedCount = this.qInfoDAO.getProcessedCount();
@@ -163,11 +147,8 @@ public class TestQueueInfoDAORedisImpl {
         final String queue = "queue1";
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).srem(QUEUES_KEY, queue);
-                oneOf(jedis).del("resque:queue:" + queue);
-                oneOf(jedis).close();
+                oneOf(jedisPool).srem(QUEUES_KEY, queue);
+                oneOf(jedisPool).del("resque:queue:" + queue);
             }
         });
         this.qInfoDAO.removeQueue(queue);
@@ -183,26 +164,23 @@ public class TestQueueInfoDAORedisImpl {
         queueTypeMap.put("queue2", KeyType.ZSET.toString());
         this.mockCtx.checking(new Expectations() {
             {
-                exactly(2).of(pool).getResource();
-                will(returnValue(jedis));
-                oneOf(jedis).smembers(QUEUES_KEY);
+                oneOf(jedisPool).smembers(QUEUES_KEY);
                 will(returnValue(queueCountMap.keySet()));
                 for (final Entry<String, String> e : queueTypeMap.entrySet()) {
                     final String queueKey = "resque:queue:" + e.getKey();
-                    exactly(2).of(jedis).type(queueKey);
+                    exactly(2).of(jedisPool).type(queueKey);
                     will(returnValue(e.getValue()));
                     if (KeyType.ZSET.toString().equals(e.getValue())) {
-                        oneOf(jedis).zcard(queueKey);
+                        oneOf(jedisPool).zcard(queueKey);
                         will(returnValue(queueCountMap.get(e.getKey())));
-                        oneOf(jedis).zcount(with(equal(queueKey)), with(equal(0.0)),
+                        oneOf(jedisPool).zcount(with(equal(queueKey)), with(equal(0.0)),
                                 with(any(Double.class)));
                         will(returnValue(1L));
                     } else {
-                        oneOf(jedis).llen(queueKey);
+                        oneOf(jedisPool).llen(queueKey);
                         will(returnValue(queueCountMap.get(e.getKey())));
                     }
                 }
-                exactly(2).of(jedis).close();
             }
         });
         final List<QueueInfo> queueInfos = this.qInfoDAO.getQueueInfos();
@@ -226,15 +204,12 @@ public class TestQueueInfoDAORedisImpl {
         payloads.add(ObjectMapperFactory.get().writeValueAsString(new Job("bar")));
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                exactly(3).of(jedis).type(queueKey);
+                exactly(3).of(jedisPool).type(queueKey);
                 will(returnValue(KeyType.LIST.toString()));
-                oneOf(jedis).llen(queueKey);
+                oneOf(jedisPool).llen(queueKey);
                 will(returnValue(size));
-                oneOf(jedis).lrange(queueKey, jobOffset, jobOffset + jobCount - 1);
+                oneOf(jedisPool).lrange(queueKey, jobOffset, jobOffset + jobCount - 1);
                 will(returnValue(payloads));
-                oneOf(jedis).close();
             }
         });
         final QueueInfo queueInfo = this.qInfoDAO.getQueueInfo(name, jobOffset, jobCount);
@@ -258,18 +233,15 @@ public class TestQueueInfoDAORedisImpl {
         payloads.add(new Tuple(ObjectMapperFactory.get().writeValueAsString(new Job("bar")), 1d));
         this.mockCtx.checking(new Expectations() {
             {
-                oneOf(pool).getResource();
-                will(returnValue(jedis));
-                exactly(3).of(jedis).type(queueKey);
+                exactly(3).of(jedisPool).type(queueKey);
                 will(returnValue(KeyType.ZSET.toString()));
-                oneOf(jedis).zcard(queueKey);
+                oneOf(jedisPool).zcard(queueKey);
                 will(returnValue(size));
-                oneOf(jedis).zcount(with(equal(queueKey)), with(equal(0.0)),
+                oneOf(jedisPool).zcount(with(equal(queueKey)), with(equal(0.0)),
                         with(any(Double.class)));
                 will(returnValue(jobCount));
-                oneOf(jedis).zrangeWithScores(queueKey, jobOffset, jobOffset + jobCount - 1);
+                oneOf(jedisPool).zrangeWithScores(queueKey, jobOffset, jobOffset + jobCount - 1);
                 will(returnValue(payloads));
-                oneOf(jedis).close();
             }
         });
         final QueueInfo queueInfo = this.qInfoDAO.getQueueInfo(name, jobOffset, jobCount);

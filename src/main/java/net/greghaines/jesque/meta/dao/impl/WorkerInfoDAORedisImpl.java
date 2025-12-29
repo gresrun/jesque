@@ -38,10 +38,7 @@ import net.greghaines.jesque.meta.WorkerInfo;
 import net.greghaines.jesque.meta.dao.WorkerInfoDAO;
 import net.greghaines.jesque.utils.CompositeDateFormat;
 import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.utils.PoolUtils;
-import net.greghaines.jesque.utils.PoolUtils.PoolWork;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
 
 /**
  * WorkerInfoDAORedisImpl gets worker information from Redis.
@@ -54,7 +51,7 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
     private static final Pattern COMMA_PATTERN = Pattern.compile(",");
 
     private final Config config;
-    private final Pool<Jedis> jedisPool;
+    private final UnifiedJedis jedisPool;
 
     /**
      * Constructor.
@@ -62,7 +59,7 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
      * @param config the Jesque configuration
      * @param jedisPool the pool of Jedis connections
      */
-    public WorkerInfoDAORedisImpl(final Config config, final Pool<Jedis> jedisPool) {
+    public WorkerInfoDAORedisImpl(final Config config, final UnifiedJedis jedisPool) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -78,15 +75,7 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
      */
     @Override
     public long getWorkerCount() {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Long doWork(final Jedis jedis) throws Exception {
-                return jedis.scard(key(WORKERS));
-            }
-        });
+        return this.jedisPool.scard(key(WORKERS));
     }
 
     /**
@@ -94,22 +83,20 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
      */
     @Override
     public long getActiveWorkerCount() {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Long doWork(final Jedis jedis) throws Exception {
-                long activeCount = 0L;
-                final Set<String> workerNames = jedis.smembers(key(WORKERS));
-                for (final String workerName : workerNames) {
-                    if (isWorkerInState(workerName, WorkerInfo.State.WORKING, jedis)) {
-                        activeCount++;
-                    }
+        try {
+            long activeCount = 0L;
+            final Set<String> workerNames = this.jedisPool.smembers(key(WORKERS));
+            for (final String workerName : workerNames) {
+                if (isWorkerInState(workerName, WorkerInfo.State.WORKING, this.jedisPool)) {
+                    activeCount++;
                 }
-                return activeCount;
             }
-        });
+            return activeCount;
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -117,22 +104,20 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
      */
     @Override
     public long getPausedWorkerCount() {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Long>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Long doWork(final Jedis jedis) throws Exception {
-                long pausedCount = 0L;
-                final Set<String> workerNames = jedis.smembers(key(WORKERS));
-                for (final String workerName : workerNames) {
-                    if (isWorkerInState(workerName, WorkerInfo.State.PAUSED, jedis)) {
-                        pausedCount++;
-                    }
+        try {
+            long pausedCount = 0L;
+            final Set<String> workerNames = this.jedisPool.smembers(key(WORKERS));
+            for (final String workerName : workerNames) {
+                if (isWorkerInState(workerName, WorkerInfo.State.PAUSED, this.jedisPool)) {
+                    pausedCount++;
                 }
-                return pausedCount;
             }
-        });
+            return pausedCount;
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -160,25 +145,21 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
     }
 
     private List<WorkerInfo> getWorkerInfos(final WorkerInfo.State requestedState) {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool,
-                new PoolWork<Jedis, List<WorkerInfo>>() {
-                    /**
-                     * {@inheritDoc}
-                     */
-                    @Override
-                    public List<WorkerInfo> doWork(final Jedis jedis) throws Exception {
-                        final Set<String> workerNames = jedis.smembers(key(WORKERS));
-                        final List<WorkerInfo> workerInfos =
-                                new ArrayList<WorkerInfo>(workerNames.size());
-                        for (final String workerName : workerNames) {
-                            if (isWorkerInState(workerName, requestedState, jedis)) {
-                                workerInfos.add(createWorker(workerName, jedis));
-                            }
-                        }
-                        Collections.sort(workerInfos);
-                        return workerInfos;
-                    }
-                });
+        try {
+            final Set<String> workerNames = this.jedisPool.smembers(key(WORKERS));
+            final List<WorkerInfo> workerInfos = new ArrayList<WorkerInfo>(workerNames.size());
+            for (final String workerName : workerNames) {
+                if (isWorkerInState(workerName, requestedState, this.jedisPool)) {
+                    workerInfos.add(createWorker(workerName, this.jedisPool));
+                }
+            }
+            Collections.sort(workerInfos);
+            return workerInfos;
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -186,19 +167,17 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
      */
     @Override
     public WorkerInfo getWorker(final String workerName) {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, WorkerInfo>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public WorkerInfo doWork(final Jedis jedis) throws Exception {
-                WorkerInfo workerInfo = null;
-                if (jedis.sismember(key(WORKERS), workerName)) {
-                    workerInfo = createWorker(workerName, jedis);
-                }
-                return workerInfo;
+        try {
+            WorkerInfo workerInfo = null;
+            if (this.jedisPool.sismember(key(WORKERS), workerName)) {
+                workerInfo = createWorker(workerName, this.jedisPool);
             }
-        });
+            return workerInfo;
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -229,7 +208,7 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
         return JesqueUtils.createKey(this.config.getNamespace(), parts);
     }
 
-    protected WorkerInfo createWorker(final String workerName, final Jedis jedis)
+    protected WorkerInfo createWorker(final String workerName, final UnifiedJedis jedis)
             throws ParseException, IOException {
         final WorkerInfo workerInfo = new WorkerInfo();
         workerInfo.setName(workerName);
@@ -276,22 +255,13 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
      */
     @Override
     public void removeWorker(final String workerName) {
-        PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public Void doWork(final Jedis jedis) throws Exception {
-                jedis.srem(key(WORKERS), workerName);
-                jedis.del(key(WORKER, workerName), key(WORKER, workerName, STARTED),
-                        key(STAT, FAILED, workerName), key(STAT, PROCESSED, workerName));
-                return null;
-            }
-        });
+        this.jedisPool.srem(key(WORKERS), workerName);
+        this.jedisPool.del(key(WORKER, workerName), key(WORKER, workerName, STARTED),
+                key(STAT, FAILED, workerName), key(STAT, PROCESSED, workerName));
     }
 
     protected boolean isWorkerInState(final String workerName,
-            final WorkerInfo.State requestedState, final Jedis jedis) throws IOException {
+            final WorkerInfo.State requestedState, final UnifiedJedis jedis) throws IOException {
         boolean proceed = true;
         if (requestedState != null) {
             final String statusPayload = jedis.get(key(WORKER, workerName));

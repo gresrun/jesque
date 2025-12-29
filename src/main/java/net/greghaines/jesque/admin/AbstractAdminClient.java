@@ -19,7 +19,6 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JesqueUtils;
-import redis.clients.jedis.Jedis;
 
 /**
  * Common logic for AdminClient implementations.
@@ -119,9 +118,14 @@ public abstract class AbstractAdminClient implements AdminClient {
      * @param channel the channel name
      * @param jobJson the job serialized as JSON
      */
-    public static void doPublish(final Jedis jedis, final String namespace, final String channel,
-            final String jobJson) {
+    public static void doPublish(final Publisher jedis, final String namespace,
+            final String channel, final String jobJson) {
         jedis.publish(JesqueUtils.createKey(namespace, CHANNEL, channel), jobJson);
+    }
+
+    @FunctionalInterface
+    public interface Publisher {
+        long publish(final String channel, final String message);
     }
 
     private static void validateArguments(final String channel, final Job job) {

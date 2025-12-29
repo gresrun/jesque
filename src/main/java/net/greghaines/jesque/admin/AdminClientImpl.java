@@ -98,7 +98,7 @@ public class AdminClientImpl extends AbstractAdminClient {
     @Override
     protected void doPublish(final String queue, final String jobJson) {
         ensureJedisConnection();
-        doPublish(this.jedis, getNamespace(), queue, jobJson);
+        doPublish(this.jedis::publish, getNamespace(), queue, jobJson);
     }
 
     /**

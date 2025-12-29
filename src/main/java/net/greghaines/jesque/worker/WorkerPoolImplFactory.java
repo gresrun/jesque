@@ -17,8 +17,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 
 import net.greghaines.jesque.Config;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.util.Pool;
+import redis.clients.jedis.UnifiedJedis;
 
 /**
  * WorkerPoolImplFactory is a factory for <code>WorkerPoolImpl</code>s. Designed to be used with
@@ -29,7 +28,7 @@ public class WorkerPoolImplFactory implements Callable<WorkerPoolImpl> {
     private final Config config;
     private final Collection<String> queues;
     private final JobFactory jobFactory;
-    private final Pool<Jedis> jedisPool;
+    private final UnifiedJedis jedisPool;
 
     /**
      * Create a new factory. Returned <code>WorkerPoolImpl</code>s will use the provided arguments.
@@ -40,7 +39,7 @@ public class WorkerPoolImplFactory implements Callable<WorkerPoolImpl> {
      * @param jedisPool the Redis connection pool
      */
     public WorkerPoolImplFactory(final Config config, final Collection<String> queues,
-            final JobFactory jobFactory, final Pool<Jedis> jedisPool) {
+            final JobFactory jobFactory, final UnifiedJedis jedisPool) {
         this.config = config;
         this.queues = queues;
         this.jobFactory = jobFactory;

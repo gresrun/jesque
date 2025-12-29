@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.commands.JedisCommands;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
 /**
@@ -119,11 +120,11 @@ public final class JedisUtils {
      * @param key the key that identifies a queue
      * @return true if the key identifies a delayed queue, false otherwise
      */
-    public static boolean isDelayedQueue(final Jedis jedis, final String key) {
+    public static boolean isDelayedQueue(final JedisCommands jedis, final String key) {
         return ZSET.equalsIgnoreCase(jedis.type(key));
     }
 
-    public static boolean isRecurringQueue(final Jedis jedis, final String queueKey,
+    public static boolean isRecurringQueue(final JedisCommands jedis, final String queueKey,
             final String hashKey) {
         final String hashType = jedis.type(hashKey);
         return (isDelayedQueue(jedis, queueKey) && HASH.equalsIgnoreCase(hashType));
@@ -136,7 +137,7 @@ public final class JedisUtils {
      * @param key the key that identifies a queue
      * @return true if the key is used, false otherwise
      */
-    public static boolean isKeyUsed(final Jedis jedis, final String key) {
+    public static boolean isKeyUsed(final JedisCommands jedis, final String key) {
         return !NONE.equalsIgnoreCase(jedis.type(key));
     }
 
@@ -147,12 +148,12 @@ public final class JedisUtils {
      * @param key the key that identifies a queue
      * @return true if the key already is a delayed queue or is not currently used, false otherwise
      */
-    public static boolean canUseAsDelayedQueue(final Jedis jedis, final String key) {
+    public static boolean canUseAsDelayedQueue(final JedisCommands jedis, final String key) {
         final String type = jedis.type(key);
         return (ZSET.equalsIgnoreCase(type) || NONE.equalsIgnoreCase(type));
     }
 
-    public static boolean canUseAsRecurringQueue(final Jedis jedis, final String queueKey,
+    public static boolean canUseAsRecurringQueue(final JedisCommands jedis, final String queueKey,
             final String hashKey) {
         final String hashType = jedis.type(hashKey);
         return (canUseAsDelayedQueue(jedis, queueKey)
