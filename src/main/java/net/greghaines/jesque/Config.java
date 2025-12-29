@@ -242,7 +242,7 @@ public final class Config {
         /**
          * Configs created by this Builder will authenticate with the given Redis user.
          *
-         * @param password the Redis user
+         * @param user the Redis user
          * @return this Builder
          */
         public Builder withUser(final String user) {
