@@ -33,7 +33,7 @@ import redis.clients.jedis.Jedis;
  */
 public final class TestUtils {
 
-    private static final Logger log = LoggerFactory.getLogger(TestUtils.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TestUtils.class);
 
     /**
      * Reset the Redis database using the supplied Config.
@@ -42,13 +42,12 @@ public final class TestUtils {
      */
     public static void resetRedis(final Config config) {
         try (Jedis jedis = createJedis(config)) {
-            log.info("Resetting Redis for next test...");
+            LOG.info("Resetting Redis for next test...");
             jedis.flushDB();
         }
     }
 
     /**
-     * Create a connection to Redis from the given Config.
      * 
      * @param config the location of the Redis server
      * @return a new connection
@@ -57,11 +56,11 @@ public final class TestUtils {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
-        final Jedis jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
-        if (config.getPassword() != null) {
-            jedis.auth(config.getPassword());
+        final Jedis jedis = new Jedis(config.getHostAndPort(), config.getJedisClientConfig());
+        if (config.getJedisClientConfig().getPassword() != null) {
+            jedis.auth(config.getJedisClientConfig().getPassword());
         }
-        jedis.select(config.getDatabase());
+        jedis.select(config.getJedisClientConfig().getDatabase());
         return jedis;
     }
 
@@ -99,7 +98,7 @@ public final class TestUtils {
         try {
             workerThread.join();
         } catch (Exception e) {
-            log.warn("Exception while waiting for workerThread to join", e);
+            LOG.warn("Exception while waiting for workerThread to join", e);
         }
     }
 
@@ -135,5 +134,7 @@ public final class TestUtils {
         Assert.assertEquals(obj1.toString(), obj2.toString());
     }
 
-    private TestUtils() {} // Utility class
+    private TestUtils() {
+        // Utility class
+    }
 }

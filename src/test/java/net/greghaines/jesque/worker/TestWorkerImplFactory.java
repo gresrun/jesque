@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import net.greghaines.jesque.ConfigBuilder;
+import net.greghaines.jesque.Config;
 import net.greghaines.jesque.TestAction;
 
 import org.junit.Assert;
@@ -25,7 +25,7 @@ public class TestWorkerImplFactory {
         jobTypes.put("test", TestAction.class);
         final MapBasedJobFactory jobFactory = new MapBasedJobFactory(jobTypes);
         final WorkerImplFactory factory =
-                new WorkerImplFactory(new ConfigBuilder().build(), queues, jobFactory);
+                new WorkerImplFactory(Config.getDefaultConfig(), queues, jobFactory);
         final WorkerImpl worker = factory.call();
         Assert.assertNotNull(worker);
         Assert.assertEquals(queues.size(), worker.getQueues().size());

@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.meta.KeyInfo;
 import net.greghaines.jesque.meta.KeyType;
 import net.greghaines.jesque.meta.dao.impl.KeysDAORedisImpl.KeyDAOPoolWork;
@@ -40,7 +39,7 @@ public class TestKeysDAORedisImpl {
         this.mockCtx.setThreadingPolicy(new Synchroniser());
         this.pool = this.mockCtx.mock(Pool.class);
         this.jedis = this.mockCtx.mock(Jedis.class);
-        this.keysDAO = new KeysDAORedisImpl(new ConfigBuilder().build(), this.pool);
+        this.keysDAO = new KeysDAORedisImpl(Config.getDefaultConfig(), this.pool);
     }
 
     @After
@@ -55,7 +54,7 @@ public class TestKeysDAORedisImpl {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullPool() {
-        final Config config = new ConfigBuilder().build();
+        final Config config = Config.getDefaultConfig();
         new KeysDAORedisImpl(config, null);
     }
 

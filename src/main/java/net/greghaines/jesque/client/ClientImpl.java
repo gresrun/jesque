@@ -59,7 +59,7 @@ public class ClientImpl extends AbstractClient {
     public ClientImpl(final Config config, final boolean checkConnectionBeforeUse) {
         super(config);
         this.config = config;
-        this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+        this.jedis = new Jedis(config.getHostAndPort(), config.getJedisClientConfig());
         authenticateAndSelectDB();
         this.checkConnectionBeforeUse = checkConnectionBeforeUse;
         this.keepAliveService = null;
@@ -78,7 +78,7 @@ public class ClientImpl extends AbstractClient {
             final TimeUnit timeUnit) {
         super(config);
         this.config = config;
-        this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
+        this.jedis = new Jedis(config.getHostAndPort(), config.getJedisClientConfig());
         authenticateAndSelectDB();
         this.checkConnectionBeforeUse = false;
         this.keepAliveService = Executors.newSingleThreadScheduledExecutor();
@@ -179,10 +179,10 @@ public class ClientImpl extends AbstractClient {
     }
 
     private void authenticateAndSelectDB() {
-        if (this.config.getPassword() != null) {
-            this.jedis.auth(this.config.getPassword());
+        if (this.config.getJedisClientConfig().getPassword() != null) {
+            this.jedis.auth(this.config.getJedisClientConfig().getPassword());
         }
-        this.jedis.select(this.config.getDatabase());
+        this.jedis.select(this.config.getJedisClientConfig().getDatabase());
     }
 
     private void ensureJedisConnection() {

@@ -1,6 +1,6 @@
 package net.greghaines.jesque.meta.dao.impl;
 
-import static net.greghaines.jesque.ConfigBuilder.DEFAULT_NAMESPACE;
+import static net.greghaines.jesque.Config.Builder.DEFAULT_NAMESPACE;
 import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 import static net.greghaines.jesque.utils.ResqueConstants.STARTED;
 import static net.greghaines.jesque.utils.ResqueConstants.WORKERS;
@@ -10,7 +10,6 @@ import java.text.ParseException;
 import java.util.Arrays;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.meta.WorkerInfo;
 import net.greghaines.jesque.utils.CompositeDateFormat;
 
@@ -44,7 +43,7 @@ public class TestWorkerInfoDAORedisImpl {
         this.mockCtx.setThreadingPolicy(new Synchroniser());
         this.pool = this.mockCtx.mock(Pool.class);
         this.jedis = this.mockCtx.mock(Jedis.class);
-        this.workerInfoDAO = new WorkerInfoDAORedisImpl(new ConfigBuilder().build(), this.pool);
+        this.workerInfoDAO = new WorkerInfoDAORedisImpl(Config.getDefaultConfig(), this.pool);
     }
 
     @After
@@ -59,7 +58,7 @@ public class TestWorkerInfoDAORedisImpl {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullPool() {
-        final Config config = new ConfigBuilder().build();
+        final Config config = Config.getDefaultConfig();
         new WorkerInfoDAORedisImpl(config, null);
     }
 

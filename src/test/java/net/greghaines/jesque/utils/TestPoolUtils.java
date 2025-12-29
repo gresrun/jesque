@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.HashSet;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.utils.PoolUtils.PoolWork;
 
 import org.jmock.Expectations;
@@ -16,9 +15,11 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisSentinelPool;
+import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.RedisSentinelClient;
+import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.util.Pool;
 
 public class TestPoolUtils {
@@ -120,10 +121,10 @@ public class TestPoolUtils {
 
     @Test
     public void testCreateJedisPool() {
-        final Config config = new ConfigBuilder().build();
-        final Pool<Jedis> pool = PoolUtils.createJedisPool(config);
+        final Config config = Config.getDefaultConfig();
+        final UnifiedJedis pool = PoolUtils.createJedisPool(config);
         Assert.assertNotNull(pool);
-        Assert.assertTrue(pool instanceof JedisPool);
+        Assert.assertTrue(pool instanceof RedisClient);
     }
 
     /**
@@ -137,16 +138,18 @@ public class TestPoolUtils {
     @Test
     @Ignore("Will only work with sentinel running and travis-ci sentinel support is sketchy at best")
     public void testCreateJedisSentinelPool() {
-        final Config config = new ConfigBuilder().withMasterName("mymaster")
-                .withSentinels(new HashSet<>(Collections.singletonList("localhost:26379"))).build();
-        final Pool<Jedis> pool = PoolUtils.createJedisPool(config);
+        final Config config = Config.newBuilder()
+                .withMasterNameAndSentinels("mymaster",
+                        new HashSet<>(Collections.singletonList(new HostAndPort("localhost", 26379))))
+                .build();
+        final UnifiedJedis pool = PoolUtils.createJedisPool(config);
         Assert.assertNotNull(pool);
-        Assert.assertTrue(pool instanceof JedisSentinelPool);
+        Assert.assertTrue(pool instanceof RedisSentinelClient);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateJedisPool_NullPoolConfig() {
-        final Config config = new ConfigBuilder().build();
+        final Config config = Config.getDefaultConfig();
         PoolUtils.createJedisPool(config, null);
     }
 }

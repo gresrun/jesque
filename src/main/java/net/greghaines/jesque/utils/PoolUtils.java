@@ -15,10 +15,11 @@ package net.greghaines.jesque.utils;
 
 import net.greghaines.jesque.Config;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import redis.clients.jedis.ConnectionPoolConfig;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisSentinelPool;
+import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.RedisSentinelClient;
+import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.util.Pool;
 
 /**
@@ -45,14 +46,9 @@ public final class PoolUtils {
         if (work == null) {
             throw new IllegalArgumentException("work must not be null");
         }
-        final V result;
-        final Jedis poolResource = pool.getResource();
-        try {
-            result = work.doWork(poolResource);
-        } finally {
-            poolResource.close();
+        try (Jedis poolResource = pool.getResource()) {
+            return work.doWork(poolResource);
         }
-        return result;
     }
 
     /**
@@ -77,11 +73,11 @@ public final class PoolUtils {
     }
 
     /**
-     * @return a GenericObjectPoolConfig configured with: maxActive=-1, maxIdle=10, minIdle=1,
+     * @return a ConnectionPoolConfig configured with: maxActive=-1, maxIdle=10, minIdle=1,
      *         testOnBorrow=true, blockWhenExhausted=false
      */
-    public static GenericObjectPoolConfig<Jedis> getDefaultPoolConfig() {
-        final GenericObjectPoolConfig<Jedis> cfg = new GenericObjectPoolConfig<>();
+    public static ConnectionPoolConfig getDefaultPoolConfig() {
+        final ConnectionPoolConfig cfg = new ConnectionPoolConfig();
         cfg.setMaxTotal(-1); // Infinite
         cfg.setMaxIdle(10);
         cfg.setMinIdle(1);
@@ -95,9 +91,9 @@ public final class PoolUtils {
      * and the default pool config.
      *
      * @param jesqueConfig the config used to create the pooled Jedis connection
-     * @return a configured Pool of Jedis connections
+     * @return a configured UnifiedJedis, implementation determined by the supplied config
      */
-    public static Pool<Jedis> createJedisPool(final Config jesqueConfig) {
+    public static UnifiedJedis createJedisPool(final Config jesqueConfig) {
         return createJedisPool(jesqueConfig, getDefaultPoolConfig());
     }
 
@@ -107,10 +103,10 @@ public final class PoolUtils {
      *
      * @param jesqueConfig the config used to create the pooled Jedis connections
      * @param poolConfig the config used to create the pool
-     * @return a configured Pool of Jedis connections
+     * @return a configured UnifiedJedis, implementation determined by the supplied config
      */
-    public static Pool<Jedis> createJedisPool(final Config jesqueConfig,
-            final GenericObjectPoolConfig<Jedis> poolConfig) {
+    public static UnifiedJedis createJedisPool(final Config jesqueConfig,
+            final ConnectionPoolConfig poolConfig) {
         if (jesqueConfig == null) {
             throw new IllegalArgumentException("jesqueConfig must not be null");
         }
@@ -119,13 +115,21 @@ public final class PoolUtils {
         }
         if (jesqueConfig.getMasterName() != null && !"".equals(jesqueConfig.getMasterName())
                 && jesqueConfig.getSentinels() != null && jesqueConfig.getSentinels().size() > 0) {
-            return new JedisSentinelPool(jesqueConfig.getMasterName(), jesqueConfig.getSentinels(),
-                    poolConfig, jesqueConfig.getTimeout(), jesqueConfig.getPassword(),
-                    jesqueConfig.getDatabase());
+            return RedisSentinelClient.builder().masterName(jesqueConfig.getMasterName())
+                    .sentinels(jesqueConfig.getSentinels()).poolConfig(poolConfig)
+                    .clientConfig(jesqueConfig.getJedisClientConfig()).build();
+            // return new JedisSentinelPool(jesqueConfig.getMasterName(),
+            // jesqueConfig.getSentinels(), poolConfig,
+            // jesqueConfig.getTimeout(), jesqueConfig.getPassword(),
+            // jesqueConfig.getDatabase());
         } else {
-            return new JedisPool(poolConfig, jesqueConfig.getHost(), jesqueConfig.getPort(),
-                    jesqueConfig.getTimeout(), jesqueConfig.getPassword(),
-                    jesqueConfig.getDatabase());
+            return RedisClient.builder().hostAndPort(jesqueConfig.getHostAndPort())
+                    .poolConfig(poolConfig).clientConfig(jesqueConfig.getJedisClientConfig())
+                    .build();
+            // return new JedisPool(poolConfig, jesqueConfig.getHost(),
+            // jesqueConfig.getPort(),
+            // jesqueConfig.getTimeout(), jesqueConfig.getPassword(),
+            // jesqueConfig.getDatabase());
         }
     }
 

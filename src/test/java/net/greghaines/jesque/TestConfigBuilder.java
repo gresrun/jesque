@@ -1,5 +1,7 @@
 package net.greghaines.jesque;
 
+import redis.clients.jedis.HostAndPort;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,191 +13,127 @@ public class TestConfigBuilder {
 
     @Test
     public void testGetDefaultConfig() {
-        final Config config = ConfigBuilder.getDefaultConfig();
+        final Config config = Config.getDefaultConfig();
         Assert.assertNotNull(config);
-        Assert.assertEquals(ConfigBuilder.DEFAULT_HOST, config.getHost());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_NAMESPACE, config.getNamespace());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PASSWORD, config.getPassword());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_DATABASE, config.getDatabase());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PORT, config.getPort());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_SENTINELS, config.getSentinels());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_MASTERNAME, config.getMasterName());
-    }
-
-    @Test
-    public void testConstructor_NoArg() {
-        final Config config = new ConfigBuilder().build();
-        Assert.assertNotNull(config);
-        Assert.assertEquals(ConfigBuilder.DEFAULT_HOST, config.getHost());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_NAMESPACE, config.getNamespace());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PASSWORD, config.getPassword());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_DATABASE, config.getDatabase());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PORT, config.getPort());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_SENTINELS, config.getSentinels());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_MASTERNAME, config.getMasterName());
+        Assert.assertEquals(Config.Builder.DEFAULT_HOST, config.getHostAndPort().getHost());
+        Assert.assertEquals(Config.Builder.DEFAULT_NAMESPACE, config.getNamespace());
+        Assert.assertEquals(Config.Builder.DEFAULT_PORT, config.getHostAndPort().getPort());
+        Assert.assertNull(config.getSentinels());
+        Assert.assertNull(config.getMasterName());
     }
 
     @Test
     public void testConstructor_Cloning() {
-        final Config orig = new ConfigBuilder().withNamespace("foo").withDatabase(10)
-                .withPassword("bar").withPort(123).withHost("abc.com").withTimeout(10000).build();
-        final Config copy = new ConfigBuilder(orig).build();
-        TestUtils.assertFullyEquals(orig, copy);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_Cloning_Null() {
-        new ConfigBuilder(null);
+        final Config orig = Config.newBuilder().withNamespace("foo").withDatabase(10)
+                .withPassword("bar").withHostAndPort("abc.com", 123).withTimeout(10000).build();
+        final Config copy = orig.toBuilder().build();
+        Assert.assertEquals(orig.getHostAndPort(), copy.getHostAndPort());
+        Assert.assertEquals(orig.getMasterName(), copy.getMasterName());
+        Assert.assertEquals(orig.getSentinels(), copy.getSentinels());
+        Assert.assertEquals(orig.getNamespace(), copy.getNamespace());
+        Assert.assertEquals(orig.getJedisClientConfig().getConnectionTimeoutMillis(),
+                copy.getJedisClientConfig().getConnectionTimeoutMillis());
+        Assert.assertEquals(orig.getJedisClientConfig().getPassword(),
+                copy.getJedisClientConfig().getPassword());
+        Assert.assertEquals(orig.toString(), copy.toString());
     }
 
     @Test
-    public void testWithHost() {
+    public void testWithHostAndPort() {
         final String myHost = "foobar";
-        final Config config = new ConfigBuilder().withHost(myHost).build();
+        final int myPort = 1234;
+        final Config config = Config.newBuilder().withHostAndPort(myHost, myPort).build();
         Assert.assertNotNull(config);
-        Assert.assertEquals(myHost, config.getHost());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_NAMESPACE, config.getNamespace());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PASSWORD, config.getPassword());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_DATABASE, config.getDatabase());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PORT, config.getPort());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_SENTINELS, config.getSentinels());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_MASTERNAME, config.getMasterName());
+        Assert.assertEquals(myHost, config.getHostAndPort().getHost());
+        Assert.assertEquals(myPort, config.getHostAndPort().getPort());
+        Assert.assertNull(config.getSentinels());
+        Assert.assertNull(config.getMasterName());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testWithHost_Null() {
-        new ConfigBuilder().withHost(null);
+        Config.newBuilder().withHostAndPort(null, 1234);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testWithHost_Empty() {
-        new ConfigBuilder().withHost("");
-    }
-
-    @Test
-    public void testWithPort() {
-        final int myPort = 1234;
-        final Config config = new ConfigBuilder().withPort(myPort).build();
-        Assert.assertNotNull(config);
-        Assert.assertEquals(ConfigBuilder.DEFAULT_HOST, config.getHost());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_NAMESPACE, config.getNamespace());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PASSWORD, config.getPassword());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_DATABASE, config.getDatabase());
-        Assert.assertEquals(myPort, config.getPort());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_SENTINELS, config.getSentinels());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_MASTERNAME, config.getMasterName());
+        Config.newBuilder().withHostAndPort("", 1234);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testWithPort_Low() {
-        new ConfigBuilder().withPort(0);
+        Config.newBuilder().withHostAndPort("localhost", 0);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testWithPort_High() {
-        new ConfigBuilder().withPort(Integer.MAX_VALUE);
+        Config.newBuilder().withHostAndPort("localhost", Integer.MAX_VALUE);
     }
 
     @Test
     public void testWithTimeout() {
         final int myTimeout = 77777;
-        final Config config = new ConfigBuilder().withTimeout(myTimeout).build();
+        final Config config = Config.newBuilder().withTimeout(myTimeout).build();
         Assert.assertNotNull(config);
-        Assert.assertEquals(ConfigBuilder.DEFAULT_HOST, config.getHost());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_NAMESPACE, config.getNamespace());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PASSWORD, config.getPassword());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_DATABASE, config.getDatabase());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PORT, config.getPort());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_SENTINELS, config.getSentinels());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_MASTERNAME, config.getMasterName());
-        Assert.assertEquals(myTimeout, config.getTimeout());
+        Assert.assertEquals(myTimeout, config.getJedisClientConfig().getConnectionTimeoutMillis());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testWithTimeout_Negative() {
-        new ConfigBuilder().withTimeout(-1);
+        Config.newBuilder().withTimeout(-1);
     }
 
     @Test
     public void testWithDatabase() {
         final int myDB = 2;
-        final Config config = new ConfigBuilder().withDatabase(myDB).build();
+        final Config config = Config.newBuilder().withDatabase(myDB).build();
         Assert.assertNotNull(config);
-        Assert.assertEquals(ConfigBuilder.DEFAULT_HOST, config.getHost());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_NAMESPACE, config.getNamespace());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PASSWORD, config.getPassword());
-        Assert.assertEquals(myDB, config.getDatabase());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PORT, config.getPort());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_SENTINELS, config.getSentinels());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_MASTERNAME, config.getMasterName());
+        Assert.assertEquals(myDB, config.getJedisClientConfig().getDatabase());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testWithDatabase_Negative() {
-        new ConfigBuilder().withDatabase(-1);
+        Config.newBuilder().withDatabase(-1);
     }
 
     @Test
     public void testWithPassword() {
         final String myPassword = "s3r3t5!";
-        final Config config = new ConfigBuilder().withPassword(myPassword).build();
+        final Config config = Config.newBuilder().withPassword(myPassword).build();
         Assert.assertNotNull(config);
-        Assert.assertEquals(ConfigBuilder.DEFAULT_HOST, config.getHost());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_NAMESPACE, config.getNamespace());
-        Assert.assertEquals(myPassword, config.getPassword());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_DATABASE, config.getDatabase());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PORT, config.getPort());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_SENTINELS, config.getSentinels());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_MASTERNAME, config.getMasterName());
+        Assert.assertEquals(myPassword, config.getJedisClientConfig().getPassword());
     }
 
     @Test
     public void testWithNamespace() {
         final String myNamespace = "foo";
-        final Config config = new ConfigBuilder().withNamespace(myNamespace).build();
+        final Config config = Config.newBuilder().withNamespace(myNamespace).build();
         Assert.assertNotNull(config);
-        Assert.assertEquals(ConfigBuilder.DEFAULT_HOST, config.getHost());
         Assert.assertEquals(myNamespace, config.getNamespace());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PASSWORD, config.getPassword());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_DATABASE, config.getDatabase());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PORT, config.getPort());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_SENTINELS, config.getSentinels());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_MASTERNAME, config.getMasterName());
     }
 
     @Test
     public void testWithMasterNameAndSentinels() {
         final String myMasterName = "foo";
-        final Set<String> mySentinels = new HashSet<>(Arrays.asList("a", "b"));
+        final Set<HostAndPort> mySentinels =
+                new HashSet<>(Arrays.asList(new HostAndPort("a", 123), new HostAndPort("b", 456)));
         final Config config =
-                new ConfigBuilder().withSentinels(mySentinels).withMasterName(myMasterName).build();
+                Config.newBuilder().withMasterNameAndSentinels(myMasterName, mySentinels).build();
         Assert.assertNotNull(config);
-        Assert.assertEquals(ConfigBuilder.DEFAULT_HOST, config.getHost());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_NAMESPACE, config.getNamespace());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PASSWORD, config.getPassword());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_DATABASE, config.getDatabase());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_PORT, config.getPort());
-        Assert.assertEquals(ConfigBuilder.DEFAULT_TIMEOUT, config.getTimeout());
+        Assert.assertNull(config.getHostAndPort());
         Assert.assertEquals(mySentinels, config.getSentinels());
         Assert.assertEquals(myMasterName, config.getMasterName());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testWithNamespace_Null() {
-        new ConfigBuilder().withNamespace(null);
+        Config.newBuilder().withNamespace(null);
     }
 
     @Test
     public void testWithNamespace_Empty() {
         final String myNamespace = "";
-        final Config config = new ConfigBuilder().withNamespace(myNamespace).build();
+        final Config config = Config.newBuilder().withNamespace(myNamespace).build();
         Assert.assertEquals(myNamespace, config.getNamespace());
     }
 }

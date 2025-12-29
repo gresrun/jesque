@@ -15,13 +15,12 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.TestAction;
 import redis.clients.jedis.Jedis;
 
 public class TestWorkerImpl {
 
-    private static final Config CONFIG = new ConfigBuilder().build();
+    private static final Config CONFIG = Config.getDefaultConfig();
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullConfig() {

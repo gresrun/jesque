@@ -24,7 +24,7 @@ import redis.clients.jedis.Jedis;
 public class LongRunningTest {
 
     private static final Logger log = LoggerFactory.getLogger(LongRunningTest.class);
-    private static final Config config = new ConfigBuilder().build();
+    private static final Config config = Config.getDefaultConfig();
 
     private static void sleepTight(final long millis) {
         try {

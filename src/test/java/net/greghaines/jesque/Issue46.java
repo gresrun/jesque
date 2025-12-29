@@ -30,7 +30,7 @@ import redis.clients.jedis.Jedis;
 public class Issue46 {
 
     private static final Logger LOG = LoggerFactory.getLogger(Issue46.class);
-    private static final Config CONFIG = new ConfigBuilder().build();
+    private static final Config CONFIG = Config.getDefaultConfig();
     private static final String TEST_QUEUE = "foo";
 
     @Before

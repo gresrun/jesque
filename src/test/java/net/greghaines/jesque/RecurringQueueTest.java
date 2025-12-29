@@ -26,7 +26,7 @@ import static net.greghaines.jesque.utils.ResqueConstants.*;
  */
 public class RecurringQueueTest {
 
-    private static final Config config = new ConfigBuilder().build();
+    private static final Config config = Config.getDefaultConfig();
     private static final String recurringTestQueue = "fooRecurring";
     private static final long recurringFrequency = 1000;
     private static final Client client = new ClientImpl(config);

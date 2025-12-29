@@ -3,7 +3,6 @@ package net.greghaines.jesque.utils;
 import static net.greghaines.jesque.TestUtils.createJedis;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.TestUtils;
 
 import org.junit.Assert;
@@ -14,7 +13,7 @@ import redis.clients.jedis.Jedis;
 
 public class TestJedisUtils {
 
-    private static final Config CONFIG = new ConfigBuilder().build();
+    private static final Config CONFIG = Config.getDefaultConfig();
     private static final String TEST_KEY = "foo";
 
     @Before

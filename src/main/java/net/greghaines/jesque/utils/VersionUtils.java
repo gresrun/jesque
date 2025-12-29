@@ -40,21 +40,19 @@ public final class VersionUtils {
     private static final String POM_PROPERTIES_RES_NAME =
             "/META-INF/maven/net.greghaines/jesque/pom.properties";
     private static final String VERSION_PROP_NAME = "version";
-    private static final AtomicReference<String> VERSION_REF = new AtomicReference<String>(null);
+    private static final AtomicReference<String> VERSION_REF = new AtomicReference<>(null);
 
     /**
      * @return the current version of this software
      */
     public static String getVersion() {
-        String version = VERSION_REF.get();
-        if (version == null) {
-            VERSION_REF.set(readVersion());
-            version = VERSION_REF.get();
-        }
-        return version;
+        return VERSION_REF.updateAndGet(VersionUtils::readVersion);
     }
 
-    private static String readVersion() {
+    private static String readVersion(String prevVersion) {
+        if (prevVersion != null) {
+            return prevVersion;
+        }
         String version = DEVELOPMENT;
         final InputStream stream = VersionUtils.class.getResourceAsStream(POM_PROPERTIES_RES_NAME);
         if (stream != null) {

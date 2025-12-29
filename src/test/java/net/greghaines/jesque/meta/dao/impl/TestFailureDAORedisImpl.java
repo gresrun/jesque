@@ -1,6 +1,6 @@
 package net.greghaines.jesque.meta.dao.impl;
 
-import static net.greghaines.jesque.ConfigBuilder.DEFAULT_NAMESPACE;
+import static net.greghaines.jesque.Config.Builder.DEFAULT_NAMESPACE;
 import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.UUID;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.json.ObjectMapperFactory;
@@ -52,7 +51,7 @@ public class TestFailureDAORedisImpl {
         this.mockCtx.setThreadingPolicy(new Synchroniser());
         this.pool = this.mockCtx.mock(Pool.class);
         this.jedis = this.mockCtx.mock(Jedis.class);
-        this.failureDAO = new FailureDAORedisImpl(new ConfigBuilder().build(), this.pool);
+        this.failureDAO = new FailureDAORedisImpl(Config.getDefaultConfig(), this.pool);
     }
 
     @After
@@ -67,7 +66,7 @@ public class TestFailureDAORedisImpl {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullPool() {
-        final Config config = new ConfigBuilder().build();
+        final Config config = Config.getDefaultConfig();
         new FailureDAORedisImpl(config, null);
     }
 

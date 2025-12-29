@@ -5,7 +5,6 @@ import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.JesqueUtils.set;
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.admin.commands.PauseCommand;
 import net.greghaines.jesque.admin.commands.ShutdownCommand;
 import net.greghaines.jesque.worker.ExceptionHandler;
@@ -18,7 +17,7 @@ import org.junit.Test;
 
 public class TestAdminImpl {
 
-    private static final Config CONFIG = new ConfigBuilder().build();
+    private static final Config CONFIG = Config.getDefaultConfig();
 
     @Test(expected = NullPointerException.class)
     public void testConstructor_OneArg_NullConfig() {

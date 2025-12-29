@@ -12,7 +12,6 @@ import org.jmock.integration.junit4.JUnit4Mockery;
 import org.jmock.lib.concurrent.Synchroniser;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.admin.commands.PauseCommand;
 import net.greghaines.jesque.admin.commands.ShutdownCommand;
 import net.greghaines.jesque.worker.ExceptionHandler;
@@ -27,7 +26,7 @@ import redis.clients.jedis.util.Pool;
 
 public class TestAdminPoolImpl {
 
-    private static final Config CONFIG = new ConfigBuilder().build();
+    private static final Config CONFIG = Config.getDefaultConfig();
 
     private Mockery mockCtx;
     private Pool<Jedis> jedisPool;

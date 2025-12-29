@@ -97,7 +97,7 @@ public class AdminImpl implements Admin {
      */
     public AdminImpl(final Config config, final Set<String> channels, final JobFactory jobFactory) {
         this(config, channels, jobFactory,
-                new Jedis(config.getHost(), config.getPort(), config.getTimeout()));
+                new Jedis(config.getHostAndPort(), config.getJedisClientConfig()));
     }
 
     /**
@@ -121,10 +121,10 @@ public class AdminImpl implements Admin {
         }
         this.namespace = config.getNamespace();
         this.jedis = jedis;
-        if (config.getPassword() != null) {
-            this.jedis.auth(config.getPassword());
+        if (config.getJedisClientConfig().getPassword() != null) {
+            this.jedis.auth(config.getJedisClientConfig().getPassword());
         }
-        this.jedis.select(config.getDatabase());
+        this.jedis.select(config.getJedisClientConfig().getDatabase());
         setChannels(channels);
         this.jobFactory = jobFactory;
     }

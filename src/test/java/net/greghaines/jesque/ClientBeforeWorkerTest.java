@@ -41,7 +41,7 @@ import redis.clients.jedis.Jedis;
  */
 public class ClientBeforeWorkerTest {
 
-    private static final Config config = new ConfigBuilder().build();
+    private static final Config config = Config.getDefaultConfig();
     private static final String testQueue = "foo";
 
     @Before

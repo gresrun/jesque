@@ -9,13 +9,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.ConfigBuilder;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.util.Pool;
 
 public class TestAdminClientPoolImpl {
 
-    private static final Config CONFIG = new ConfigBuilder().build();
+    private static final Config CONFIG = Config.getDefaultConfig();
 
     private Mockery mockCtx;
     private Pool<Jedis> jedisPool;

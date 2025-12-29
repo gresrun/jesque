@@ -21,7 +21,7 @@ import redis.clients.jedis.JedisPool;
 public class Issue56Test {
 
     private static final Logger LOG = LoggerFactory.getLogger(Issue56Test.class);
-    private static final Config CONFIG = new ConfigBuilder().build();
+    private static final Config CONFIG = Config.getDefaultConfig();
     private static final Client CLIENT = new ClientPoolImpl(CONFIG, new JedisPool());
     private static final String QUEUE = "default";
 

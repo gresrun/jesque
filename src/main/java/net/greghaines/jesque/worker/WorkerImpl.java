@@ -145,7 +145,7 @@ public class WorkerImpl implements Worker {
     public WorkerImpl(final Config config, final Collection<String> queues,
             final JobFactory jobFactory) {
         this(config, queues, jobFactory,
-                new Jedis(config.getHost(), config.getPort(), config.getTimeout()));
+                new Jedis(config.getHostAndPort(), config.getJedisClientConfig()));
     }
 
     /**
@@ -575,10 +575,10 @@ public class WorkerImpl implements Worker {
     }
 
     private void authenticateAndSelectDB() {
-        if (this.config.getPassword() != null) {
-            this.jedis.auth(this.config.getPassword());
+        if (this.config.getJedisClientConfig().getPassword() != null) {
+            this.jedis.auth(this.config.getJedisClientConfig().getPassword());
         }
-        this.jedis.select(this.config.getDatabase());
+        this.jedis.select(this.config.getJedisClientConfig().getDatabase());
     }
 
     /**
@@ -698,7 +698,8 @@ public class WorkerImpl implements Worker {
      * @param curQueue the queue the Job came from
      */
     protected void failure(final Throwable thrwbl, final Job job, final String curQueue) {
-        // The job may have taken a long time; make an effort to ensure the connection is OK
+        // The job may have taken a long time; make an effort to ensure the connection
+        // is OK
         JedisUtils.ensureJedisConnection(this.jedis);
         try {
             this.jedis.incr(key(STAT, FAILED));

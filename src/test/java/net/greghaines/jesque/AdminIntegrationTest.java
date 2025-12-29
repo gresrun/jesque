@@ -1,6 +1,7 @@
 package net.greghaines.jesque;
 
 import static net.greghaines.jesque.utils.JesqueUtils.*;
+import static net.greghaines.jesque.Config.Builder.DEFAULT_NAMESPACE;
 
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -25,15 +26,14 @@ import org.slf4j.LoggerFactory;
 public class AdminIntegrationTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(AdminIntegrationTest.class);
-    private static Config config;
+    private static final String TEST_QUEUE = "foo";
 
-    private static final String testQueue = "foo";
+    private static Config config;
 
     @BeforeClass
     public static void initConfig() {
-        config = new ConfigBuilder()
-                .withNamespace(ConfigBuilder.DEFAULT_NAMESPACE + new Random().nextInt(10000))
-                .build();
+        int suffix = new Random().nextInt(10000);
+        config = Config.newBuilder().withNamespace(DEFAULT_NAMESPACE + suffix).build();
     }
 
     @Before
@@ -45,7 +45,7 @@ public class AdminIntegrationTest {
     public void testAdminAndWorkerPool() {
         final WorkerPool workerPool = new WorkerPool(new Callable<WorkerImpl>() {
             public WorkerImpl call() {
-                return new WorkerImpl(config, set(testQueue),
+                return new WorkerImpl(config, set(TEST_QUEUE),
                         new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
             }
         }, 2);
@@ -73,7 +73,7 @@ public class AdminIntegrationTest {
     @Ignore
     @Test
     public void testPauseAndShutdownCommands() {
-        final Worker worker = new WorkerImpl(config, set(testQueue),
+        final Worker worker = new WorkerImpl(config, set(TEST_QUEUE),
                 new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
         final Admin admin = new AdminImpl(config);
         admin.setWorker(worker);

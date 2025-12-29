@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public class InfiniteTest {
 
     private static final Logger log = LoggerFactory.getLogger(InfiniteTest.class);
-    private static final Config config = new ConfigBuilder().build();
+    private static final Config config = Config.getDefaultConfig();
 
     @Before
     public void resetRedis() throws Exception {

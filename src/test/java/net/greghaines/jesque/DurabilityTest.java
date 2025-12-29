@@ -33,7 +33,7 @@ public class DurabilityTest {
 
     private static final Job sleepJob = new Job("SleepAction", 3000L);
     private static final Job sleepWithExceptionJob = new Job("SleepWithExceptionAction", 3000L);
-    private static final Config config = new ConfigBuilder().build();
+    private static final Config config = Config.getDefaultConfig();
 
     @Before
     public void resetRedis() {

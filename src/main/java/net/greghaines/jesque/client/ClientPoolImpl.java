@@ -25,7 +25,6 @@ import java.util.List;
  * A Client implementation that gets its connection to Redis from a connection pool.
  * 
  * @author Greg Haines
- * @author Animesh Kumar
  */
 public class ClientPoolImpl extends AbstractClient {
 
