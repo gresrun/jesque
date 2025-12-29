@@ -43,9 +43,9 @@
             <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         </snapshotRepository>
         <site>
+            <name>GitHub Pages</name>
             <id>github-pages-site</id>
-            <name>Deployment through GitHub's site deployment plugin</name>
-            <url>site/${project.version}</url>
+            <url>scm:git:git@github.com:gresrun/jesque.git</url>
         </site>
     </distributionManagement>
     <developers>
@@ -209,38 +209,24 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>3.6.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
                 <version>3.12.1</version>
-                <dependencies>
-                    <dependency>
-                        <!-- Allows markdown syntax for site generation. To use it place files below src/site/markdown/[filename].md -->
-                        <groupId>org.apache.maven.doxia</groupId>
-                        <artifactId>doxia-module-markdown</artifactId>
-                        <version>2.0.0</version>
-                    </dependency>
-                </dependencies>
                 <configuration>
                     <skipDeploy>true</skipDeploy>
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>com.github.github</groupId>
-                <artifactId>site-maven-plugin</artifactId>
-                <version>0.12</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-scm-publish-plugin</artifactId>
+                <version>3.3.0</version>
                 <configuration>
-                    <message>Creating site for ${project.artifactId}, ${project.version}</message>
-                    <path>${project.distributionManagement.site.url}</path>
-                    <merge>true</merge>
+                    <scmBranch>gh-pages</scmBranch>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>github-site</id>
-                        <goals>
-                            <goal>site</goal>
-                        </goals>
-                        <phase>site-deploy</phase>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.sonatype.central</groupId>
@@ -311,6 +297,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
             </plugin>
         </plugins>
     </reporting>
