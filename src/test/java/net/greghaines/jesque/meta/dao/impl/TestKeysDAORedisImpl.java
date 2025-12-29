@@ -5,555 +5,571 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.meta.KeyInfo;
 import net.greghaines.jesque.meta.KeyType;
 import net.greghaines.jesque.meta.dao.impl.KeysDAORedisImpl.KeyDAOWork;
-
 import org.jmock.Expectations;
 import org.jmock.Mockery;
+import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.jmock.integration.junit4.JUnit4Mockery;
 import org.jmock.lib.concurrent.Synchroniser;
-import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
 import redis.clients.jedis.UnifiedJedis;
 
 public class TestKeysDAORedisImpl {
 
-    private Mockery mockCtx;
-    private UnifiedJedis jedisPool;
-    private KeysDAORedisImpl keysDAO;
+  private Mockery mockCtx;
+  private UnifiedJedis jedisPool;
+  private KeysDAORedisImpl keysDAO;
 
-    @Before
-    public void setUp() {
-        this.mockCtx = new JUnit4Mockery();
-        this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
-        this.mockCtx.setThreadingPolicy(new Synchroniser());
-        this.jedisPool = this.mockCtx.mock(UnifiedJedis.class);
-        this.keysDAO = new KeysDAORedisImpl(Config.getDefaultConfig(), this.jedisPool);
-    }
+  @Before
+  public void setUp() {
+    this.mockCtx = new JUnit4Mockery();
+    this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
+    this.mockCtx.setThreadingPolicy(new Synchroniser());
+    this.jedisPool = this.mockCtx.mock(UnifiedJedis.class);
+    this.keysDAO = new KeysDAORedisImpl(Config.getDefaultConfig(), this.jedisPool);
+  }
 
-    @After
-    public void tearDown() {
-        this.mockCtx.assertIsSatisfied();
-    }
+  @After
+  public void tearDown() {
+    this.mockCtx.assertIsSatisfied();
+  }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_NullConfig() {
-        new KeysDAORedisImpl(null, null);
-    }
+  @Test(expected = IllegalArgumentException.class)
+  public void testConstructor_NullConfig() {
+    new KeysDAORedisImpl(null, null);
+  }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_NullPool() {
-        final Config config = Config.getDefaultConfig();
-        new KeysDAORedisImpl(config, null);
-    }
+  @Test(expected = IllegalArgumentException.class)
+  public void testConstructor_NullPool() {
+    final Config config = Config.getDefaultConfig();
+    new KeysDAORedisImpl(config, null);
+  }
 
-    @Test
-    public void testGetRedisInfo() {
-        final String infoString = "foo:bar\r\n# CPU\r\nbaz\r\nqux";
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).info();
-                will(returnValue(infoString));
-            }
+  @Test
+  public void testGetRedisInfo() {
+    final String infoString = "foo:bar\r\n# CPU\r\nbaz\r\nqux";
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).info();
+            will(returnValue(infoString));
+          }
         });
-        final Map<String, String> redisInfo = this.keysDAO.getRedisInfo();
-        Assert.assertNotNull(redisInfo);
-        Assert.assertEquals(3, redisInfo.size());
-        Assert.assertTrue(redisInfo.containsKey("foo"));
-        Assert.assertEquals("bar", redisInfo.get("foo"));
-        Assert.assertTrue(redisInfo.containsKey("baz"));
-        Assert.assertNull(redisInfo.get("baz"));
-        Assert.assertTrue(redisInfo.containsKey("qux"));
-        Assert.assertNull(redisInfo.get("qux"));
-    }
+    final Map<String, String> redisInfo = this.keysDAO.getRedisInfo();
+    Assert.assertNotNull(redisInfo);
+    Assert.assertEquals(3, redisInfo.size());
+    Assert.assertTrue(redisInfo.containsKey("foo"));
+    Assert.assertEquals("bar", redisInfo.get("foo"));
+    Assert.assertTrue(redisInfo.containsKey("baz"));
+    Assert.assertNull(redisInfo.get("baz"));
+    Assert.assertTrue(redisInfo.containsKey("qux"));
+    Assert.assertNull(redisInfo.get("qux"));
+  }
 
-    @Test
-    public void testGetKeyInfos() throws Exception {
-        final Set<String> keys =
-                new LinkedHashSet<String>(Arrays.asList("resque:bar", "resque:qux"));
-        final List<String> keyNames = Arrays.asList("bar", "qux");
-        final List<String> values = Arrays.asList("bazqux", "abc123456");
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).keys("resque:*");
-                will(returnValue(keys));
-                int i = 0;
-                for (final String key : keys) {
-                    oneOf(jedisPool).type(key);
-                    will(returnValue(KeyType.STRING.toString()));
-                    oneOf(jedisPool).strlen(key);
-                    will(returnValue((long) values.get(i++).length()));
-                }
+  @Test
+  public void testGetKeyInfos() throws Exception {
+    final Set<String> keys = new LinkedHashSet<String>(Arrays.asList("resque:bar", "resque:qux"));
+    final List<String> keyNames = Arrays.asList("bar", "qux");
+    final List<String> values = Arrays.asList("bazqux", "abc123456");
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).keys("resque:*");
+            will(returnValue(keys));
+            int i = 0;
+            for (final String key : keys) {
+              oneOf(jedisPool).type(key);
+              will(returnValue(KeyType.STRING.toString()));
+              oneOf(jedisPool).strlen(key);
+              will(returnValue((long) values.get(i++).length()));
             }
+          }
         });
-        final List<KeyInfo> keyInfos = this.keysDAO.getKeyInfos();
-        Assert.assertNotNull(keyInfos);
-        Assert.assertEquals(2, keyInfos.size());
-        int i = 0;
-        for (final KeyInfo keyInfo : keyInfos) {
-            Assert.assertEquals("resque", keyInfo.getNamespace());
-            Assert.assertEquals(keyNames.get(i), keyInfo.getName());
-            Assert.assertEquals(KeyType.STRING, keyInfo.getType());
-            final long size = values.get(i++).length();
-            Assert.assertEquals((Long) size, keyInfo.getSize());
-            Assert.assertNull(keyInfo.getArrayValue());
-        }
+    final List<KeyInfo> keyInfos = this.keysDAO.getKeyInfos();
+    Assert.assertNotNull(keyInfos);
+    Assert.assertEquals(2, keyInfos.size());
+    int i = 0;
+    for (final KeyInfo keyInfo : keyInfos) {
+      Assert.assertEquals("resque", keyInfo.getNamespace());
+      Assert.assertEquals(keyNames.get(i), keyInfo.getName());
+      Assert.assertEquals(KeyType.STRING, keyInfo.getType());
+      final long size = values.get(i++).length();
+      Assert.assertEquals((Long) size, keyInfo.getSize());
+      Assert.assertNull(keyInfo.getArrayValue());
     }
+  }
 
-    @Test
-    public void testGetKeyInfo() throws Exception {
-        final String key = "foo:bar";
-        final String value = "bazqux";
-        final long size = value.length();
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.STRING.toString()));
-                oneOf(jedisPool).strlen(key);
-                will(returnValue(size));
-            }
+  @Test
+  public void testGetKeyInfo() throws Exception {
+    final String key = "foo:bar";
+    final String value = "bazqux";
+    final long size = value.length();
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.STRING.toString()));
+            oneOf(jedisPool).strlen(key);
+            will(returnValue(size));
+          }
         });
-        final KeyInfo keyInfo = this.keysDAO.getKeyInfo(key);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.STRING, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNull(keyInfo.getArrayValue());
-    }
+    final KeyInfo keyInfo = this.keysDAO.getKeyInfo(key);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.STRING, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNull(keyInfo.getArrayValue());
+  }
 
-    @Test
-    public void testGetKeyInfo_ArrayValue() throws Exception {
-        final String key = "foo:bar";
-        final String value = "bazqux";
-        final long size = value.length();
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.STRING.toString()));
-                oneOf(jedisPool).strlen(key);
-                will(returnValue(size));
-                oneOf(jedisPool).get(key);
-                will(returnValue(value));
-            }
+  @Test
+  public void testGetKeyInfo_ArrayValue() throws Exception {
+    final String key = "foo:bar";
+    final String value = "bazqux";
+    final long size = value.length();
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.STRING.toString()));
+            oneOf(jedisPool).strlen(key);
+            will(returnValue(size));
+            oneOf(jedisPool).get(key);
+            will(returnValue(value));
+          }
         });
-        final KeyInfo keyInfo = this.keysDAO.getKeyInfo(key, 0, 1);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.STRING, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNotNull(keyInfo.getArrayValue());
-        Assert.assertEquals(1, keyInfo.getArrayValue().size());
-        Assert.assertEquals(value, keyInfo.getArrayValue().get(0));
-    }
+    final KeyInfo keyInfo = this.keysDAO.getKeyInfo(key, 0, 1);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.STRING, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNotNull(keyInfo.getArrayValue());
+    Assert.assertEquals(1, keyInfo.getArrayValue().size());
+    Assert.assertEquals(value, keyInfo.getArrayValue().get(0));
+  }
 
-    @Test
-    public void testDoWork_HandleString() throws Exception {
-        final String key = "foo:bar";
-        final String value = "bazqux";
-        final long size = value.length();
-        final KeyDAOWork work = new KeyDAOWork(key);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.STRING.toString()));
-                oneOf(jedisPool).strlen(key);
-                will(returnValue(size));
-            }
+  @Test
+  public void testDoWork_HandleString() throws Exception {
+    final String key = "foo:bar";
+    final String value = "bazqux";
+    final long size = value.length();
+    final KeyDAOWork work = new KeyDAOWork(key);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.STRING.toString()));
+            oneOf(jedisPool).strlen(key);
+            will(returnValue(size));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.STRING, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNull(keyInfo.getArrayValue());
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.STRING, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNull(keyInfo.getArrayValue());
+  }
 
-    @Test
-    public void testDoWork_HandleString_ArrayValue() throws Exception {
-        final String key = "foo:bar";
-        final String value = "bazqux";
-        final long size = value.length();
-        final KeyDAOWork work = new KeyDAOWork(key, 0, 1);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.STRING.toString()));
-                oneOf(jedisPool).strlen(key);
-                will(returnValue(size));
-                oneOf(jedisPool).get(key);
-                will(returnValue(value));
-            }
+  @Test
+  public void testDoWork_HandleString_ArrayValue() throws Exception {
+    final String key = "foo:bar";
+    final String value = "bazqux";
+    final long size = value.length();
+    final KeyDAOWork work = new KeyDAOWork(key, 0, 1);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.STRING.toString()));
+            oneOf(jedisPool).strlen(key);
+            will(returnValue(size));
+            oneOf(jedisPool).get(key);
+            will(returnValue(value));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.STRING, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNotNull(keyInfo.getArrayValue());
-        Assert.assertEquals(1, keyInfo.getArrayValue().size());
-        Assert.assertEquals(value, keyInfo.getArrayValue().get(0));
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.STRING, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNotNull(keyInfo.getArrayValue());
+    Assert.assertEquals(1, keyInfo.getArrayValue().size());
+    Assert.assertEquals(value, keyInfo.getArrayValue().get(0));
+  }
 
-    @Test
-    public void testDoWork_HandleZSet() throws Exception {
-        final String key = "foo:bar";
-        final long size = 8;
-        final KeyDAOWork work = new KeyDAOWork(key);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.ZSET.toString()));
-                oneOf(jedisPool).zcard(key);
-                will(returnValue(size));
-            }
+  @Test
+  public void testDoWork_HandleZSet() throws Exception {
+    final String key = "foo:bar";
+    final long size = 8;
+    final KeyDAOWork work = new KeyDAOWork(key);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.ZSET.toString()));
+            oneOf(jedisPool).zcard(key);
+            will(returnValue(size));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.ZSET, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNull(keyInfo.getArrayValue());
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.ZSET, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNull(keyInfo.getArrayValue());
+  }
 
-    @Test
-    public void testDoWork_HandleZSet_ArrayValue() throws Exception {
-        final String key = "foo:bar";
-        final List<String> value = Arrays.asList("foo", "bar", "baz");
-        final long size = 8;
-        final int offset = 1;
-        final int count = value.size();
-        final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.ZSET.toString()));
-                oneOf(jedisPool).zcard(key);
-                will(returnValue(size));
-                oneOf(jedisPool).zrange(key, offset, offset + count);
-                will(returnValue(value));
-            }
+  @Test
+  public void testDoWork_HandleZSet_ArrayValue() throws Exception {
+    final String key = "foo:bar";
+    final List<String> value = Arrays.asList("foo", "bar", "baz");
+    final long size = 8;
+    final int offset = 1;
+    final int count = value.size();
+    final KeyDAOWork work = new KeyDAOWork(key, offset, count);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.ZSET.toString()));
+            oneOf(jedisPool).zcard(key);
+            will(returnValue(size));
+            oneOf(jedisPool).zrange(key, offset, offset + count);
+            will(returnValue(value));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.ZSET, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNotNull(keyInfo.getArrayValue());
-        Assert.assertEquals(count, keyInfo.getArrayValue().size());
-        Assert.assertTrue(value.containsAll(keyInfo.getArrayValue()));
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.ZSET, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNotNull(keyInfo.getArrayValue());
+    Assert.assertEquals(count, keyInfo.getArrayValue().size());
+    Assert.assertTrue(value.containsAll(keyInfo.getArrayValue()));
+  }
 
-    @Test
-    public void testDoWork_HandleSet() throws Exception {
-        final String key = "foo:bar";
-        final long size = 8;
-        final KeyDAOWork work = new KeyDAOWork(key);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.SET.toString()));
-                oneOf(jedisPool).scard(key);
-                will(returnValue(size));
-            }
+  @Test
+  public void testDoWork_HandleSet() throws Exception {
+    final String key = "foo:bar";
+    final long size = 8;
+    final KeyDAOWork work = new KeyDAOWork(key);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.SET.toString()));
+            oneOf(jedisPool).scard(key);
+            will(returnValue(size));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.SET, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNull(keyInfo.getArrayValue());
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.SET, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNull(keyInfo.getArrayValue());
+  }
 
-    @Test
-    public void testDoWork_HandleSet_ArrayValue() throws Exception {
-        final String key = "foo:bar";
-        final Set<String> value = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
-        final long size = value.size();
-        final int offset = 0;
-        final int count = 1;
-        final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.SET.toString()));
-                oneOf(jedisPool).scard(key);
-                will(returnValue(size));
-                oneOf(jedisPool).smembers(key);
-                will(returnValue(value));
-            }
+  @Test
+  public void testDoWork_HandleSet_ArrayValue() throws Exception {
+    final String key = "foo:bar";
+    final Set<String> value = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
+    final long size = value.size();
+    final int offset = 0;
+    final int count = 1;
+    final KeyDAOWork work = new KeyDAOWork(key, offset, count);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.SET.toString()));
+            oneOf(jedisPool).scard(key);
+            will(returnValue(size));
+            oneOf(jedisPool).smembers(key);
+            will(returnValue(value));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.SET, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNotNull(keyInfo.getArrayValue());
-        Assert.assertEquals(1, keyInfo.getArrayValue().size());
-        Assert.assertTrue(keyInfo.getArrayValue().contains("foo"));
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.SET, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNotNull(keyInfo.getArrayValue());
+    Assert.assertEquals(1, keyInfo.getArrayValue().size());
+    Assert.assertTrue(keyInfo.getArrayValue().contains("foo"));
+  }
 
-    @Test
-    public void testDoWork_HandleSet_ArrayValue_TooBig() throws Exception {
-        final String key = "foo:bar";
-        final Set<String> value = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
-        final long size = value.size();
-        final int offset = value.size() + 1;
-        final int count = value.size();
-        final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.SET.toString()));
-                oneOf(jedisPool).scard(key);
-                will(returnValue(size));
-                oneOf(jedisPool).smembers(key);
-                will(returnValue(value));
-            }
+  @Test
+  public void testDoWork_HandleSet_ArrayValue_TooBig() throws Exception {
+    final String key = "foo:bar";
+    final Set<String> value = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
+    final long size = value.size();
+    final int offset = value.size() + 1;
+    final int count = value.size();
+    final KeyDAOWork work = new KeyDAOWork(key, offset, count);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.SET.toString()));
+            oneOf(jedisPool).scard(key);
+            will(returnValue(size));
+            oneOf(jedisPool).smembers(key);
+            will(returnValue(value));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.SET, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNotNull(keyInfo.getArrayValue());
-        Assert.assertTrue(keyInfo.getArrayValue().isEmpty());
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.SET, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNotNull(keyInfo.getArrayValue());
+    Assert.assertTrue(keyInfo.getArrayValue().isEmpty());
+  }
 
-    @Test
-    public void testDoWork_HandleSet_ArrayValue_OverEnd() throws Exception {
-        final String key = "foo:bar";
-        final Set<String> value = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
-        final long size = value.size();
-        final int offset = value.size() - 1;
-        final int count = value.size();
-        final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.SET.toString()));
-                oneOf(jedisPool).scard(key);
-                will(returnValue(size));
-                oneOf(jedisPool).smembers(key);
-                will(returnValue(value));
-            }
+  @Test
+  public void testDoWork_HandleSet_ArrayValue_OverEnd() throws Exception {
+    final String key = "foo:bar";
+    final Set<String> value = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
+    final long size = value.size();
+    final int offset = value.size() - 1;
+    final int count = value.size();
+    final KeyDAOWork work = new KeyDAOWork(key, offset, count);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.SET.toString()));
+            oneOf(jedisPool).scard(key);
+            will(returnValue(size));
+            oneOf(jedisPool).smembers(key);
+            will(returnValue(value));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.SET, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNotNull(keyInfo.getArrayValue());
-        Assert.assertEquals(1, keyInfo.getArrayValue().size());
-        Assert.assertTrue(keyInfo.getArrayValue().contains("baz"));
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.SET, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNotNull(keyInfo.getArrayValue());
+    Assert.assertEquals(1, keyInfo.getArrayValue().size());
+    Assert.assertTrue(keyInfo.getArrayValue().contains("baz"));
+  }
 
-    @Test
-    public void testDoWork_HandleHash() throws Exception {
-        final String key = "foo:bar";
-        final long size = 8;
-        final KeyDAOWork work = new KeyDAOWork(key);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.HASH.toString()));
-                oneOf(jedisPool).hlen(key);
-                will(returnValue(size));
-            }
+  @Test
+  public void testDoWork_HandleHash() throws Exception {
+    final String key = "foo:bar";
+    final long size = 8;
+    final KeyDAOWork work = new KeyDAOWork(key);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.HASH.toString()));
+            oneOf(jedisPool).hlen(key);
+            will(returnValue(size));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.HASH, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNull(keyInfo.getArrayValue());
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.HASH, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNull(keyInfo.getArrayValue());
+  }
 
-    @Test
-    public void testDoWork_HandleHash_ArrayValue() throws Exception {
-        final String key = "foo:bar";
-        final Set<String> valueKeys = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
-        final List<String> valueValues = Arrays.asList("123");
-        final long size = valueKeys.size();
-        final int offset = 0;
-        final int count = 1;
-        final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.HASH.toString()));
-                oneOf(jedisPool).hlen(key);
-                will(returnValue(size));
-                oneOf(jedisPool).hkeys(key);
-                will(returnValue(valueKeys));
-                oneOf(jedisPool).hmget(key, "foo");
-                will(returnValue(valueValues));
-            }
+  @Test
+  public void testDoWork_HandleHash_ArrayValue() throws Exception {
+    final String key = "foo:bar";
+    final Set<String> valueKeys = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
+    final List<String> valueValues = Arrays.asList("123");
+    final long size = valueKeys.size();
+    final int offset = 0;
+    final int count = 1;
+    final KeyDAOWork work = new KeyDAOWork(key, offset, count);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.HASH.toString()));
+            oneOf(jedisPool).hlen(key);
+            will(returnValue(size));
+            oneOf(jedisPool).hkeys(key);
+            will(returnValue(valueKeys));
+            oneOf(jedisPool).hmget(key, "foo");
+            will(returnValue(valueValues));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.HASH, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNotNull(keyInfo.getArrayValue());
-        Assert.assertEquals(1, keyInfo.getArrayValue().size());
-        Assert.assertTrue(keyInfo.getArrayValue().contains("{foo=123}"));
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.HASH, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNotNull(keyInfo.getArrayValue());
+    Assert.assertEquals(1, keyInfo.getArrayValue().size());
+    Assert.assertTrue(keyInfo.getArrayValue().contains("{foo=123}"));
+  }
 
-    @Test
-    public void testDoWork_HandleHash_ArrayValue_TooBig() throws Exception {
-        final String key = "foo:bar";
-        final Set<String> valueKeys = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
-        final long size = valueKeys.size();
-        final int offset = valueKeys.size() + 1;
-        final int count = valueKeys.size();
-        final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.HASH.toString()));
-                oneOf(jedisPool).hlen(key);
-                will(returnValue(size));
-                oneOf(jedisPool).hkeys(key);
-                will(returnValue(valueKeys));
-            }
+  @Test
+  public void testDoWork_HandleHash_ArrayValue_TooBig() throws Exception {
+    final String key = "foo:bar";
+    final Set<String> valueKeys = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
+    final long size = valueKeys.size();
+    final int offset = valueKeys.size() + 1;
+    final int count = valueKeys.size();
+    final KeyDAOWork work = new KeyDAOWork(key, offset, count);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.HASH.toString()));
+            oneOf(jedisPool).hlen(key);
+            will(returnValue(size));
+            oneOf(jedisPool).hkeys(key);
+            will(returnValue(valueKeys));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.HASH, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNotNull(keyInfo.getArrayValue());
-        Assert.assertTrue(keyInfo.getArrayValue().isEmpty());
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.HASH, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNotNull(keyInfo.getArrayValue());
+    Assert.assertTrue(keyInfo.getArrayValue().isEmpty());
+  }
 
-    @Test
-    public void testDoWork_HandleHash_ArrayValue_OverEnd() throws Exception {
-        final String key = "foo:bar";
-        final Set<String> valueKeys = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
-        final List<String> valueValues = Arrays.asList("789");
-        final long size = valueKeys.size();
-        final int offset = valueKeys.size() - 1;
-        final int count = valueKeys.size();
-        final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.HASH.toString()));
-                oneOf(jedisPool).hlen(key);
-                will(returnValue(size));
-                oneOf(jedisPool).hkeys(key);
-                will(returnValue(valueKeys));
-                oneOf(jedisPool).hmget(key, "baz");
-                will(returnValue(valueValues));
-            }
+  @Test
+  public void testDoWork_HandleHash_ArrayValue_OverEnd() throws Exception {
+    final String key = "foo:bar";
+    final Set<String> valueKeys = new LinkedHashSet<String>(Arrays.asList("foo", "bar", "baz"));
+    final List<String> valueValues = Arrays.asList("789");
+    final long size = valueKeys.size();
+    final int offset = valueKeys.size() - 1;
+    final int count = valueKeys.size();
+    final KeyDAOWork work = new KeyDAOWork(key, offset, count);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.HASH.toString()));
+            oneOf(jedisPool).hlen(key);
+            will(returnValue(size));
+            oneOf(jedisPool).hkeys(key);
+            will(returnValue(valueKeys));
+            oneOf(jedisPool).hmget(key, "baz");
+            will(returnValue(valueValues));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.HASH, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNotNull(keyInfo.getArrayValue());
-        Assert.assertEquals(1, keyInfo.getArrayValue().size());
-        Assert.assertTrue(keyInfo.getArrayValue().contains("{baz=789}"));
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.HASH, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNotNull(keyInfo.getArrayValue());
+    Assert.assertEquals(1, keyInfo.getArrayValue().size());
+    Assert.assertTrue(keyInfo.getArrayValue().contains("{baz=789}"));
+  }
 
-    @Test
-    public void testDoWork_HandleList() throws Exception {
-        final String key = "foo:bar";
-        final long size = 8;
-        final KeyDAOWork work = new KeyDAOWork(key);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.LIST.toString()));
-                oneOf(jedisPool).llen(key);
-                will(returnValue(size));
-            }
+  @Test
+  public void testDoWork_HandleList() throws Exception {
+    final String key = "foo:bar";
+    final long size = 8;
+    final KeyDAOWork work = new KeyDAOWork(key);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.LIST.toString()));
+            oneOf(jedisPool).llen(key);
+            will(returnValue(size));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.LIST, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNull(keyInfo.getArrayValue());
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.LIST, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNull(keyInfo.getArrayValue());
+  }
 
-    @Test
-    public void testDoWork_HandleList_ArrayValue() throws Exception {
-        final String key = "foo:bar";
-        final List<String> value = Arrays.asList("foo", "bar", "baz");
-        final long size = 8;
-        final int offset = 1;
-        final int count = value.size();
-        final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.LIST.toString()));
-                oneOf(jedisPool).llen(key);
-                will(returnValue(size));
-                oneOf(jedisPool).lrange(key, offset, offset + count);
-                will(returnValue(value));
-            }
+  @Test
+  public void testDoWork_HandleList_ArrayValue() throws Exception {
+    final String key = "foo:bar";
+    final List<String> value = Arrays.asList("foo", "bar", "baz");
+    final long size = 8;
+    final int offset = 1;
+    final int count = value.size();
+    final KeyDAOWork work = new KeyDAOWork(key, offset, count);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.LIST.toString()));
+            oneOf(jedisPool).llen(key);
+            will(returnValue(size));
+            oneOf(jedisPool).lrange(key, offset, offset + count);
+            will(returnValue(value));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNotNull(keyInfo);
-        Assert.assertEquals("foo", keyInfo.getNamespace());
-        Assert.assertEquals("bar", keyInfo.getName());
-        Assert.assertEquals(KeyType.LIST, keyInfo.getType());
-        Assert.assertEquals((Long) size, keyInfo.getSize());
-        Assert.assertNotNull(keyInfo.getArrayValue());
-        Assert.assertEquals(count, keyInfo.getArrayValue().size());
-        Assert.assertTrue(value.containsAll(keyInfo.getArrayValue()));
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNotNull(keyInfo);
+    Assert.assertEquals("foo", keyInfo.getNamespace());
+    Assert.assertEquals("bar", keyInfo.getName());
+    Assert.assertEquals(KeyType.LIST, keyInfo.getType());
+    Assert.assertEquals((Long) size, keyInfo.getSize());
+    Assert.assertNotNull(keyInfo.getArrayValue());
+    Assert.assertEquals(count, keyInfo.getArrayValue().size());
+    Assert.assertTrue(value.containsAll(keyInfo.getArrayValue()));
+  }
 
-    @Test
-    public void testDoWork_Unkonwn() throws Exception {
-        final String key = "foo:bar";
-        final KeyDAOWork work = new KeyDAOWork(key);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue("?"));
-            }
+  @Test
+  public void testDoWork_Unkonwn() throws Exception {
+    final String key = "foo:bar";
+    final KeyDAOWork work = new KeyDAOWork(key);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue("?"));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNull(keyInfo);
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNull(keyInfo);
+  }
 
-    @Test
-    public void testDoWork_None() throws Exception {
-        final String key = "foo:bar";
-        final KeyDAOWork work = new KeyDAOWork(key);
-        this.mockCtx.checking(new Expectations() {
-            {
-                oneOf(jedisPool).type(key);
-                will(returnValue(KeyType.NONE.toString()));
-            }
+  @Test
+  public void testDoWork_None() throws Exception {
+    final String key = "foo:bar";
+    final KeyDAOWork work = new KeyDAOWork(key);
+    this.mockCtx.checking(
+        new Expectations() {
+          {
+            oneOf(jedisPool).type(key);
+            will(returnValue(KeyType.NONE.toString()));
+          }
         });
-        final KeyInfo keyInfo = work.doWork(this.jedisPool);
-        Assert.assertNull(keyInfo);
-    }
+    final KeyInfo keyInfo = work.doWork(this.jedisPool);
+    Assert.assertNull(keyInfo);
+  }
 }

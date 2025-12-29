@@ -6,22 +6,22 @@ package net.greghaines.jesque;
  * @author Daniël de Kok
  */
 public class SleepAction implements Runnable {
-    private final int millis;
+  private final int millis;
 
-    /**
-     * Construct a sleep action.
-     *
-     * @param millis The number of milliseconds to sleep.
-     */
-    public SleepAction(int millis) {
-        this.millis = millis;
-    }
+  /**
+   * Construct a sleep action.
+   *
+   * @param millis The number of milliseconds to sleep.
+   */
+  public SleepAction(int millis) {
+    this.millis = millis;
+  }
 
-    @Override
-    public void run() {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-        }
+  @Override
+  public void run() {
+    try {
+      Thread.sleep(millis);
+    } catch (InterruptedException e) {
     }
+  }
 }

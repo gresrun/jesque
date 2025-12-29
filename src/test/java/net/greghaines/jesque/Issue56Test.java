@@ -4,66 +4,62 @@ import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
-
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientPoolImpl;
 import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.worker.WorkerImplFactory;
 import net.greghaines.jesque.worker.WorkerPool;
-
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Issue56Test {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Issue56Test.class);
-    private static final Config CONFIG = Config.getDefaultConfig();
-    private static final Client CLIENT =
-            new ClientPoolImpl(CONFIG, PoolUtils.createJedisPool(CONFIG));
-    private static final String QUEUE = "default";
+  private static final Logger LOG = LoggerFactory.getLogger(Issue56Test.class);
+  private static final Config CONFIG = Config.getDefaultConfig();
+  private static final Client CLIENT =
+      new ClientPoolImpl(CONFIG, PoolUtils.createJedisPool(CONFIG));
+  private static final String QUEUE = "default";
 
-    @Test
-    public void testZREM() {
-        // Start workers
-        final WorkerImplFactory workerFactory =
-                new WorkerImplFactory(CONFIG, Arrays.asList(QUEUE), createTestActionJobFactory());
-        final WorkerPool workerPool = new WorkerPool(workerFactory, 10);
-        workerPool.run();
+  @Test
+  public void testZREM() {
+    // Start workers
+    final WorkerImplFactory workerFactory =
+        new WorkerImplFactory(CONFIG, Arrays.asList(QUEUE), createTestActionJobFactory());
+    final WorkerPool workerPool = new WorkerPool(workerFactory, 10);
+    workerPool.run();
 
-        // Start jobs
-        enqueue();
+    // Start jobs
+    enqueue();
 
-        // Wait a few seconds then shutdown
-        try {
-            Thread.sleep(15000);
-        } catch (Exception e) {
-        } // Give ourselves time to process
-        CLIENT.end();
-        try {
-            workerPool.endAndJoin(true, 100);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    // Wait a few seconds then shutdown
+    try {
+      Thread.sleep(15000);
+    } catch (Exception e) {
+    } // Give ourselves time to process
+    CLIENT.end();
+    try {
+      workerPool.endAndJoin(true, 100);
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+  }
 
-    public static void enqueue() {
-        final long future = System.currentTimeMillis() + 500;
-        final Job job = new Job(TestAction.class.getSimpleName());
-        CLIENT.delayedEnqueue(QUEUE, job, future);
+  public static void enqueue() {
+    final long future = System.currentTimeMillis() + 500;
+    final Job job = new Job(TestAction.class.getSimpleName());
+    CLIENT.delayedEnqueue(QUEUE, job, future);
+  }
+
+  public static class TestAction implements Runnable {
+
+    private static final AtomicLong RUN_COUNT = new AtomicLong(0);
+
+    /** {@inheritDoc} */
+    @Override
+    public void run() {
+      LOG.info("TestAction.run(): {}", RUN_COUNT.getAndIncrement());
+      enqueue();
     }
-
-    public static class TestAction implements Runnable {
-
-        private static final AtomicLong RUN_COUNT = new AtomicLong(0);
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void run() {
-            LOG.info("TestAction.run(): {}", RUN_COUNT.getAndIncrement());
-            enqueue();
-        }
-    }
+  }
 }

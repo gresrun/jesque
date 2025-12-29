@@ -9,20 +9,20 @@ import java.util.concurrent.Callable;
  */
 public class SleepWithExceptionAction implements Callable<Void> {
 
-    private final int millis;
+  private final int millis;
 
-    /**
-     * Construct a sleep action.
-     *
-     * @param millis The number of milliseconds to sleep.
-     */
-    public SleepWithExceptionAction(int millis) {
-        this.millis = millis;
-    }
+  /**
+   * Construct a sleep action.
+   *
+   * @param millis The number of milliseconds to sleep.
+   */
+  public SleepWithExceptionAction(int millis) {
+    this.millis = millis;
+  }
 
-    @Override
-    public Void call() throws Exception {
-        Thread.sleep(millis);
-        return null;
-    }
+  @Override
+  public Void call() throws Exception {
+    Thread.sleep(millis);
+    return null;
+  }
 }

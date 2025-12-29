@@ -1,11 +1,11 @@
 /*
  * Copyright 2011 Greg Haines
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
@@ -15,33 +15,32 @@ package net.greghaines.jesque.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import net.greghaines.jesque.utils.CompositeDateFormat;
-
 import java.text.DateFormat;
+import net.greghaines.jesque.utils.CompositeDateFormat;
 
 /**
  * A helper that creates a fully-configured singleton ObjectMapper.
- * 
+ *
  * @author Greg Haines
  */
 public final class ObjectMapperFactory {
 
-	private static final ObjectMapper mapper = new ObjectMapper();
+  private static final ObjectMapper mapper = new ObjectMapper();
 
-	static {
-		mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-		final DateFormat jsonDateFormat = new CompositeDateFormat();
-		mapper.setDateFormat(jsonDateFormat);
-	}
+  static {
+    mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+    final DateFormat jsonDateFormat = new CompositeDateFormat();
+    mapper.setDateFormat(jsonDateFormat);
+  }
 
-	/**
-	 * @return a fully-configured ObjectMapper
-	 */
-	public static ObjectMapper get() {
-		return mapper;
-	}
+  /**
+   * @return a fully-configured ObjectMapper
+   */
+  public static ObjectMapper get() {
+    return mapper;
+  }
 
-	private ObjectMapperFactory() {
-		// Utility class
-	}
+  private ObjectMapperFactory() {
+    // Utility class
+  }
 }
