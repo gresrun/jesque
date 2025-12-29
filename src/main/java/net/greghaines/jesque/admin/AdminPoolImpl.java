@@ -13,9 +13,6 @@
  */
 package net.greghaines.jesque.admin;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
-import static net.greghaines.jesque.utils.JesqueUtils.set;
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
 import static net.greghaines.jesque.utils.ResqueConstants.CHANNEL;
 import static net.greghaines.jesque.worker.JobExecutor.State.NEW;
@@ -23,6 +20,7 @@ import static net.greghaines.jesque.worker.JobExecutor.State.RUNNING;
 import static net.greghaines.jesque.worker.JobExecutor.State.SHUTDOWN;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,9 +78,10 @@ public class AdminPoolImpl implements Admin {
      * @param jedisPool the Redis connection pool
      */
     public AdminPoolImpl(final Config config, final UnifiedJedis jedisPool) {
-        this(config, set(ADMIN_CHANNEL),
-                new MapBasedJobFactory(map(entry("PauseCommand", PauseCommand.class),
-                        entry("ShutdownCommand", ShutdownCommand.class))),
+        this(config, Set.of(ADMIN_CHANNEL),
+                new MapBasedJobFactory(
+                        Map.of(PauseCommand.class.getSimpleName(), PauseCommand.class,
+                                ShutdownCommand.class.getSimpleName(), ShutdownCommand.class)),
                 jedisPool);
     }
 

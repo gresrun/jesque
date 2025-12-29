@@ -1,9 +1,13 @@
 package net.greghaines.jesque;
 
+import static net.greghaines.jesque.TestUtils.createJedis;
+import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
+import static net.greghaines.jesque.utils.JesqueUtils.createKey;
+import static net.greghaines.jesque.utils.ResqueConstants.*;
+
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientImpl;
 import net.greghaines.jesque.utils.JesqueUtils;
-import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 import org.junit.After;
@@ -14,12 +18,6 @@ import redis.clients.jedis.Jedis;
 
 import java.util.Arrays;
 import java.util.List;
-
-import static net.greghaines.jesque.TestUtils.createJedis;
-import static net.greghaines.jesque.utils.JesqueUtils.createKey;
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
-import static net.greghaines.jesque.utils.ResqueConstants.*;
 
 /**
  * Created by Karthik (@argvk) on 6/3/15.
@@ -57,7 +55,7 @@ public class RecurringQueueTest {
 
         // Create and mark the start worker
         final Worker worker = new WorkerImpl(config, Arrays.asList(recurringTestQueue),
-                new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
+                createTestActionJobFactory());
         final Thread workerThread = new Thread(worker);
         Long startMillis = System.currentTimeMillis();
         workerThread.start();

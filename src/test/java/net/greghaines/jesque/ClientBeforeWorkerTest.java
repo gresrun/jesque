@@ -15,15 +15,13 @@ package net.greghaines.jesque;
 
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
 import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.STAT;
 
 import java.util.Arrays;
-
+import java.util.Map;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
@@ -61,7 +59,7 @@ public class ClientBeforeWorkerTest {
 
         // Create and start worker
         final Worker worker = new WorkerImpl(config, Arrays.asList(testQueue),
-                new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
+                new MapBasedJobFactory(Map.of(TestAction.class.getSimpleName(), TestAction.class)));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
         try { // Wait a bit to ensure the worker had time to process the job

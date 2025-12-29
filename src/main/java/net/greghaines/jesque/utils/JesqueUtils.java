@@ -18,16 +18,11 @@ import static net.greghaines.jesque.utils.ResqueConstants.FREQUENCY;
 
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
@@ -284,61 +279,6 @@ public final class JesqueUtils {
             }
         }
         return stes.toArray(new StackTraceElement[stes.size()]);
-    }
-
-    /**
-     * A convenient way of creating a map on the fly.
-     *
-     * @param <K> the key type
-     * @param <V> the value type
-     * @param entries Map.Entry objects to be added to the map
-     * @return a LinkedHashMap with the supplied entries
-     */
-    @SafeVarargs
-    public static <K, V> Map<K, V> map(final Entry<? extends K, ? extends V>... entries) {
-        final Map<K, V> map = new LinkedHashMap<K, V>(entries.length);
-        for (final Entry<? extends K, ? extends V> entry : entries) {
-            map.put(entry.getKey(), entry.getValue());
-        }
-        return map;
-    }
-
-    /**
-     * Creates a Map.Entry out of the given key and value. Commonly used in conjunction with
-     * map(Entry...)
-     *
-     * @param <K> the key type
-     * @param <V> the value type
-     * @param key the key
-     * @param value the value
-     * @return a Map.Entry object with the given key and value
-     */
-    public static <K, V> Entry<K, V> entry(final K key, final V value) {
-        return new SimpleImmutableEntry<K, V>(key, value);
-    }
-
-    /**
-     * Creates a Set out of the given keys
-     *
-     * @param <K> the key type
-     * @param keys the keys
-     * @return a Set containing the given keys
-     */
-    @SafeVarargs
-    public static <K> Set<K> set(final K... keys) {
-        return new LinkedHashSet<K>(Arrays.asList(keys));
-    }
-
-    /**
-     * Test for equality.
-     * 
-     * @param obj1 the first object
-     * @param obj2 the second object
-     * @return true if both are null or the two objects are equal
-     */
-    public static boolean nullSafeEquals(final Object obj1, final Object obj2) {
-        return ((obj1 == null && obj2 == null)
-                || (obj1 != null && obj2 != null && obj1.equals(obj2)));
     }
 
     /**

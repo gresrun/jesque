@@ -1,9 +1,7 @@
 package net.greghaines.jesque;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
-
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.greghaines.jesque.worker.MapBasedJobFactory;
@@ -50,9 +48,11 @@ public class LongRunningTest {
     public void issue28() throws InterruptedException {
         changeRedisTimeout(10);
         TestUtils.enqueueJobs("longRunning",
-                Arrays.asList(new Job("LongRunningAction", 20 * 1000L)), config);
-        final Worker worker2 = new WorkerImpl(config, Arrays.asList("longRunning"),
-                new MapBasedJobFactory(map(entry("LongRunningAction", LongRunningAction.class))));
+                Arrays.asList(new Job(LongRunningAction.class.getSimpleName(), 20 * 1000L)),
+                config);
+        final Worker worker2 =
+                new WorkerImpl(config, Arrays.asList("longRunning"), new MapBasedJobFactory(
+                        Map.of(LongRunningAction.class.getSimpleName(), LongRunningAction.class)));
         final AtomicBoolean successRef = new AtomicBoolean(false);
         worker2.getWorkerEventEmitter().addListener(new WorkerListener() {
             @Override

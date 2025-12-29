@@ -1,7 +1,6 @@
 package net.greghaines.jesque;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
+import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
@@ -9,7 +8,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientPoolImpl;
 import net.greghaines.jesque.utils.PoolUtils;
-import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.WorkerImplFactory;
 import net.greghaines.jesque.worker.WorkerPool;
 
@@ -29,8 +27,7 @@ public class Issue56Test {
     public void testZREM() {
         // Start workers
         final WorkerImplFactory workerFactory =
-                new WorkerImplFactory(CONFIG, Arrays.asList(QUEUE), new MapBasedJobFactory(
-                        map(entry(TestAction.class.getSimpleName(), TestAction.class))));
+                new WorkerImplFactory(CONFIG, Arrays.asList(QUEUE), createTestActionJobFactory());
         final WorkerPool workerPool = new WorkerPool(workerFactory, 10);
         workerPool.run();
 

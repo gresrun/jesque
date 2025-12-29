@@ -2,8 +2,6 @@ package net.greghaines.jesque;
 
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
 import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
 import static net.greghaines.jesque.utils.ResqueConstants.STAT;
@@ -44,10 +42,11 @@ public class Issue46 {
         templateValues.put("email", "mail@gmail.com");
         templateValues.put("url", "http://localhost:90/confir");
         templateValues.put("fName", "RANGANATHAN");
-        final Job job = new Job("SendMailJob", null, "mail@gmail.com", "REGISTRATION_MAIL_SUBJECT",
-                true, "REGISTRATION_MAIL", templateValues);
-        final Worker worker = new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE),
-                new MapBasedJobFactory(map(entry("SendMailJob", SendMailJob.class))));
+        final Job job = new Job(SendMailJob.class.getSimpleName(), null, "mail@gmail.com",
+                "REGISTRATION_MAIL_SUBJECT", true, "REGISTRATION_MAIL", templateValues);
+        final Worker worker =
+                new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE), new MapBasedJobFactory(
+                        Map.of(SendMailJob.class.getSimpleName(), SendMailJob.class)));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
         try {

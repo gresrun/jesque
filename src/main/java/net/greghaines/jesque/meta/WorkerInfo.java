@@ -16,9 +16,8 @@ package net.greghaines.jesque.meta;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
-
+import java.util.Objects;
 import net.greghaines.jesque.WorkerStatus;
-import net.greghaines.jesque.utils.JesqueUtils;
 
 /**
  * Information about the current state of a worker.
@@ -211,15 +210,14 @@ public class WorkerInfo implements Comparable<WorkerInfo>, Serializable {
             equal = true;
         } else if (obj instanceof WorkerInfo) {
             final WorkerInfo other = (WorkerInfo) obj;
-            equal = (JesqueUtils.nullSafeEquals(this.failed, other.failed)
-                    && JesqueUtils.nullSafeEquals(this.host, other.host)
-                    && JesqueUtils.nullSafeEquals(this.name, other.name)
-                    && JesqueUtils.nullSafeEquals(this.pid, other.pid)
-                    && JesqueUtils.nullSafeEquals(this.processed, other.processed)
-                    && JesqueUtils.nullSafeEquals(this.queues, other.queues)
-                    && JesqueUtils.nullSafeEquals(this.started, other.started)
-                    && JesqueUtils.nullSafeEquals(this.state, other.state)
-                    && JesqueUtils.nullSafeEquals(this.status, other.status));
+            equal = (Objects.equals(this.failed, other.failed)
+                    && Objects.equals(this.host, other.host)
+                    && Objects.equals(this.name, other.name) && Objects.equals(this.pid, other.pid)
+                    && Objects.equals(this.processed, other.processed)
+                    && Objects.equals(this.queues, other.queues)
+                    && Objects.equals(this.started, other.started)
+                    && Objects.equals(this.state, other.state)
+                    && Objects.equals(this.status, other.status));
         }
         return equal;
     }

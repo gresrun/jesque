@@ -1,11 +1,9 @@
 package net.greghaines.jesque;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
@@ -33,7 +31,7 @@ public class InfiniteTest {
         for (int i = 0; i < 5; i++) {
             final List<Job> jobs = new ArrayList<Job>(30);
             for (int j = 0; j < 30; j++) {
-                jobs.add(new Job("TestAction",
+                jobs.add(new Job(TestAction.class.getSimpleName(),
                         new Object[] {j, 2.3, true, "test", Arrays.asList("inner", 4.5)}));
             }
             TestUtils.enqueueJobs("foo" + i, jobs, config);
@@ -44,14 +42,15 @@ public class InfiniteTest {
             TestUtils.enqueueJobs("bar", jobs, config);
         }
         final Worker worker = new WorkerImpl(config, Arrays.asList("foo0", "bar", "baz"),
-                new MapBasedJobFactory(map(entry("TestAction", TestAction.class),
-                        entry("FailAction", FailAction.class))));
+                new MapBasedJobFactory(Map.of(TestAction.class.getSimpleName(), TestAction.class,
+                        "FailAction", FailAction.class)));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
-        TestUtils.enqueueJobs("inf", Arrays.asList(new Job("InfiniteAction")), config);
-        final Worker worker2 = new WorkerImpl(config, Arrays.asList("inf"),
-                new MapBasedJobFactory(map(entry("InfiniteAction", InfiniteAction.class))));
+        TestUtils.enqueueJobs("inf", Arrays.asList(new Job(InfiniteAction.class.getSimpleName())),
+                config);
+        final Worker worker2 = new WorkerImpl(config, Arrays.asList("inf"), new MapBasedJobFactory(
+                Map.of(InfiniteAction.class.getSimpleName(), InfiniteAction.class)));
         final Thread workerThread2 = new Thread(worker2);
         workerThread2.start();
         worker2.togglePause(true);
@@ -62,15 +61,16 @@ public class InfiniteTest {
     @Test
     @Ignore
     public void issue6() throws InterruptedException {
-        final Worker worker = new WorkerImpl(config, Arrays.asList("foo"), new MapBasedJobFactory(
-                map(entry("TestAction", TestAction.class), entry("FailAction", FailAction.class))));
+        final Worker worker = new WorkerImpl(config, Arrays.asList("foo"),
+                new MapBasedJobFactory(Map.of(TestAction.class.getSimpleName(), TestAction.class,
+                        FailAction.class.getSimpleName(), FailAction.class)));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
         for (int i = 0; i < 10; i++) {
             final List<Job> jobs = new ArrayList<Job>(30);
             for (int j = 0; j < 30; j++) {
-                jobs.add(new Job("TestAction",
+                jobs.add(new Job(TestAction.class.getSimpleName(),
                         new Object[] {j, 2.3, true, "test", Arrays.asList("inner", 4.5)}));
             }
             TestUtils.enqueueJobs("foo", jobs, config);

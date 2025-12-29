@@ -1,9 +1,10 @@
 package net.greghaines.jesque;
 
-import static net.greghaines.jesque.utils.JesqueUtils.*;
 import static net.greghaines.jesque.Config.Builder.DEFAULT_NAMESPACE;
 
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import net.greghaines.jesque.admin.Admin;
@@ -45,8 +46,8 @@ public class AdminIntegrationTest {
     public void testAdminAndWorkerPool() {
         final WorkerPool workerPool = new WorkerPool(new Callable<WorkerImpl>() {
             public WorkerImpl call() {
-                return new WorkerImpl(config, set(TEST_QUEUE),
-                        new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
+                return new WorkerImpl(config, Set.of(TEST_QUEUE), new MapBasedJobFactory(
+                        Map.of(TestAction.class.getSimpleName(), TestAction.class)));
             }
         }, 2);
         final Admin admin = new AdminImpl(config);
@@ -73,8 +74,8 @@ public class AdminIntegrationTest {
     @Ignore
     @Test
     public void testPauseAndShutdownCommands() {
-        final Worker worker = new WorkerImpl(config, set(TEST_QUEUE),
-                new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
+        final Worker worker = new WorkerImpl(config, Set.of(TEST_QUEUE),
+                new MapBasedJobFactory(Map.of(TestAction.class.getSimpleName(), TestAction.class)));
         final Admin admin = new AdminImpl(config);
         admin.setWorker(worker);
 

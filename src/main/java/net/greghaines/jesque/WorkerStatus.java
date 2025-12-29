@@ -15,10 +15,8 @@ package net.greghaines.jesque;
 
 import java.io.Serializable;
 import java.util.Date;
-
+import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import net.greghaines.jesque.utils.JesqueUtils;
 
 /**
  * A bean to hold information about the status of a Worker.
@@ -158,10 +156,9 @@ public class WorkerStatus implements Serializable {
             equal = true;
         } else if (obj instanceof WorkerStatus) {
             final WorkerStatus other = (WorkerStatus) obj;
-            equal = ((this.paused == other.paused)
-                    && JesqueUtils.nullSafeEquals(this.queue, other.queue)
-                    && JesqueUtils.nullSafeEquals(this.runAt, other.runAt)
-                    && JesqueUtils.nullSafeEquals(this.payload, other.payload));
+            equal = ((this.paused == other.paused) && Objects.equals(this.queue, other.queue)
+                    && Objects.equals(this.runAt, other.runAt)
+                    && Objects.equals(this.payload, other.payload));
         }
         return equal;
     }

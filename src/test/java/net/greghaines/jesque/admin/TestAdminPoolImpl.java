@@ -1,10 +1,10 @@
 package net.greghaines.jesque.admin;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
-import static net.greghaines.jesque.utils.JesqueUtils.set;
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.jmock.Mockery;
 import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.jmock.integration.junit4.JUnit4Mockery;
@@ -59,14 +59,15 @@ public class TestAdminPoolImpl {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_FourArg_NullJobFactory() {
-        new AdminPoolImpl(CONFIG, set(ADMIN_CHANNEL), null, null);
+        new AdminPoolImpl(CONFIG, Set.of(ADMIN_CHANNEL), null, null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_FourArg_NullPool() {
-        new AdminImpl(CONFIG, set(ADMIN_CHANNEL),
-                new MapBasedJobFactory(map(entry("PauseCommand", PauseCommand.class),
-                        entry("ShutdownCommand", ShutdownCommand.class))),
+        new AdminImpl(CONFIG, Set.of(ADMIN_CHANNEL),
+                new MapBasedJobFactory(
+                        Map.of(PauseCommand.class.getSimpleName(), PauseCommand.class,
+                                ShutdownCommand.class.getSimpleName(), ShutdownCommand.class)),
                 null);
     }
 
@@ -77,12 +78,14 @@ public class TestAdminPoolImpl {
 
     @Test(expected = IllegalArgumentException.class)
     public void testSetChannels_NullChannel() {
-        new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(set((String) null));
+        final Set<String> channels = new HashSet<>();
+        channels.add(null);
+        new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(channels);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testSetChannels_EmptyChannel() {
-        new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(set(""));
+        new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(Set.of(""));
     }
 
     @Test(expected = IllegalArgumentException.class)

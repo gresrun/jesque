@@ -6,8 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.Callable;
 
 import net.greghaines.jesque.Job;
@@ -38,34 +36,6 @@ public class TestJesqueUtils {
     public void testCreateKey_Iterable() {
         Assert.assertEquals("foo:bar:baz",
                 JesqueUtils.createKey("foo", Arrays.asList("bar", "baz")));
-    }
-
-    @Test
-    public void testSet() {
-        final Set<String> set = JesqueUtils.set("foo", "bar", "baz", "foo");
-        Assert.assertNotNull(set);
-        Assert.assertEquals(3, set.size());
-        Assert.assertTrue(set.containsAll(Arrays.asList("foo", "bar", "baz")));
-    }
-
-    @Test
-    public void testEntry() {
-        final Entry<String, String> entry = JesqueUtils.entry("foo", "bar");
-        Assert.assertNotNull(entry);
-        Assert.assertEquals("foo", entry.getKey());
-        Assert.assertEquals("bar", entry.getValue());
-    }
-
-    @Test
-    public void testMap() {
-        final Entry<String, String> entry1 = JesqueUtils.entry("foo", "bar");
-        final Entry<String, String> entry2 = JesqueUtils.entry("baz", "quz");
-        final Entry<String, String> entry3 = JesqueUtils.entry("foo", "quz");
-        final Map<String, String> map = JesqueUtils.map(entry1, entry2, entry3);
-        Assert.assertNotNull(map);
-        Assert.assertEquals(2, map.size());
-        Assert.assertEquals("quz", map.get("foo"));
-        Assert.assertEquals("quz", map.get("baz"));
     }
 
     @Test
@@ -166,19 +136,6 @@ public class TestJesqueUtils {
         Assert.assertFalse(JesqueUtils.equal(ex1, ex2));
         ex2 = new RuntimeException("foo", new Exception());
         Assert.assertTrue(JesqueUtils.equal(ex1, ex2));
-    }
-
-    @Test
-    public void testNullSafeEquals() {
-        final String str1 = "foo";
-        final String str2 = "foo";
-        final String str3 = "bar";
-        Assert.assertTrue(JesqueUtils.nullSafeEquals(null, null));
-        Assert.assertFalse(JesqueUtils.nullSafeEquals(str1, null));
-        Assert.assertFalse(JesqueUtils.nullSafeEquals(null, str1));
-        Assert.assertTrue(JesqueUtils.nullSafeEquals(str1, str1));
-        Assert.assertTrue(JesqueUtils.nullSafeEquals(str1, str2));
-        Assert.assertFalse(JesqueUtils.nullSafeEquals(str1, str3));
     }
 
     public static class TestRunnableJob implements Runnable {

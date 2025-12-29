@@ -15,9 +15,8 @@ package net.greghaines.jesque.meta;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
-
-import net.greghaines.jesque.utils.JesqueUtils;
 
 /**
  * Information about a key in Redis.
@@ -164,11 +163,11 @@ public class KeyInfo implements Comparable<KeyInfo>, Serializable {
             equal = true;
         } else if (obj instanceof KeyInfo) {
             final KeyInfo other = (KeyInfo) obj;
-            equal = (JesqueUtils.nullSafeEquals(this.arrayValue, other.arrayValue)
-                    && JesqueUtils.nullSafeEquals(this.name, other.name)
-                    && JesqueUtils.nullSafeEquals(this.namespace, other.namespace)
-                    && JesqueUtils.nullSafeEquals(this.size, other.size)
-                    && JesqueUtils.nullSafeEquals(this.type, other.type));
+            equal = (Objects.equals(this.arrayValue, other.arrayValue)
+                    && Objects.equals(this.name, other.name)
+                    && Objects.equals(this.namespace, other.namespace)
+                    && Objects.equals(this.size, other.size)
+                    && Objects.equals(this.type, other.type));
         }
         return equal;
     }

@@ -19,8 +19,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import net.greghaines.jesque.utils.JesqueUtils;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -272,9 +271,9 @@ public class Job implements Serializable {
             equal = true;
         } else if (obj instanceof Job) {
             final Job other = (Job) obj;
-            equal = (JesqueUtils.nullSafeEquals(this.className, other.className)
+            equal = (Objects.equals(this.className, other.className)
                     && Arrays.equals(this.args, other.args)
-                    && JesqueUtils.nullSafeEquals(this.vars, other.vars));
+                    && Objects.equals(this.vars, other.vars));
         }
         return equal;
     }

@@ -15,8 +15,11 @@ package net.greghaines.jesque.admin;
 
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
 import static net.greghaines.jesque.utils.ResqueConstants.CHANNEL;
+
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
+import net.greghaines.jesque.admin.commands.PauseCommand;
+import net.greghaines.jesque.admin.commands.ShutdownCommand;
 import net.greghaines.jesque.json.ObjectMapperFactory;
 import net.greghaines.jesque.utils.JesqueUtils;
 
@@ -51,7 +54,7 @@ public abstract class AbstractAdminClient implements AdminClient {
      */
     @Override
     public void shutdownWorkers(final boolean now) {
-        publish(new Job("ShutdownCommand", now));
+        publish(new Job(ShutdownCommand.class.getSimpleName(), now));
     }
 
     /**
@@ -59,7 +62,7 @@ public abstract class AbstractAdminClient implements AdminClient {
      */
     @Override
     public void shutdownWorkers(final String channel, final boolean now) {
-        publish(channel, new Job("ShutdownCommand", now));
+        publish(channel, new Job(ShutdownCommand.class.getSimpleName(), now));
     }
 
     /**
@@ -67,7 +70,7 @@ public abstract class AbstractAdminClient implements AdminClient {
      */
     @Override
     public void togglePausedWorkers(final boolean paused) {
-        publish(new Job("PauseCommand", paused));
+        publish(new Job(PauseCommand.class.getSimpleName(), paused));
     }
 
     /**
@@ -75,7 +78,7 @@ public abstract class AbstractAdminClient implements AdminClient {
      */
     @Override
     public void togglePausedWorkers(final String channel, final boolean paused) {
-        publish(channel, new Job("PauseCommand", paused));
+        publish(channel, new Job(PauseCommand.class.getSimpleName(), paused));
     }
 
     /**

@@ -16,7 +16,7 @@ package net.greghaines.jesque;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
-
+import java.util.Objects;
 import net.greghaines.jesque.utils.JesqueUtils;
 
 import org.slf4j.Logger;
@@ -274,15 +274,15 @@ public class JobFailure implements Serializable {
             equal = true;
         } else if (obj instanceof JobFailure) {
             final JobFailure other = (JobFailure) obj;
-            equal = (JesqueUtils.nullSafeEquals(this.queue, other.queue)
-                    && JesqueUtils.nullSafeEquals(this.worker, other.worker)
-                    && JesqueUtils.nullSafeEquals(this.throwableString, other.throwableString)
-                    && JesqueUtils.nullSafeEquals(this.error, other.error)
-                    && JesqueUtils.nullSafeEquals(this.failedAt, other.failedAt)
-                    && JesqueUtils.nullSafeEquals(this.retriedAt, other.retriedAt)
+            equal = (Objects.equals(this.queue, other.queue)
+                    && Objects.equals(this.worker, other.worker)
+                    && Objects.equals(this.throwableString, other.throwableString)
+                    && Objects.equals(this.error, other.error)
+                    && Objects.equals(this.failedAt, other.failedAt)
+                    && Objects.equals(this.retriedAt, other.retriedAt)
                     && JesqueUtils.equal(this.throwable, other.throwable)
-                    && JesqueUtils.nullSafeEquals(this.payload, other.payload)
-                    && JesqueUtils.nullSafeEquals(this.backtrace, other.backtrace));
+                    && Objects.equals(this.payload, other.payload)
+                    && Objects.equals(this.backtrace, other.backtrace));
         }
         return equal;
     }

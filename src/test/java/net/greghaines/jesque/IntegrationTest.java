@@ -15,8 +15,6 @@ package net.greghaines.jesque;
 
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
 import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
 import static net.greghaines.jesque.utils.ResqueConstants.STAT;
@@ -165,10 +163,10 @@ public class IntegrationTest {
     @Ignore
     @Test
     public void unpermittedJob() {
-        final Job job = new Job("TestAction",
+        final Job job = new Job(TestAction.class.getSimpleName(),
                 new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
         final AtomicBoolean didFailWithUnpermittedJob = new AtomicBoolean(false);
-        doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)),
+        doWork(Arrays.asList(job), Map.of(FailAction.class.getSimpleName(), FailAction.class),
                 new WorkerListener() {
                     public void onEvent(final WorkerEvent event, final Worker worker,
                             final String queue, final Job job, final Object runner,
@@ -187,10 +185,11 @@ public class IntegrationTest {
     }
 
     private static void assertSuccess(final WorkerListener listener, final WorkerEvent... events) {
-        final Job job = new Job("TestAction",
+        final Job job = new Job(TestAction.class.getSimpleName(),
                 new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 
-        doWork(Arrays.asList(job), map(entry("TestAction", TestAction.class)), listener, events);
+        doWork(Arrays.asList(job), Map.of(TestAction.class.getSimpleName(), TestAction.class),
+                listener, events);
 
         try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
@@ -199,9 +198,10 @@ public class IntegrationTest {
     }
 
     private static void assertFailure(final WorkerListener listener, final WorkerEvent... events) {
-        final Job job = new Job("FailAction");
+        final Job job = new Job(FailAction.class.getSimpleName());
 
-        doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)), listener, events);
+        doWork(Arrays.asList(job), Map.of(FailAction.class.getSimpleName(), FailAction.class),
+                listener, events);
 
         try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
@@ -210,16 +210,16 @@ public class IntegrationTest {
     }
 
     private static void assertMixed(final WorkerListener listener, final WorkerEvent... events) {
-        final Job job1 = new Job("FailAction");
-        final Job job2 = new Job("TestAction",
+        final Job job1 = new Job(FailAction.class.getSimpleName());
+        final Job job2 = new Job(TestAction.class.getSimpleName(),
                 new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
-        final Job job3 = new Job("FailAction");
-        final Job job4 = new Job("TestAction",
+        final Job job3 = new Job(FailAction.class.getSimpleName());
+        final Job job4 = new Job(TestAction.class.getSimpleName(),
                 new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 
-        doWork(Arrays.asList(job1, job2, job3, job4),
-                map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)),
-                listener, events);
+        doWork(Arrays.asList(job1, job2, job3, job4), Map.of(FailAction.class.getSimpleName(),
+                FailAction.class, TestAction.class.getSimpleName(), TestAction.class), listener,
+                events);
 
         try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
@@ -229,15 +229,16 @@ public class IntegrationTest {
 
     private static void assertBatchMixed(final WorkerListener listener,
             final WorkerEvent... events) {
-        final Job job1 = new Job("FailAction");
-        final Job job2 = new Job("TestAction",
+        final Job job1 = new Job(FailAction.class.getSimpleName());
+        final Job job2 = new Job(TestAction.class.getSimpleName(),
                 new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
-        final Job job3 = new Job("FailAction");
-        final Job job4 = new Job("TestAction",
+        final Job job3 = new Job(FailAction.class.getSimpleName());
+        final Job job4 = new Job(TestAction.class.getSimpleName(),
                 new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 
-        doBatchWork(Arrays.asList(job1, job2, job3, job4),
-                map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)),
+        doBatchWork(
+                Arrays.asList(job1, job2, job3, job4), Map.of(FailAction.class.getSimpleName(),
+                        FailAction.class, TestAction.class.getSimpleName(), TestAction.class),
                 listener, events);
 
         try (Jedis jedis = createJedis(CONFIG)) {

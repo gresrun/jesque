@@ -1,9 +1,10 @@
 package net.greghaines.jesque.admin;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
-import static net.greghaines.jesque.utils.JesqueUtils.set;
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.admin.commands.PauseCommand;
 import net.greghaines.jesque.admin.commands.ShutdownCommand;
@@ -36,7 +37,7 @@ public class TestAdminImpl {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_ThreeArg_NullJobFactory() {
-        new AdminImpl(CONFIG, set(ADMIN_CHANNEL), null);
+        new AdminImpl(CONFIG, Set.of(ADMIN_CHANNEL), null);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -51,14 +52,15 @@ public class TestAdminImpl {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_FourArg_NullJobFactory() {
-        new AdminImpl(CONFIG, set(ADMIN_CHANNEL), null, null);
+        new AdminImpl(CONFIG, Set.of(ADMIN_CHANNEL), null, null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_FourArg_NullJedis() {
-        new AdminImpl(CONFIG, set(ADMIN_CHANNEL),
-                new MapBasedJobFactory(map(entry("PauseCommand", PauseCommand.class),
-                        entry("ShutdownCommand", ShutdownCommand.class))),
+        new AdminImpl(CONFIG, Set.of(ADMIN_CHANNEL),
+                new MapBasedJobFactory(
+                        Map.of(PauseCommand.class.getSimpleName(), PauseCommand.class,
+                                ShutdownCommand.class.getSimpleName(), ShutdownCommand.class)),
                 null);
     }
 
@@ -69,12 +71,14 @@ public class TestAdminImpl {
 
     @Test(expected = IllegalArgumentException.class)
     public void testSetChannels_NullChannel() {
-        new AdminImpl(CONFIG).setChannels(set((String) null));
+        final Set<String> channels = new HashSet<>();
+        channels.add(null);
+        new AdminImpl(CONFIG).setChannels(channels);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testSetChannels_EmptyChannel() {
-        new AdminImpl(CONFIG).setChannels(set(""));
+        new AdminImpl(CONFIG).setChannels(Set.of(""));
     }
 
     @Test(expected = IllegalArgumentException.class)

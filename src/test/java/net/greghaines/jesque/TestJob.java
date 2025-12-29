@@ -1,8 +1,5 @@
 package net.greghaines.jesque;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
-
 import java.util.Arrays;
 import java.util.Map;
 
@@ -23,22 +20,22 @@ public class TestJob {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NamedArgs_NullName() {
-        new Job(null, map(entry("foo", "bar")));
+        new Job(null, Map.of("foo", "bar"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NamedArgs_EmptyName() {
-        new Job("", map(entry("foo", "bar")));
+        new Job("", Map.of("foo", "bar"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_AllArgs_NullName() {
-        new Job(null, new Object[] {true, 1}, map(entry("foo", "bar")));
+        new Job(null, new Object[] {true, 1}, Map.of("foo", "bar"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_AllArgs_EmptyName() {
-        new Job("", new Object[] {true, 1}, map(entry("foo", "bar")));
+        new Job("", new Object[] {true, 1}, Map.of("foo", "bar"));
     }
 
     @Test
@@ -84,7 +81,7 @@ public class TestJob {
     @Test
     public void testConstructor_NamedArgs() {
         final String className = "foo";
-        final Map<String, ? extends Object> vars = map(entry("foo", "bar"), entry("baz", 123));
+        final Map<String, ? extends Object> vars = Map.of("foo", "bar", "baz", 123);
         final Job job = new Job(className, vars);
         Assert.assertEquals(className, job.getClassName());
         Assert.assertNull(job.getArgs());
@@ -97,7 +94,7 @@ public class TestJob {
     public void testConstructor_AllArgs() {
         final String className = "foo";
         final Object[] args = {1, 2.0};
-        final Map<String, ? extends Object> vars = map(entry("foo", "bar"), entry("baz", 123));
+        final Map<String, ? extends Object> vars = Map.of("foo", "bar", "baz", 123);
         final Job job = new Job(className, args, vars);
         Assert.assertEquals(className, job.getClassName());
         Assert.assertNotNull(job.getArgs());
@@ -111,7 +108,7 @@ public class TestJob {
     public void testConstructor_Clone() {
         final String className = "foo";
         final Object[] args = {1, 2.0};
-        final Map<String, ? extends Object> vars = map(entry("foo", "bar"), entry("baz", 123));
+        final Map<String, ? extends Object> vars = Map.of("foo", "bar", "baz", 123);
         final Job protoJob = new Job(className, args, vars);
         final Job job = new Job(protoJob);
         Assert.assertEquals(className, job.getClassName());
@@ -141,7 +138,7 @@ public class TestJob {
         final String className2 = "";
         final Object arg1 = 1;
         final Object arg2 = 2.0;
-        final Map<String, ? extends Object> vars = map(entry("foo", "bar"), entry("baz", 123));
+        final Map<String, ? extends Object> vars = Map.of("foo", "bar", "baz", 123);
         final Job job = new Job();
         Assert.assertNull(job.getClassName());
         Assert.assertNull(job.getArgs());
@@ -181,7 +178,7 @@ public class TestJob {
         Assert.assertFalse(job1.equals(job2));
         job1.setArgs(arg1, arg2);
         TestUtils.assertFullyEquals(job1, job2);
-        final Map<String, ? extends Object> vars = map(entry("foo", "bar"), entry("baz", 123));
+        final Map<String, ? extends Object> vars = Map.of("foo", "bar", "baz", 123);
         job2.setVars(vars);
         Assert.assertFalse(job1.equals(job2));
         job1.setVars(vars);

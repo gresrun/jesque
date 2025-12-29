@@ -14,10 +14,10 @@
 package net.greghaines.jesque.meta;
 
 import net.greghaines.jesque.Job;
-import net.greghaines.jesque.utils.JesqueUtils;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Information about the current state of a queue.
@@ -137,11 +137,10 @@ public class QueueInfo implements Comparable<QueueInfo>, Serializable {
             equal = true;
         } else if (obj instanceof QueueInfo) {
             final QueueInfo other = (QueueInfo) obj;
-            equal = (JesqueUtils.nullSafeEquals(this.jobs, other.jobs)
-                    && JesqueUtils.nullSafeEquals(this.name, other.name)
-                    && JesqueUtils.nullSafeEquals(this.size, other.size)
-                    && JesqueUtils.nullSafeEquals(this.delayed, other.delayed)
-                    && JesqueUtils.nullSafeEquals(this.pending, other.pending));
+            equal = (Objects.equals(this.jobs, other.jobs) && Objects.equals(this.name, other.name)
+                    && Objects.equals(this.size, other.size)
+                    && Objects.equals(this.delayed, other.delayed)
+                    && Objects.equals(this.pending, other.pending));
         }
         return equal;
     }

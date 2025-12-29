@@ -13,13 +13,10 @@
  */
 package net.greghaines.jesque.json;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
-
+import java.util.Map;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
@@ -40,12 +37,11 @@ public class TestJsonSerialization {
         assertSerializeRoundTrip(new Job("foo"));
         assertSerializeRoundTrip(new Job("TestAction",
                 new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)}));
-        assertSerializeRoundTrip(new Job("TestAction", map(entry("foo", "bar"), entry("baz", 123),
-                entry("key3", Arrays.asList("inner2", 6.7, false)))));
+        assertSerializeRoundTrip(new Job("TestAction",
+                Map.of("foo", "bar", "baz", 123, "key3", Arrays.asList("inner2", 6.7, false))));
         assertSerializeRoundTrip(new Job("TestAction",
                 new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)},
-                map(entry("foo", "bar"), entry("baz", 123),
-                        entry("key3", Arrays.asList("inner2", 6.7, false)))));
+                Map.of("foo", "bar", "baz", 123, "key3", Arrays.asList("inner2", 6.7, false))));
     }
 
     @Test

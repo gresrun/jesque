@@ -1,9 +1,8 @@
 package net.greghaines.jesque;
 
 import static net.greghaines.jesque.TestUtils.createJedis;
+import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
 import static net.greghaines.jesque.utils.ResqueConstants.PROCESSED;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
@@ -12,8 +11,6 @@ import static net.greghaines.jesque.utils.ResqueConstants.STAT;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
-
-import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 
@@ -60,14 +57,14 @@ public class DelayedQueueTest {
         }
 
         // Create and start worker
-        final Worker worker = new WorkerImpl(config, Arrays.asList(delayTestQueue),
-                new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
+        final Worker worker =
+                new WorkerImpl(config, Arrays.asList(delayTestQueue), createTestActionJobFactory());
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
         // start second thread
-        final Worker worker2 = new WorkerImpl(config, Arrays.asList(testQueue),
-                new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
+        final Worker worker2 =
+                new WorkerImpl(config, Arrays.asList(testQueue), createTestActionJobFactory());
         final Thread workerThread2 = new Thread(worker2);
         workerThread2.start();
 

@@ -1,7 +1,6 @@
 package net.greghaines.jesque.worker;
 
-import static net.greghaines.jesque.utils.JesqueUtils.entry;
-import static net.greghaines.jesque.utils.JesqueUtils.map;
+import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,7 +14,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import net.greghaines.jesque.Config;
-import net.greghaines.jesque.TestAction;
 import redis.clients.jedis.Jedis;
 
 public class TestWorkerImpl {
@@ -39,14 +37,13 @@ public class TestWorkerImpl {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullJedis() {
-        new WorkerImpl(CONFIG, Collections.<String>emptyList(),
-                new MapBasedJobFactory(map(entry("Test", TestAction.class))), null);
+        new WorkerImpl(CONFIG, Collections.<String>emptyList(), createTestActionJobFactory(), null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullNextQueueStrategy() {
-        new WorkerImpl(CONFIG, Collections.<String>emptyList(),
-                new MapBasedJobFactory(map(entry("Test", TestAction.class))), getJedis(), null);
+        new WorkerImpl(CONFIG, Collections.<String>emptyList(), createTestActionJobFactory(),
+                getJedis(), null);
     }
 
     @Test
