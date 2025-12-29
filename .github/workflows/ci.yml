@@ -32,7 +32,7 @@ jobs:
       run: mvn clean test jacoco:report -Dgithub=true
 
     - name: Upload Test Coverage Report
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./target/site/jacoco/jacoco.xml
