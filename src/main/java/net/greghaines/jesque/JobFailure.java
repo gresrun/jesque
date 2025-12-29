@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque;
 
@@ -33,7 +31,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author Greg Haines
  */
 public class JobFailure implements Serializable {
-    
+
     private static final long serialVersionUID = -2160045729341301316L;
     private static final Logger LOG = LoggerFactory.getLogger(JobFailure.class);
 
@@ -63,10 +61,8 @@ public class JobFailure implements Serializable {
     /**
      * Cloning constructor.
      * 
-     * @param origFailure
-     *            the failure to start from
-     * @throws IllegalArgumentException
-     *             if the origFailure is null
+     * @param origFailure the failure to start from
+     * @throws IllegalArgumentException if the origFailure is null
      */
     public JobFailure(final JobFailure origFailure) {
         if (origFailure == null) {
@@ -93,8 +89,7 @@ public class JobFailure implements Serializable {
     /**
      * Set the name of the worker where the job failed.
      * 
-     * @param worker
-     *            the name of the worker
+     * @param worker the name of the worker
      */
     public void setWorker(final String worker) {
         this.worker = worker;
@@ -110,8 +105,7 @@ public class JobFailure implements Serializable {
     /**
      * Set the queue the job came from.
      * 
-     * @param queue
-     *            the queue the job came from
+     * @param queue the queue the job came from
      */
     public void setQueue(final String queue) {
         this.queue = queue;
@@ -127,8 +121,7 @@ public class JobFailure implements Serializable {
     /**
      * Set the job.
      * 
-     * @param payload
-     *            the job
+     * @param payload the job
      */
     public void setPayload(final Job payload) {
         this.payload = payload;
@@ -144,8 +137,7 @@ public class JobFailure implements Serializable {
     /**
      * Set the throwable that occurred.
      * 
-     * @param throwable
-     *            the kind of throwable that occurred
+     * @param throwable the kind of throwable that occurred
      */
     public void setThrowable(final Throwable throwable) {
         this.throwable = throwable;
@@ -156,14 +148,14 @@ public class JobFailure implements Serializable {
      */
     @JsonProperty("exception")
     public String getThrowableString() {
-        return (this.throwable == null) ? this.throwableString : this.throwable.getClass().getName();
+        return (this.throwable == null) ? this.throwableString
+                : this.throwable.getClass().getName();
     }
 
     /**
      * Set the exception that occurred.
      * 
-     * @param throwableString
-     *            the kind of exception that occurred as a string
+     * @param throwableString the kind of exception that occurred as a string
      */
     @JsonProperty("exception")
     public void setThrowableString(final String throwableString) {
@@ -182,8 +174,7 @@ public class JobFailure implements Serializable {
     /**
      * Set the error that occurred
      * 
-     * @param error
-     *            the error that occurred
+     * @param error the error that occurred
      */
     @JsonProperty
     public void setError(final String error) {
@@ -196,14 +187,14 @@ public class JobFailure implements Serializable {
      */
     @JsonProperty
     public List<String> getBacktrace() {
-        return (this.throwable == null) ? this.backtrace : JesqueUtils.createBacktrace(this.throwable);
+        return (this.throwable == null) ? this.backtrace
+                : JesqueUtils.createBacktrace(this.throwable);
     }
 
     /**
      * Set the backtrace of the throwable
      * 
-     * @param backtrace
-     *            the backtrace of the throwable
+     * @param backtrace the backtrace of the throwable
      */
     @JsonProperty
     public void setBacktrace(final List<String> backtrace) {
@@ -221,8 +212,7 @@ public class JobFailure implements Serializable {
     /**
      * Set when the error occurred.
      * 
-     * @param failedAt
-     *            when the error occurred
+     * @param failedAt when the error occurred
      */
     public void setFailedAt(final Date failedAt) {
         this.failedAt = failedAt;
@@ -238,8 +228,7 @@ public class JobFailure implements Serializable {
     /**
      * Set when the job was retried.
      * 
-     * @param retriedAt
-     *            when the job was retried
+     * @param retriedAt when the job was retried
      */
     public void setRetriedAt(final Date retriedAt) {
         this.retriedAt = retriedAt;
@@ -250,8 +239,9 @@ public class JobFailure implements Serializable {
      */
     @Override
     public String toString() {
-        return "JobFailure [worker=" + this.worker + ", queue=" + this.queue+ ", payload=" + this.payload
-            + ", throwable=" + this.throwable + ", failedAt=" + this.failedAt + ", retriedAt=" + this.retriedAt + "]";
+        return "JobFailure [worker=" + this.worker + ", queue=" + this.queue + ", payload="
+                + this.payload + ", throwable=" + this.throwable + ", failedAt=" + this.failedAt
+                + ", retriedAt=" + this.retriedAt + "]";
     }
 
     /**
@@ -267,7 +257,8 @@ public class JobFailure implements Serializable {
         result = prime * result + ((this.payload == null) ? 0 : this.payload.hashCode());
         result = prime * result + ((this.worker == null) ? 0 : this.worker.hashCode());
         result = prime * result + ((this.queue == null) ? 0 : this.queue.hashCode());
-        result = prime * result + ((this.throwableString == null) ? 0 : this.throwableString.hashCode());
+        result = prime * result
+                + ((this.throwableString == null) ? 0 : this.throwableString.hashCode());
         result = prime * result + ((this.error == null) ? 0 : this.error.hashCode());
         result = prime * result + ((this.backtrace == null) ? 0 : this.backtrace.hashCode());
         return result;
@@ -295,13 +286,15 @@ public class JobFailure implements Serializable {
         }
         return equal;
     }
-    
+
     private void tryCreateThrowable() {
-        if (this.throwable == null && this.throwableString != null && this.error != null && this.backtrace != null) {
+        if (this.throwable == null && this.throwableString != null && this.error != null
+                && this.backtrace != null) {
             try {
-                this.throwable = JesqueUtils.recreateThrowable(this.throwableString, this.error, this.backtrace);
+                this.throwable = JesqueUtils.recreateThrowable(this.throwableString, this.error,
+                        this.backtrace);
             } catch (Exception e) {
-                LOG.warn("Error while recreating throwable: " + this.throwableString + " " 
+                LOG.warn("Error while recreating throwable: " + this.throwableString + " "
                         + this.error + " " + this.backtrace, e);
             }
         }

@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque;
 
@@ -28,7 +26,7 @@ import net.greghaines.jesque.utils.JesqueUtils;
  * @author Greg Haines
  */
 public class WorkerStatus implements Serializable {
-    
+
     private static final long serialVersionUID = 1852915628988733048L;
 
     @JsonProperty("run_at")
@@ -50,10 +48,8 @@ public class WorkerStatus implements Serializable {
     /**
      * Cloning constructor.
      * 
-     * @param origStatus
-     *            the status to start from
-     * @throws IllegalArgumentException
-     *             if the origStatus is null
+     * @param origStatus the status to start from
+     * @throws IllegalArgumentException if the origStatus is null
      */
     public WorkerStatus(final WorkerStatus origStatus) {
         if (origStatus == null) {
@@ -75,8 +71,7 @@ public class WorkerStatus implements Serializable {
     /**
      * Set when the Worker started on the current job.
      * 
-     * @param runAt
-     *            when the Worker started on the current job
+     * @param runAt when the Worker started on the current job
      */
     public void setRunAt(final Date runAt) {
         this.runAt = runAt;
@@ -92,8 +87,7 @@ public class WorkerStatus implements Serializable {
     /**
      * Set which queue the current job came from.
      * 
-     * @param queue
-     *            which queue the current job came from
+     * @param queue which queue the current job came from
      */
     public void setQueue(final String queue) {
         this.queue = queue;
@@ -109,8 +103,7 @@ public class WorkerStatus implements Serializable {
     /**
      * Set the job.
      * 
-     * @param payload
-     *            the job
+     * @param payload the job
      */
     public void setPayload(final Job payload) {
         this.payload = payload;
@@ -126,8 +119,7 @@ public class WorkerStatus implements Serializable {
     /**
      * Sets whether the worker is paused.
      * 
-     * @param paused
-     *            whether the worker is paused
+     * @param paused whether the worker is paused
      */
     public void setPaused(final boolean paused) {
         this.paused = paused;
@@ -138,8 +130,8 @@ public class WorkerStatus implements Serializable {
      */
     @Override
     public String toString() {
-        return "WorkerStatus [queue=" + this.queue + ", runAt=" + this.runAt 
-            + ", paused=" + Boolean.toString(this.paused) + ", payload=" + this.payload + "]";
+        return "WorkerStatus [queue=" + this.queue + ", runAt=" + this.runAt + ", paused="
+                + Boolean.toString(this.paused) + ", payload=" + this.payload + "]";
     }
 
     /**

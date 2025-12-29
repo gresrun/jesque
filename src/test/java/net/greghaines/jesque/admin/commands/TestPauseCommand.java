@@ -14,7 +14,7 @@ import org.junit.Test;
  */
 public class TestPauseCommand {
 
-    @Test(expected=IllegalStateException.class)
+    @Test(expected = IllegalStateException.class)
     public void testRun_NoWorker() {
         final PauseCommand pauseCmd = new PauseCommand(false);
         pauseCmd.run();
@@ -25,9 +25,11 @@ public class TestPauseCommand {
         final boolean pause = true;
         final Mockery mockCtx = new JUnit4Mockery();
         final Worker worker = mockCtx.mock(Worker.class);
-        mockCtx.checking(new Expectations(){{
-            oneOf(worker).togglePause(pause);
-        }});
+        mockCtx.checking(new Expectations() {
+            {
+                oneOf(worker).togglePause(pause);
+            }
+        });
         final PauseCommand pauseCmd = new PauseCommand(pause);
         pauseCmd.setWorker(worker);
         pauseCmd.run();

@@ -2,6 +2,7 @@ package net.greghaines.jesque.worker;
 
 /**
  * Strategies to determine the next queue a Worker will poll.
+ * 
  * @author Ofir Naor (ofirnk)
  */
 public enum NextQueueStrategy {

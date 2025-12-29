@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.worker;
 
@@ -58,8 +56,8 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
- * WorkerPoolImpl is an implementation of the Worker interface that uses a connection pool. Obeys the contract of a
- * Resque worker in Redis.
+ * WorkerPoolImpl is an implementation of the Worker interface that uses a connection pool. Obeys
+ * the contract of a Resque worker in Redis.
  */
 public class WorkerPoolImpl implements Worker {
 
@@ -69,7 +67,8 @@ public class WorkerPoolImpl implements Worker {
     protected static final long RECONNECT_SLEEP_TIME = 5000; // 5 sec
     private static final String LPOPLPUSH_LUA = "/workerScripts/jesque_lpoplpush.lua";
     private static final String POP_LUA = "/workerScripts/jesque_pop.lua";
-    private static final String POP_FROM_MULTIPLE_PRIO_QUEUES = "/workerScripts/fromMultiplePriorityQueues.lua";
+    private static final String POP_FROM_MULTIPLE_PRIO_QUEUES =
+            "/workerScripts/fromMultiplePriorityQueues.lua";
 
     // Set the thread name to the message for debugging
     private static volatile boolean threadNameChangingEnabled = false;
@@ -86,8 +85,8 @@ public class WorkerPoolImpl implements Worker {
      * Enable/disable worker thread renaming during normal operation. (Disabled by default)
      * <p>
      * <strong>Warning: Enabling this feature is very expensive CPU-wise!</strong><br>
-     * This feature is designed to assist in debugging worker state but should be disabled in production environments
-     * for performance reasons.
+     * This feature is designed to assist in debugging worker state but should be disabled in
+     * production environments for performance reasons.
      * </p>
      * 
      * @param enabled whether threads' names should change during normal operation
@@ -123,34 +122,37 @@ public class WorkerPoolImpl implements Worker {
     private final AtomicBoolean processingJob = new AtomicBoolean(false);
     private final AtomicReference<String> popScriptHash = new AtomicReference<>(null);
     private final AtomicReference<String> lpoplpushScriptHash = new AtomicReference<>(null);
-    private final AtomicReference<String> multiPriorityQueuesScriptHash = new AtomicReference<>(null);
+    private final AtomicReference<String> multiPriorityQueuesScriptHash =
+            new AtomicReference<>(null);
     private final long workerId = WORKER_COUNTER.getAndIncrement();
-    private final String threadNameBase = "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
+    private final String threadNameBase =
+            "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
-    private final AtomicReference<ExceptionHandler> exceptionHandlerRef = new AtomicReference<ExceptionHandler>(
-            new DefaultPoolExceptionHandler());
+    private final AtomicReference<ExceptionHandler> exceptionHandlerRef =
+            new AtomicReference<ExceptionHandler>(new DefaultPoolExceptionHandler());
     private final AtomicReference<FailQueueStrategy> failQueueStrategyRef;
     private final JobFactory jobFactory;
 
     /**
      * Creates a new WorkerImpl, with the given connection to Redis.<br>
-     * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
-     * Uses the DRAIN_WHILE_MESSAGES_EXISTS NextQueueStrategy.
+     * The worker will only listen to the supplied queues and execute jobs that are provided by the
+     * given job factory. Uses the DRAIN_WHILE_MESSAGES_EXISTS NextQueueStrategy.
      *
-     * @param config     used to create a connection to Redis and the package prefix for incoming jobs
-     * @param queues     the list of queues to poll
+     * @param config used to create a connection to Redis and the package prefix for incoming jobs
+     * @param queues the list of queues to poll
      * @param jobFactory the job factory that materializes the jobs
-     * @param jedisPool  the Redis connection pool
+     * @param jedisPool the Redis connection pool
      * @throws IllegalArgumentException if either config, queues, jobFactory or jedis is null
      */
-    public WorkerPoolImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory,
-                          final Pool<Jedis> jedisPool) {
+    public WorkerPoolImpl(final Config config, final Collection<String> queues,
+            final JobFactory jobFactory, final Pool<Jedis> jedisPool) {
         this(config, queues, jobFactory, jedisPool, NextQueueStrategy.DRAIN_WHILE_MESSAGES_EXISTS);
     }
 
     /**
      * Creates a new WorkerImpl, with the given connection to Redis.<br>
-     * The worker will only listen to the supplied queues and execute jobs that are provided by the given job factory.
+     * The worker will only listen to the supplied queues and execute jobs that are provided by the
+     * given job factory.
      * 
      * @param config used to create a connection to Redis and the package prefix for incoming jobs
      * @param queues the list of queues to poll
@@ -159,8 +161,9 @@ public class WorkerPoolImpl implements Worker {
      * @param nextQueueStrategy defines worker behavior once it has found messages in a queue
      * @throws IllegalArgumentException if either config, queues, jobFactory or jedis is null
      */
-    public WorkerPoolImpl(final Config config, final Collection<String> queues, final JobFactory jobFactory,
-                          final Pool<Jedis> jedisPool, final NextQueueStrategy nextQueueStrategy) {
+    public WorkerPoolImpl(final Config config, final Collection<String> queues,
+            final JobFactory jobFactory, final Pool<Jedis> jedisPool,
+            final NextQueueStrategy nextQueueStrategy) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -209,8 +212,10 @@ public class WorkerPoolImpl implements Worker {
                     @Override
                     public Void doWork(final Jedis jedis) throws IOException {
                         jedis.sadd(key(WORKERS), name);
-                        jedis.set(key(WORKER, name, STARTED), new SimpleDateFormat(DATE_FORMAT).format(new Date()));
-                        listenerDelegate.fireEvent(WORKER_START, WorkerPoolImpl.this, null, null, null, null, null);
+                        jedis.set(key(WORKER, name, STARTED),
+                                new SimpleDateFormat(DATE_FORMAT).format(new Date()));
+                        listenerDelegate.fireEvent(WORKER_START, WorkerPoolImpl.this, null, null,
+                                null, null, null);
                         loadRedisScripts(jedis);
                         return null;
                     }
@@ -229,8 +234,8 @@ public class WorkerPoolImpl implements Worker {
                     @Override
                     public Void doWork(final Jedis jedis) {
                         jedis.srem(key(WORKERS), name);
-                        jedis.del(key(WORKER, name), key(WORKER, name, STARTED), key(STAT, FAILED, name),
-                                key(STAT, PROCESSED, name));
+                        jedis.del(key(WORKER, name), key(WORKER, name, STARTED),
+                                key(STAT, FAILED, name), key(STAT, PROCESSED, name));
                         return null;
                     }
                 });
@@ -368,15 +373,16 @@ public class WorkerPoolImpl implements Worker {
         this.queueNames.clear();
         if (queues == ALL_QUEUES) { // Using object equality on purpose
             // Like '*' in other clients
-            this.queueNames.addAll(PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Set<String>>() {
-                /**
-                 * {@inheritDoc}
-                 */
-                @Override
-                public Set<String> doWork(final Jedis jedis) {
-                    return jedis.smembers(key(QUEUES));
-                }
-            }));
+            this.queueNames.addAll(PoolUtils.doWorkInPoolNicely(this.jedisPool,
+                    new PoolWork<Jedis, Set<String>>() {
+                        /**
+                         * {@inheritDoc}
+                         */
+                        @Override
+                        public Set<String> doWork(final Jedis jedis) {
+                            return jedis.smembers(key(QUEUES));
+                        }
+                    }));
         } else {
             this.queueNames.addAll(queues);
         }
@@ -453,10 +459,12 @@ public class WorkerPoolImpl implements Worker {
                     checkPaused();
                     // Might have been waiting in poll()/checkPaused() for a while
                     if (RUNNING.equals(this.state.get())) {
-                        this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null, null, null);
+                        this.listenerDelegate.fireEvent(WORKER_POLL, this, curQueue, null, null,
+                                null, null);
                         final String payload = pop(curQueue);
                         if (payload != null) {
-                            process(ObjectMapperFactory.get().readValue(payload, Job.class), curQueue);
+                            process(ObjectMapperFactory.get().readValue(payload, Job.class),
+                                    curQueue);
                             missCount = 0;
                         } else {
                             missCount++;
@@ -501,7 +509,8 @@ public class WorkerPoolImpl implements Worker {
         final String nextQueue;
         switch (this.nextQueueStrategy) {
             case DRAIN_WHILE_MESSAGES_EXISTS:
-                final String nextPollQueue = this.queueNames.poll(EMPTY_QUEUE_SLEEP_TIME, TimeUnit.MILLISECONDS);
+                final String nextPollQueue =
+                        this.queueNames.poll(EMPTY_QUEUE_SLEEP_TIME, TimeUnit.MILLISECONDS);
                 if (nextPollQueue != null) {
                     // Rotate the queues
                     this.queueNames.add(nextPollQueue);
@@ -538,7 +547,8 @@ public class WorkerPoolImpl implements Worker {
                         return (String) jedis.evalsha(popScriptHash.get(), 3, key, inflightKey,
                                 JesqueUtils.createRecurringHashKey(key), now);
                     case RESET_TO_HIGHEST_PRIORITY:
-                        return (String) jedis.evalsha(multiPriorityQueuesScriptHash.get(), 3, curQueue, inflightKey, namespace, now);
+                        return (String) jedis.evalsha(multiPriorityQueuesScriptHash.get(), 3,
+                                curQueue, inflightKey, namespace, now);
                     default:
                         throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
                 }
@@ -553,31 +563,36 @@ public class WorkerPoolImpl implements Worker {
      * @param ex the exception that was thrown
      */
     protected void recoverFromException(final String curQueue, final Exception ex) {
-        final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, ex, curQueue);
+        final RecoveryStrategy recoveryStrategy =
+                this.exceptionHandlerRef.get().onException(this, ex, curQueue);
         switch (recoveryStrategy) {
-        case RECONNECT:
-            if (ex instanceof JedisNoScriptException) {
-                LOG.info("Got JedisNoScriptException while reconnecting, reloading Redis scripts");
-                loadRedisScripts();
-            } else {
-                LOG.info("Waiting " + RECONNECT_SLEEP_TIME + "ms for pool to reconnect to redis", ex);
-                try {
-                    Thread.sleep(RECONNECT_SLEEP_TIME);
-                } catch (InterruptedException e) {
+            case RECONNECT:
+                if (ex instanceof JedisNoScriptException) {
+                    LOG.info(
+                            "Got JedisNoScriptException while reconnecting, reloading Redis scripts");
+                    loadRedisScripts();
+                } else {
+                    LOG.info(
+                            "Waiting " + RECONNECT_SLEEP_TIME + "ms for pool to reconnect to redis",
+                            ex);
+                    try {
+                        Thread.sleep(RECONNECT_SLEEP_TIME);
+                    } catch (InterruptedException e) {
+                    }
                 }
-            }
-            break;
-        case TERMINATE:
-            LOG.warn("Terminating in response to exception", ex);
-            end(false);
-            break;
-        case PROCEED:
-            this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, ex);
-            break;
-        default:
-            LOG.error("Unknown RecoveryStrategy: " + recoveryStrategy
-                    + " while attempting to recover from the following exception; worker proceeding...", ex);
-            break;
+                break;
+            case TERMINATE:
+                LOG.warn("Terminating in response to exception", ex);
+                end(false);
+                break;
+            case PROCEED:
+                this.listenerDelegate.fireEvent(WORKER_ERROR, this, curQueue, null, null, null, ex);
+                break;
+            default:
+                LOG.error("Unknown RecoveryStrategy: " + recoveryStrategy
+                        + " while attempting to recover from the following exception; worker proceeding...",
+                        ex);
+                break;
         }
     }
 
@@ -686,7 +701,8 @@ public class WorkerPoolImpl implements Worker {
      * @throws Exception if the instance is a {@link Callable} and throws an exception
      * @return result of the execution
      */
-    protected Object execute(final Job job, final String curQueue, final Object instance) throws Exception {
+    protected Object execute(final Job job, final String curQueue, final Object instance)
+            throws Exception {
         if (instance instanceof WorkerAware) {
             ((WorkerAware) instance).setWorker(this);
         }
@@ -698,8 +714,8 @@ public class WorkerPoolImpl implements Worker {
             ((Runnable) instance).run(); // The job is executing!
             result = null;
         } else { // Should never happen since we're testing the class earlier
-            throw new ClassCastException(
-                    "Instance must be a Runnable or a Callable: " + instance.getClass().getName() + " - " + instance);
+            throw new ClassCastException("Instance must be a Runnable or a Callable: "
+                    + instance.getClass().getName() + " - " + instance);
         }
         return result;
     }
@@ -712,7 +728,8 @@ public class WorkerPoolImpl implements Worker {
      * @param result the result of the successful execution of the Job
      * @param curQueue the queue the Job came from
      */
-    protected void success(final Job job, final Object runner, final Object result, final String curQueue) {
+    protected void success(final Job job, final Object runner, final Object result,
+            final String curQueue) {
         try {
             PoolUtils.doWorkInPool(this.jedisPool, new PoolWork<Jedis, Void>() {
                 /**
@@ -769,7 +786,8 @@ public class WorkerPoolImpl implements Worker {
         } catch (JedisException je) {
             LOG.warn("Error updating failure stats for throwable=" + thrwbl + " job=" + job, je);
         } catch (IOException ioe) {
-            LOG.warn("Error serializing failure payload for throwable=" + thrwbl + " job=" + job, ioe);
+            LOG.warn("Error serializing failure payload for throwable=" + thrwbl + " job=" + job,
+                    ioe);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -785,7 +803,8 @@ public class WorkerPoolImpl implements Worker {
      * @return the JSON representation of a new JobFailure
      * @throws IOException if there was an error serializing the JobFailure
      */
-    protected String failMsg(final Throwable thrwbl, final String queue, final Job job) throws IOException {
+    protected String failMsg(final Throwable thrwbl, final String queue, final Job job)
+            throws IOException {
         final JobFailure failure = new JobFailure();
         failure.setFailedAt(new Date());
         failure.setWorker(this.name);
@@ -870,7 +889,8 @@ public class WorkerPoolImpl implements Worker {
     protected void loadRedisScripts(Jedis jedis) throws IOException {
         popScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(POP_LUA)));
         lpoplpushScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(LPOPLPUSH_LUA)));
-        multiPriorityQueuesScriptHash.set(jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
+        multiPriorityQueuesScriptHash
+                .set(jedis.scriptLoad(ScriptUtils.readScript(POP_FROM_MULTIPLE_PRIO_QUEUES)));
     }
 
     protected void loadRedisScripts() {

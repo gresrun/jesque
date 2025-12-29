@@ -22,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import redis.clients.jedis.Jedis;
+
 /**
  * Created by Karthik (@argvk) on 4/2/15.
  */
@@ -42,18 +43,19 @@ public class RemoveDelayedQueueTest {
         final List<Job> jobs = new ArrayList<Job>(10);
 
         for (int i = 0; i < 10; i++) {
-            jobs.add(new Job("TestAction", new Object[] { i, 2.3, true, "test", Arrays.asList("inner", 4.5) }));
+            jobs.add(new Job("TestAction",
+                    new Object[] {i, 2.3, true, "test", Arrays.asList("inner", 4.5)}));
         }
 
         TestUtils.delayEnqueueJobs(delayTestQueue, jobs, config);
 
         // set the jobs to be removed from the queue
-        final List<Job> jobsToRemove = jobs.subList(0,5);
+        final List<Job> jobsToRemove = jobs.subList(0, 5);
         TestUtils.removeDelayEnqueueJobs(delayTestQueue, jobsToRemove, config);
 
         try (Jedis jedis = createJedis(config)) { // Assert that we removed jobs are not queued
-            Assert.assertEquals(5L,
-                    jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
+            Assert.assertEquals(5L, jedis.zcount(
+                    createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
         }
 
         // Create and start worker
@@ -76,10 +78,11 @@ public class RemoveDelayedQueueTest {
 
         // Assert that the job was run by the worker
         try (Jedis jedis = createJedis(config)) {
-            Assert.assertEquals(String.valueOf(5), jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
+            Assert.assertEquals(String.valueOf(5),
+                    jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
             Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-            Assert.assertEquals(0L,
-                    jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
+            Assert.assertEquals(0L, jedis.zcount(
+                    createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
         }
     }
 }

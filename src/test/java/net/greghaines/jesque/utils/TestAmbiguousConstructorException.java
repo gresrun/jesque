@@ -20,9 +20,9 @@ public class TestAmbiguousConstructorException {
     public void testClassArgsOptionsConstructor() {
         final Set<Constructor<?>> options = new HashSet<Constructor<?>>();
         final AmbiguousConstructorException ace = new AmbiguousConstructorException(
-                TestAmbiguousConstructorException.class, new Object[]{"foo", "bar"}, options);
+                TestAmbiguousConstructorException.class, new Object[] {"foo", "bar"}, options);
         Assert.assertEquals(TestAmbiguousConstructorException.class, ace.getType());
-        Assert.assertArrayEquals(new Object[]{"foo", "bar"}, ace.getArgs());
+        Assert.assertArrayEquals(new Object[] {"foo", "bar"}, ace.getArgs());
         Assert.assertEquals(options, ace.getOptions());
     }
 }

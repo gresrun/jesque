@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.worker;
 
@@ -23,16 +21,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * WorkerPool creates a fixed number of identical <code>Workers</code>, each on a separate <code>Thread</code>.
+ * WorkerPool creates a fixed number of identical <code>Workers</code>, each on a separate
+ * <code>Thread</code>.
  */
 public class WorkerPool implements Worker {
-    
+
     private final List<Worker> workers;
     private final List<Thread> threads;
     private final WorkerEventEmitter eventEmitter;
 
     /**
-     * Create a WorkerPool with the given number of Workers and the default <code>ThreadFactory</code>.
+     * Create a WorkerPool with the given number of Workers and the default
+     * <code>ThreadFactory</code>.
+     * 
      * @param workerFactory a Callable that returns an implementation of Worker
      * @param numWorkers the number of Workers to create
      */
@@ -41,7 +42,9 @@ public class WorkerPool implements Worker {
     }
 
     /**
-     * Create a WorkerPool with the given number of Workers and the given <code>ThreadFactory</code>.
+     * Create a WorkerPool with the given number of Workers and the given
+     * <code>ThreadFactory</code>.
+     * 
      * @param workerFactory a Callable that returns an implementation of Worker
      * @param numWorkers the number of Workers to create
      * @param threadFactory the factory to create pre-configured Threads
@@ -65,11 +68,14 @@ public class WorkerPool implements Worker {
     }
 
     /**
-     * Shutdown this pool and wait millis time per thread or until all threads are finished if millis is 0.
+     * Shutdown this pool and wait millis time per thread or until all threads are finished if
+     * millis is 0.
+     * 
      * @param now if true, an effort will be made to stop any jobs in progress
-     * @param millis the time to wait in milliseconds for the threads to join; a timeout of 0 means to wait forever.
-     * @throws InterruptedException if any thread has interrupted the current thread. 
-     * The interrupted status of the current thread is cleared when this exception is thrown.
+     * @param millis the time to wait in milliseconds for the threads to join; a timeout of 0 means
+     *        to wait forever.
+     * @throws InterruptedException if any thread has interrupted the current thread. The
+     *         interrupted status of the current thread is cleared when this exception is thrown.
      */
     public void endAndJoin(final boolean now, final long millis) throws InterruptedException {
         end(now);
@@ -104,12 +110,13 @@ public class WorkerPool implements Worker {
     }
 
     /**
-     * Join to internal threads and wait millis time per thread or until all
-     * threads are finished if millis is 0.
+     * Join to internal threads and wait millis time per thread or until all threads are finished if
+     * millis is 0.
      * 
-     * @param millis the time to wait in milliseconds for the threads to join; a timeout of 0 means to wait forever.
-     * @throws InterruptedException if any thread has interrupted the current thread. 
-     * The interrupted status of the current thread is cleared when this exception is thrown.
+     * @param millis the time to wait in milliseconds for the threads to join; a timeout of 0 means
+     *        to wait forever.
+     * @throws InterruptedException if any thread has interrupted the current thread. The
+     *         interrupted status of the current thread is cleared when this exception is thrown.
      */
     @Override
     public void join(final long millis) throws InterruptedException {
@@ -275,13 +282,14 @@ public class WorkerPool implements Worker {
             worker.setExceptionHandler(exceptionHandler);
         }
     }
-    
+
     private static class WorkerPoolEventEmitter implements WorkerEventEmitter {
-        
+
         private final List<Worker> workers;
-        
+
         /**
          * Constructor.
+         * 
          * @param workers the workers to manage
          */
         public WorkerPoolEventEmitter(final List<Worker> workers) {

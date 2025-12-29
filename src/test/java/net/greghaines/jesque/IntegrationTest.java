@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque;
 
@@ -58,7 +56,7 @@ import redis.clients.jedis.Jedis;
  * @author Greg Haines
  */
 public class IntegrationTest {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(IntegrationTest.class);
     private static final Config CONFIG = new ConfigBuilder().build();
     private static final String TEST_QUEUE = "foo";
@@ -144,34 +142,42 @@ public class IntegrationTest {
     public void acquireLockSuccess() {
         LOG.info("Running acquireLockSuccess()...");
         final Client client = new ClientImpl(CONFIG);
-        Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
-        Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
-        Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
+        Assert.assertTrue("Failed to acquire the expected lock.",
+                client.acquireLock("systemLockA", "me", 10));
+        Assert.assertTrue("Failed to acquire the expected lock.",
+                client.acquireLock("systemLockA", "me", 10));
+        Assert.assertTrue("Failed to acquire the expected lock.",
+                client.acquireLock("systemLockA", "me", 10));
     }
 
     @Test
     public void acquireLockFail() {
         LOG.info("Running acquireLockFail()...");
         final Client client = new ClientImpl(CONFIG);
-        Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "pete", 10000));
+        Assert.assertTrue("Failed to acquire the expected lock.",
+                client.acquireLock("systemLockA", "pete", 10000));
         Assert.assertFalse("Acquired lock that should have been in use.",
                 client.acquireLock("systemLockA", "george", 10));
-        Assert.assertTrue("Failed to acquire the expected lock.", client.acquireLock("systemLockA", "pete", 10000));
+        Assert.assertTrue("Failed to acquire the expected lock.",
+                client.acquireLock("systemLockA", "pete", 10000));
     }
 
     @Ignore
     @Test
     public void unpermittedJob() {
-        final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Job job = new Job("TestAction",
+                new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
         final AtomicBoolean didFailWithUnpermittedJob = new AtomicBoolean(false);
-        doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)), new WorkerListener() {
-            public void onEvent(final WorkerEvent event, final Worker worker, final String queue, final Job job,
-                    final Object runner, final Object result, final Throwable t) {
-                if (JOB_FAILURE.equals(event) && (t instanceof UnpermittedJobException)) {
-                    didFailWithUnpermittedJob.set(true);
-                }
-            }
-        }, JOB_FAILURE);
+        doWork(Arrays.asList(job), map(entry("FailAction", FailAction.class)),
+                new WorkerListener() {
+                    public void onEvent(final WorkerEvent event, final Worker worker,
+                            final String queue, final Job job, final Object runner,
+                            final Object result, final Throwable t) {
+                        if (JOB_FAILURE.equals(event) && (t instanceof UnpermittedJobException)) {
+                            didFailWithUnpermittedJob.set(true);
+                        }
+                    }
+                }, JOB_FAILURE);
 
         try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertTrue(didFailWithUnpermittedJob.get());
@@ -181,7 +187,8 @@ public class IntegrationTest {
     }
 
     private static void assertSuccess(final WorkerListener listener, final WorkerEvent... events) {
-        final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Job job = new Job("TestAction",
+                new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 
         doWork(Arrays.asList(job), map(entry("TestAction", TestAction.class)), listener, events);
 
@@ -204,12 +211,15 @@ public class IntegrationTest {
 
     private static void assertMixed(final WorkerListener listener, final WorkerEvent... events) {
         final Job job1 = new Job("FailAction");
-        final Job job2 = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Job job2 = new Job("TestAction",
+                new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
         final Job job3 = new Job("FailAction");
-        final Job job4 = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Job job4 = new Job("TestAction",
+                new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 
         doWork(Arrays.asList(job1, job2, job3, job4),
-                map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)), listener, events);
+                map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)),
+                listener, events);
 
         try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
@@ -217,14 +227,18 @@ public class IntegrationTest {
         }
     }
 
-    private static void assertBatchMixed(final WorkerListener listener, final WorkerEvent... events) {
+    private static void assertBatchMixed(final WorkerListener listener,
+            final WorkerEvent... events) {
         final Job job1 = new Job("FailAction");
-        final Job job2 = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Job job2 = new Job("TestAction",
+                new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
         final Job job3 = new Job("FailAction");
-        final Job job4 = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Job job4 = new Job("TestAction",
+                new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
 
         doBatchWork(Arrays.asList(job1, job2, job3, job4),
-                map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)), listener, events);
+                map(entry("FailAction", FailAction.class), entry("TestAction", TestAction.class)),
+                listener, events);
 
         try (Jedis jedis = createJedis(CONFIG)) {
             Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
@@ -232,9 +246,11 @@ public class IntegrationTest {
         }
     }
 
-    private static void doWork(final List<Job> jobs, final Map<String, ? extends Class<? extends Runnable>> jobTypes,
+    private static void doWork(final List<Job> jobs,
+            final Map<String, ? extends Class<? extends Runnable>> jobTypes,
             final WorkerListener listener, final WorkerEvent... events) {
-        final Worker worker = new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE), new MapBasedJobFactory(jobTypes));
+        final Worker worker =
+                new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE), new MapBasedJobFactory(jobTypes));
         if (listener != null && events.length > 0) {
             worker.getWorkerEventEmitter().addListener(listener, events);
         }
@@ -247,9 +263,11 @@ public class IntegrationTest {
         }
     }
 
-    private static void doBatchWork(final List<Job> jobs, final Map<String, ? extends Class<? extends Runnable>> jobTypes,
+    private static void doBatchWork(final List<Job> jobs,
+            final Map<String, ? extends Class<? extends Runnable>> jobTypes,
             final WorkerListener listener, final WorkerEvent... events) {
-        final Worker worker = new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE), new MapBasedJobFactory(jobTypes));
+        final Worker worker =
+                new WorkerImpl(CONFIG, Arrays.asList(TEST_QUEUE), new MapBasedJobFactory(jobTypes));
         if (listener != null && events.length > 0) {
             worker.getWorkerEventEmitter().addListener(listener, events);
         }
@@ -263,8 +281,8 @@ public class IntegrationTest {
     }
 
     private static class FailingWorkerListener implements WorkerListener {
-        public void onEvent(final WorkerEvent event, final Worker worker, final String queue, final Job job,
-                final Object runner, final Object result, final Throwable t) {
+        public void onEvent(final WorkerEvent event, final Worker worker, final String queue,
+                final Job job, final Object runner, final Object result, final Throwable t) {
             throw new RuntimeException("Listener FAIL");
         }
     }

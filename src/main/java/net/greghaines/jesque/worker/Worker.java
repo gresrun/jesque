@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.worker;
 
@@ -20,8 +18,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * A Worker polls for Jobs from a specified list of queues, executing them in sequence and notifying WorkerListeners in
- * the process.
+ * A Worker polls for Jobs from a specified list of queues, executing them in sequence and notifying
+ * WorkerListeners in the process.
  * <p>
  * Workers are designed to be run in a Thread or an ExecutorService. E.g.:
  * 
@@ -55,15 +53,16 @@ public interface Worker extends JobExecutor, Runnable {
     /**
      * Returns whether this worker is paused.
      * 
-     * @return whether this worker is paused. If true, the worker is not processing any new jobs; if false, the worker
-     *         is processing new jobs
+     * @return whether this worker is paused. If true, the worker is not processing any new jobs; if
+     *         false, the worker is processing new jobs
      */
     boolean isPaused();
 
     /**
      * Toggle whether this worker will process any new jobs.
      * 
-     * @param paused if true, the worker will not process any new jobs; if false, the worker will process new jobs
+     * @param paused if true, the worker will not process any new jobs; if false, the worker will
+     *        process new jobs
      */
     void togglePause(boolean paused);
 
@@ -75,16 +74,16 @@ public interface Worker extends JobExecutor, Runnable {
     Collection<String> getQueues();
 
     /**
-     * Poll the given queue. If the queue exists multiple times, it will be checked that many times per loop. This
-     * allows for a queue to be given higher priority by checking it more often.
+     * Poll the given queue. If the queue exists multiple times, it will be checked that many times
+     * per loop. This allows for a queue to be given higher priority by checking it more often.
      * 
      * @param queueName the name of the queue to poll
      */
     void addQueue(String queueName);
 
     /**
-     * Stop polling the given queue. If the <code>all</code> argument is true, all instances of the queue will be
-     * removed, otherwise, only one instance is removed.
+     * Stop polling the given queue. If the <code>all</code> argument is true, all instances of the
+     * queue will be removed, otherwise, only one instance is removed.
      * 
      * @param queueName the queue to stop polling
      * @param all whether to remove all or only one of the instances
@@ -97,7 +96,8 @@ public interface Worker extends JobExecutor, Runnable {
     void removeAllQueues();
 
     /**
-     * Clear any current queues and poll the given queues in the order returned by the Collection's iterator.
+     * Clear any current queues and poll the given queues in the order returned by the Collection's
+     * iterator.
      * 
      * @param queues the queues to poll
      */

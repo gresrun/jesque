@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.meta.dao.impl;
 
@@ -44,12 +42,13 @@ import redis.clients.jedis.util.Pool;
  * @author Animesh Kumar
  */
 public class QueueInfoDAORedisImpl implements QueueInfoDAO {
-    
+
     private final Config config;
     private final Pool<Jedis> jedisPool;
 
     /**
      * Constructor.
+     * 
      * @param config the Jesque configuration
      * @param jedisPool the pool of Jedis connections
      */
@@ -200,8 +199,7 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
     /**
      * Builds a namespaced Redis key with the given arguments.
      * 
-     * @param parts
-     *            the key parts to be joined
+     * @param parts the key parts to be joined
      * @return an assembled String key
      */
     private String key(final String... parts) {
@@ -240,13 +238,16 @@ public class QueueInfoDAORedisImpl implements QueueInfoDAO {
      * @param jobCount
      * @return
      */
-    private List<Job> getJobs(final Jedis jedis, final String queueName, final long jobOffset, final long jobCount) throws Exception {
+    private List<Job> getJobs(final Jedis jedis, final String queueName, final long jobOffset,
+            final long jobCount) throws Exception {
         final String key = key(QUEUE, queueName);
         final List<Job> jobs = new ArrayList<>();
         if (JedisUtils.isDelayedQueue(jedis, key)) { // If delayed queue, use ZRANGEWITHSCORES
-            final List<Tuple> elements = jedis.zrangeWithScores(key, jobOffset, jobOffset + jobCount - 1);
+            final List<Tuple> elements =
+                    jedis.zrangeWithScores(key, jobOffset, jobOffset + jobCount - 1);
             for (final Tuple elementWithScore : elements) {
-                final Job job = ObjectMapperFactory.get().readValue(elementWithScore.getElement(), Job.class);
+                final Job job = ObjectMapperFactory.get().readValue(elementWithScore.getElement(),
+                        Job.class);
                 job.setRunAt(elementWithScore.getScore());
                 jobs.add(job);
             }

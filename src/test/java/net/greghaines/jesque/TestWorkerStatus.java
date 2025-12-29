@@ -16,7 +16,7 @@ public class TestWorkerStatus {
         Assert.assertFalse(status.isPaused());
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testConstructor_Clone_Null() {
         new WorkerStatus(null);
     }
@@ -43,7 +43,7 @@ public class TestWorkerStatus {
         Assert.assertEquals(queue, status.getQueue());
         Assert.assertEquals(paused, status.isPaused());
     }
-    
+
     @Test
     public void testEquals() {
         final WorkerStatus status1 = new WorkerStatus();

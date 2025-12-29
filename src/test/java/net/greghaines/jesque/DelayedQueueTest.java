@@ -28,7 +28,7 @@ import redis.clients.jedis.Jedis;
  * @author Animesh Kumar
  */
 public class DelayedQueueTest {
-    
+
     private static final Config config = new ConfigBuilder().build();
     private static final String testQueue = "foo";
     private static final String delayTestQueue = "fooDelay";
@@ -43,28 +43,30 @@ public class DelayedQueueTest {
         // Enqueue the job before worker is created and started
         final List<Job> jobs = new ArrayList<Job>(10);
         for (int i = 0; i < 10; i++) {
-            jobs.add(new Job("TestAction", new Object[] { i, 2.3, true, "test", Arrays.asList("inner", 4.5) }));
+            jobs.add(new Job("TestAction",
+                    new Object[] {i, 2.3, true, "test", Arrays.asList("inner", 4.5)}));
         }
         TestUtils.delayEnqueueJobs(delayTestQueue, jobs, config);
         jobs.clear();
         for (int i = 10; i < 20; i++) {
-            jobs.add(new Job("TestAction", new Object[] { i, 2.3, true, "test", Arrays.asList("inner", 4.5) }));
+            jobs.add(new Job("TestAction",
+                    new Object[] {i, 2.3, true, "test", Arrays.asList("inner", 4.5)}));
         }
         TestUtils.enqueueJobs(testQueue, jobs, config);
 
         try (Jedis jedis = createJedis(config)) { // Assert that we enqueued the job
-            Assert.assertEquals(10L,
-                    jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
+            Assert.assertEquals(10L, jedis.zcount(
+                    createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
         }
 
         // Create and start worker
-        final Worker worker = new WorkerImpl(config, Arrays.asList(delayTestQueue), 
+        final Worker worker = new WorkerImpl(config, Arrays.asList(delayTestQueue),
                 new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
         final Thread workerThread = new Thread(worker);
         workerThread.start();
 
         // start second thread
-        final Worker worker2 = new WorkerImpl(config, Arrays.asList(testQueue), 
+        final Worker worker2 = new WorkerImpl(config, Arrays.asList(testQueue),
                 new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
         final Thread workerThread2 = new Thread(worker2);
         workerThread2.start();
@@ -77,10 +79,11 @@ public class DelayedQueueTest {
 
         // Assert that the job was run by the worker
         try (Jedis jedis = createJedis(config)) {
-            Assert.assertEquals(String.valueOf(20), jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
+            Assert.assertEquals(String.valueOf(20),
+                    jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
             Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-            Assert.assertEquals(0L,
-                    jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
+            Assert.assertEquals(0L, jedis.zcount(
+                    createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
         }
     }
 }

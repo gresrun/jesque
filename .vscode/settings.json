@@ -1,3 +1,6 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.format.settings.url": "https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml",
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.checkstyle.version": "12.3.0",
+    "java.checkstyle.configuration": "/google_checks.xml"
 }

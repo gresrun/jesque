@@ -25,7 +25,8 @@ public class TestJesqueUtils {
 
     @Test
     public void testJoin_Iterable() {
-        Assert.assertEquals("foo,bar,baz", JesqueUtils.join(",", Arrays.asList("foo", "bar", "baz")));
+        Assert.assertEquals("foo,bar,baz",
+                JesqueUtils.join(",", Arrays.asList("foo", "bar", "baz")));
     }
 
     @Test
@@ -35,7 +36,8 @@ public class TestJesqueUtils {
 
     @Test
     public void testCreateKey_Iterable() {
-        Assert.assertEquals("foo:bar:baz", JesqueUtils.createKey("foo", Arrays.asList("bar", "baz")));
+        Assert.assertEquals("foo:bar:baz",
+                JesqueUtils.createKey("foo", Arrays.asList("bar", "baz")));
     }
 
     @Test
@@ -48,7 +50,7 @@ public class TestJesqueUtils {
 
     @Test
     public void testEntry() {
-        final Entry<String,String> entry = JesqueUtils.entry("foo", "bar");
+        final Entry<String, String> entry = JesqueUtils.entry("foo", "bar");
         Assert.assertNotNull(entry);
         Assert.assertEquals("foo", entry.getKey());
         Assert.assertEquals("bar", entry.getValue());
@@ -56,10 +58,10 @@ public class TestJesqueUtils {
 
     @Test
     public void testMap() {
-        final Entry<String,String> entry1 = JesqueUtils.entry("foo", "bar");
-        final Entry<String,String> entry2 = JesqueUtils.entry("baz", "quz");
-        final Entry<String,String> entry3 = JesqueUtils.entry("foo", "quz");
-        final Map<String,String> map = JesqueUtils.map(entry1, entry2, entry3);
+        final Entry<String, String> entry1 = JesqueUtils.entry("foo", "bar");
+        final Entry<String, String> entry2 = JesqueUtils.entry("baz", "quz");
+        final Entry<String, String> entry3 = JesqueUtils.entry("foo", "quz");
+        final Map<String, String> map = JesqueUtils.map(entry1, entry2, entry3);
         Assert.assertNotNull(map);
         Assert.assertEquals(2, map.size());
         Assert.assertEquals("quz", map.get("foo"));
@@ -109,11 +111,11 @@ public class TestJesqueUtils {
 
     @Test
     public void testRecreateStackTrace() throws ParseException {
-        final List<String> bTrace = new ArrayList<String>(Arrays.asList("foo",
-                "\tat net.greghaines.jesque.Job.<init>(Job.java:30)",
-                "\tat net.greghaines.jesque.Job.<init>(Job.java)",
-                "\tat net.greghaines.jesque.Job.<init>(Unknown Source)",
-                "\tat net.greghaines.jesque.Job.<init>(Native Method)"));
+        final List<String> bTrace = new ArrayList<String>(
+                Arrays.asList("foo", "\tat net.greghaines.jesque.Job.<init>(Job.java:30)",
+                        "\tat net.greghaines.jesque.Job.<init>(Job.java)",
+                        "\tat net.greghaines.jesque.Job.<init>(Unknown Source)",
+                        "\tat net.greghaines.jesque.Job.<init>(Native Method)"));
         final StackTraceElement[] stes = JesqueUtils.recreateStackTrace(bTrace);
         Assert.assertEquals(4, stes.length);
     }

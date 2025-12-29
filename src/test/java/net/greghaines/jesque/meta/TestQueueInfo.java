@@ -27,7 +27,7 @@ public class TestQueueInfo {
         qInfo.setDelayed(delayed);
         Assert.assertEquals(delayed, qInfo.isDelayed());
     }
-    
+
     @Test
     public void testCompareToEqualsHashCode() {
         final QueueInfo qi1 = new QueueInfo();

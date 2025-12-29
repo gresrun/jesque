@@ -1,17 +1,15 @@
 /*
  * Copyright 2012 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.admin;
 
@@ -60,7 +58,7 @@ import redis.clients.jedis.JedisPubSub;
  * @author Greg Haines
  */
 public class AdminImpl implements Admin {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(AdminImpl.class);
     private static final long RECONNECT_SLEEP_TIME = 5000; // 5s
     private static final int RECONNECT_ATTEMPTS = 120; // Total time: 10min
@@ -74,38 +72,44 @@ public class AdminImpl implements Admin {
     protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
     private final AtomicBoolean processingJob = new AtomicBoolean(false);
     private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
-    private final AtomicReference<ExceptionHandler> exceptionHandlerRef = 
+    private final AtomicReference<ExceptionHandler> exceptionHandlerRef =
             new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
 
     /**
-     * Create a new AdminImpl which subscribes to {@link ResqueConstants#ADMIN_CHANNEL}, registers the 
-     * {@link PauseCommand} and {@link ShutdownCommand} jobs, and creates a new Jedis connection.
+     * Create a new AdminImpl which subscribes to {@link ResqueConstants#ADMIN_CHANNEL}, registers
+     * the {@link PauseCommand} and {@link ShutdownCommand} jobs, and creates a new Jedis
+     * connection.
+     * 
      * @param config the Jesque configuration
      */
     public AdminImpl(final Config config) {
-        this(config, set(ADMIN_CHANNEL), new MapBasedJobFactory(map(
-                entry("PauseCommand", PauseCommand.class), 
-                entry("ShutdownCommand", ShutdownCommand.class))));
+        this(config, set(ADMIN_CHANNEL),
+                new MapBasedJobFactory(map(entry("PauseCommand", PauseCommand.class),
+                        entry("ShutdownCommand", ShutdownCommand.class))));
     }
 
     /**
      * Create a new AdminImpl which creates a new Jedis connection.
+     * 
      * @param config the Jesque configuration
      * @param channels the channels to subscribe to
      * @param jobFactory the job factory that materializes the jobs
      */
     public AdminImpl(final Config config, final Set<String> channels, final JobFactory jobFactory) {
-        this(config, channels, jobFactory, new Jedis(config.getHost(), config.getPort(), config.getTimeout()));
+        this(config, channels, jobFactory,
+                new Jedis(config.getHost(), config.getPort(), config.getTimeout()));
     }
 
     /**
      * Create a new AdminImpl.
+     * 
      * @param config the Jesque configuration
      * @param channels the channels to subscribe to
      * @param jobFactory the job factory that materializes the jobs
      * @param jedis the connection to Redis
      */
-    public AdminImpl(final Config config, final Set<String> channels, final JobFactory jobFactory, final Jedis jedis) {
+    public AdminImpl(final Config config, final Set<String> channels, final JobFactory jobFactory,
+            final Jedis jedis) {
         if (config == null) {
             throw new IllegalArgumentException("config must not be null");
         }
@@ -280,52 +284,44 @@ public class AdminImpl implements Admin {
          * {@inheritDoc}
          */
         @Override
-        public void onPMessage(final String pattern, final String channel, final String message) {
-        } // NOOP
+        public void onPMessage(final String pattern, final String channel, final String message) {} // NOOP
 
         /**
          * {@inheritDoc}
          */
         @Override
-        public void onSubscribe(final String channel, final int subscribedChannels) {
-        } // NOOP
+        public void onSubscribe(final String channel, final int subscribedChannels) {} // NOOP
 
         /**
          * {@inheritDoc}
          */
         @Override
-        public void onUnsubscribe(final String channel, final int subscribedChannels) {
-        } // NOOP
+        public void onUnsubscribe(final String channel, final int subscribedChannels) {} // NOOP
 
         /**
          * {@inheritDoc}
          */
         @Override
-        public void onPUnsubscribe(final String pattern, final int subscribedChannels) {
-        } // NOOP
+        public void onPUnsubscribe(final String pattern, final int subscribedChannels) {} // NOOP
 
         /**
          * {@inheritDoc}
          */
         @Override
-        public void onPSubscribe(final String pattern, final int subscribedChannels) {
-        } // NOOP
+        public void onPSubscribe(final String pattern, final int subscribedChannels) {} // NOOP
     }
 
     /**
      * Executes the given job.
      * 
-     * @param job
-     *            the job to execute
-     * @param curQueue
-     *            the queue the job came from
-     * @param instance
-     *            the materialized job
+     * @param job the job to execute
+     * @param curQueue the queue the job came from
+     * @param instance the materialized job
      * @return the result of the job execution
-     * @throws Exception
-     *             if the instance is a {@link Callable} and throws an exception
+     * @throws Exception if the instance is a {@link Callable} and throws an exception
      */
-    protected Object execute(final Job job, final String curQueue, final Object instance) throws Exception {
+    protected Object execute(final Job job, final String curQueue, final Object instance)
+            throws Exception {
         final Object result;
         if (instance instanceof WorkerAware) {
             ((WorkerAware) instance).setWorker(this.workerRef.get());
@@ -336,15 +332,14 @@ public class AdminImpl implements Admin {
             ((Runnable) instance).run(); // The job is executing!
             result = null;
         } else { // Should never happen since we're testing the class earlier
-            throw new ClassCastException("instance must be a Runnable or a Callable: " + instance.getClass().getName() 
-                    + " - " + instance);
+            throw new ClassCastException("instance must be a Runnable or a Callable: "
+                    + instance.getClass().getName() + " - " + instance);
         }
         return result;
     }
 
     /**
-     * @return the number of times this Admin will attempt to reconnect to Redis
-     *         before giving up
+     * @return the number of times this Admin will attempt to reconnect to Redis before giving up
      */
     protected int getReconnectAttempts() {
         return RECONNECT_ATTEMPTS;
@@ -354,43 +349,42 @@ public class AdminImpl implements Admin {
      * Handle an exception that was thrown from inside
      * {@link PubSubListener#onMessage(String,String)}.
      * 
-     * @param channel
-     *            the name of the channel that was being processed when the
-     *            exception was thrown
-     * @param e
-     *            the exception that was thrown
+     * @param channel the name of the channel that was being processed when the exception was thrown
+     * @param e the exception that was thrown
      */
     protected void recoverFromException(final String channel, final Exception e) {
-        final RecoveryStrategy recoveryStrategy = this.exceptionHandlerRef.get().onException(this, e, channel);
+        final RecoveryStrategy recoveryStrategy =
+                this.exceptionHandlerRef.get().onException(this, e, channel);
         switch (recoveryStrategy) {
-        case RECONNECT:
-            LOG.info("Reconnecting to Redis in response to exception", e);
-            final int reconAttempts = getReconnectAttempts();
-            if (!JedisUtils.reconnect(this.jedis, reconAttempts, RECONNECT_SLEEP_TIME)) {
-                LOG.warn("Terminating in response to exception after " + reconAttempts + " to reconnect", e);
+            case RECONNECT:
+                LOG.info("Reconnecting to Redis in response to exception", e);
+                final int reconAttempts = getReconnectAttempts();
+                if (!JedisUtils.reconnect(this.jedis, reconAttempts, RECONNECT_SLEEP_TIME)) {
+                    LOG.warn("Terminating in response to exception after " + reconAttempts
+                            + " to reconnect", e);
+                    end(false);
+                } else {
+                    LOG.info("Reconnected to Redis");
+                }
+                break;
+            case TERMINATE:
+                LOG.warn("Terminating in response to exception", e);
                 end(false);
-            } else {
-                LOG.info("Reconnected to Redis");
-            }
-            break;
-        case TERMINATE:
-            LOG.warn("Terminating in response to exception", e);
-            end(false);
-            break;
-        case PROCEED:
-            break;
-        default:
-            LOG.error("Unknown RecoveryStrategy: " + recoveryStrategy 
-                    + " while attempting to recover from the following exception; Admin proceeding...", e);
-            break;
+                break;
+            case PROCEED:
+                break;
+            default:
+                LOG.error("Unknown RecoveryStrategy: " + recoveryStrategy
+                        + " while attempting to recover from the following exception; Admin proceeding...",
+                        e);
+                break;
         }
     }
 
     /**
      * Verify that the given channels are all valid.
      * 
-     * @param channels
-     *            the given channels
+     * @param channels the given channels
      */
     protected static void checkChannels(final Iterable<String> channels) {
         if (channels == null) {
@@ -398,7 +392,8 @@ public class AdminImpl implements Admin {
         }
         for (final String channel : channels) {
             if (channel == null || "".equals(channel)) {
-                throw new IllegalArgumentException("channels' members must not be null: " + channels);
+                throw new IllegalArgumentException(
+                        "channels' members must not be null: " + channels);
             }
         }
     }

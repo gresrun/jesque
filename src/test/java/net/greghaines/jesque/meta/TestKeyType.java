@@ -17,7 +17,8 @@ public class TestKeyType {
     @Test
     public void testGetKeyTypeByValue() {
         for (final KeyType keyType : KeyType.values()) {
-            Assert.assertEquals(keyType, KeyType.getKeyTypeByValue(keyType.name().toLowerCase(Locale.US)));
+            Assert.assertEquals(keyType,
+                    KeyType.getKeyTypeByValue(keyType.name().toLowerCase(Locale.US)));
         }
     }
 }

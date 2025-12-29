@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque;
 
@@ -36,13 +34,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author Greg Haines
  */
 public class Job implements Serializable {
-    
+
     private static final long serialVersionUID = -1523425239512691383L;
 
     private String className;
     private Object[] args;
-    private Map<String,Object> vars;
-    private Map<String,Object> unknownFields = new HashMap<String,Object>();
+    private Map<String, Object> vars;
+    private Map<String, Object> unknownFields = new HashMap<String, Object>();
     private Double runAt; // only set if this job belongs to a delayed queue
 
     /**
@@ -55,10 +53,8 @@ public class Job implements Serializable {
     /**
      * Cloning constructor. Makes a clone of the arguments, if they exist.
      * 
-     * @param origJob
-     *            the Job to start from
-     * @throws IllegalArgumentException
-     *             if the origJob is null
+     * @param origJob the Job to start from
+     * @throws IllegalArgumentException if the origJob is null
      */
     public Job(final Job origJob) {
         if (origJob == null) {
@@ -66,17 +62,14 @@ public class Job implements Serializable {
         }
         this.className = origJob.className;
         this.args = (origJob.args == null) ? null : origJob.args.clone();
-        this.vars = (origJob.vars == null) ? null : new LinkedHashMap<String,Object>(origJob.vars);
+        this.vars = (origJob.vars == null) ? null : new LinkedHashMap<String, Object>(origJob.vars);
     }
 
     /**
-     * A convenience constructor. Delegates to Job(String, Object...) by calling
-     * args.toArray().
+     * A convenience constructor. Delegates to Job(String, Object...) by calling args.toArray().
      * 
-     * @param className
-     *            the class name of the Job
-     * @param args
-     *            the arguments for the Job
+     * @param className the class name of the Job
+     * @param args the arguments for the Job
      */
     public Job(final String className, final List<?> args) {
         this(className, args.toArray());
@@ -85,10 +78,8 @@ public class Job implements Serializable {
     /**
      * Create a new Job with the given class name and arguments.
      * 
-     * @param className
-     *            the class name of the Job
-     * @param args
-     *            the arguments for the Job
+     * @param className the class name of the Job
+     * @param args the arguments for the Job
      */
     public Job(final String className, final Object... args) {
         if (className == null || "".equals(className)) {
@@ -102,42 +93,37 @@ public class Job implements Serializable {
      * Create a new Job with the given class name and named arguments.<br>
      * Resque 2.0-style Job.
      * 
-     * @param className
-     *            the class name of the Job
-     * @param vars
-     *            the named arguments for the Job
+     * @param className the class name of the Job
+     * @param vars the named arguments for the Job
      */
     @SuppressWarnings("unchecked")
-    public Job(final String className, final Map<String,? extends Object> vars) {
+    public Job(final String className, final Map<String, ? extends Object> vars) {
         if (className == null || "".equals(className)) {
             throw new IllegalArgumentException("className must not be null or empty: " + className);
         }
         this.className = className;
-        this.vars = (Map<String, Object>)vars;
+        this.vars = (Map<String, Object>) vars;
     }
 
     /**
      * Create a new Job with the given class name and both types of arguments.<br>
      * Resque 2.0-style Job.
      * 
-     * @param className
-     *            the class name of the Job
-     * @param args
-     *            the arguments for the Job
-     * @param vars
-     *            the named arguments for the Job
+     * @param className the class name of the Job
+     * @param args the arguments for the Job
+     * @param vars the named arguments for the Job
      */
     @SuppressWarnings("unchecked")
     @JsonCreator
-    public Job(@JsonProperty("class") final String className, 
-            @JsonProperty("args") final Object[] args, 
-            @JsonProperty("vars") final Map<String,? extends Object> vars) {
+    public Job(@JsonProperty("class") final String className,
+            @JsonProperty("args") final Object[] args,
+            @JsonProperty("vars") final Map<String, ? extends Object> vars) {
         if (className == null || "".equals(className)) {
             throw new IllegalArgumentException("className must not be null or empty: " + className);
         }
         this.className = className;
         this.args = args;
-        this.vars = (Map<String, Object>)vars;
+        this.vars = (Map<String, Object>) vars;
     }
 
     /**
@@ -151,8 +137,7 @@ public class Job implements Serializable {
     /**
      * Set the class name.
      * 
-     * @param className
-     *            the new class name
+     * @param className the new class name
      */
     public void setClassName(final String className) {
         this.className = className;
@@ -169,8 +154,7 @@ public class Job implements Serializable {
     /**
      * Set the arguments.
      * 
-     * @param args
-     *            the new arguments
+     * @param args the new arguments
      */
     public void setArgs(final Object... args) {
         this.args = args;
@@ -187,12 +171,11 @@ public class Job implements Serializable {
     /**
      * Set the named arguments.
      * 
-     * @param vars
-     *            the new named arguments
+     * @param vars the new named arguments
      */
     @SuppressWarnings("unchecked")
     public void setVars(final Map<String, ? extends Object> vars) {
-        this.vars = (Map<String, Object>)vars;
+        this.vars = (Map<String, Object>) vars;
     }
 
     @JsonIgnore
@@ -210,11 +193,13 @@ public class Job implements Serializable {
      */
     @JsonIgnore
     public boolean isValid() {
-        return ((this.args != null || this.vars != null) && this.className != null && !"".equals(this.className));
+        return ((this.args != null || this.vars != null) && this.className != null
+                && !"".equals(this.className));
     }
 
     /**
      * Get an unknown field.
+     * 
      * @param fieldName the field name
      * @return the value
      */
@@ -225,15 +210,17 @@ public class Job implements Serializable {
 
     /**
      * Get all unknown fields.
+     * 
      * @return all unknown fields
      */
     @JsonAnyGetter
-    public Map<String,Object> getUnknownFields() {
+    public Map<String, Object> getUnknownFields() {
         return this.unknownFields;
     }
 
     /**
      * Set an unknown field.
+     * 
      * @param name the unknown property name
      * @param value the unknown property value
      */
@@ -244,10 +231,11 @@ public class Job implements Serializable {
 
     /**
      * Set all unknown fields
+     * 
      * @param unknownFields the new unknown fields
      */
     @JsonIgnore
-    public void setUnknownFields(final Map<String,Object> unknownFields) {
+    public void setUnknownFields(final Map<String, Object> unknownFields) {
         this.unknownFields.clear();
         this.unknownFields.putAll(unknownFields);
     }
@@ -257,8 +245,8 @@ public class Job implements Serializable {
      */
     @Override
     public String toString() {
-        return "Job [class=" + this.className + ", args=" + Arrays.toString(this.args) 
-                + ", vars=" + this.vars + "]";
+        return "Job [class=" + this.className + ", args=" + Arrays.toString(this.args) + ", vars="
+                + this.vars + "]";
     }
 
     /**

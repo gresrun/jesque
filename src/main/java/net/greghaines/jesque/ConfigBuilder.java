@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque;
 
@@ -70,8 +68,7 @@ public class ConfigBuilder implements Serializable {
     }
 
     /**
-     * Create a new ConfigBuilder using an existing Config as the starting
-     * point.
+     * Create a new ConfigBuilder using an existing Config as the starting point.
      *
      * @param startingPoint the Config instance to copy the values from
      */
@@ -103,23 +100,22 @@ public class ConfigBuilder implements Serializable {
     }
 
     /**
-     * Configs created by this ConfigBuilder will have the given Redis port
-     * number.
+     * Configs created by this ConfigBuilder will have the given Redis port number.
      *
      * @param port the Redis port number
      * @return this ConfigBuilder
      */
     public ConfigBuilder withPort(final int port) {
         if (port < 1 || port > 65535) {
-            throw new IllegalArgumentException("port must be a valid port in the range 1-65535: " + port);
+            throw new IllegalArgumentException(
+                    "port must be a valid port in the range 1-65535: " + port);
         }
         this.port = port;
         return this;
     }
 
     /**
-     * Configs created by this ConfigBuilder will have the given Redis
-     * connection timeout.
+     * Configs created by this ConfigBuilder will have the given Redis connection timeout.
      *
      * @param timeout the Redis connection timeout
      * @return this ConfigBuilder
@@ -133,8 +129,7 @@ public class ConfigBuilder implements Serializable {
     }
 
     /**
-     * Configs created by this ConfigBuilder will authenticate with the given
-     * Redis password.
+     * Configs created by this ConfigBuilder will authenticate with the given Redis password.
      *
      * @param password the Redis password
      * @return this ConfigBuilder
@@ -145,8 +140,8 @@ public class ConfigBuilder implements Serializable {
     }
 
     /**
-     * Configs created by this ConfigBuilder will have the given Redis namespace
-     * to prefix keys with.
+     * Configs created by this ConfigBuilder will have the given Redis namespace to prefix keys
+     * with.
      *
      * @param namespace the Redis namespace to prefix keys with
      * @return this ConfigBuilder
@@ -205,12 +200,13 @@ public class ConfigBuilder implements Serializable {
      * @return a new Config initialized with the current values
      */
     public Config build() {
-        if (this.sentinels != null && this.sentinels.size() > 0 && this.masterName != null 
+        if (this.sentinels != null && this.sentinels.size() > 0 && this.masterName != null
                 && !"".equals(this.masterName)) {
-            return new Config(this.sentinels, this.masterName, this.timeout, this.password, this.namespace, 
-                    this.database);
+            return new Config(this.sentinels, this.masterName, this.timeout, this.password,
+                    this.namespace, this.database);
         } else {
-            return new Config(this.host, this.port, this.timeout, this.password, this.namespace, this.database);
+            return new Config(this.host, this.port, this.timeout, this.password, this.namespace,
+                    this.database);
         }
     }
 }

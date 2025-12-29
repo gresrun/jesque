@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AdminIntegrationTest {
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(AdminIntegrationTest.class);
     private static Config config;
 
@@ -31,7 +31,8 @@ public class AdminIntegrationTest {
 
     @BeforeClass
     public static void initConfig() {
-        config = new ConfigBuilder().withNamespace(ConfigBuilder.DEFAULT_NAMESPACE + new Random().nextInt(10000))
+        config = new ConfigBuilder()
+                .withNamespace(ConfigBuilder.DEFAULT_NAMESPACE + new Random().nextInt(10000))
                 .build();
     }
 
@@ -44,7 +45,7 @@ public class AdminIntegrationTest {
     public void testAdminAndWorkerPool() {
         final WorkerPool workerPool = new WorkerPool(new Callable<WorkerImpl>() {
             public WorkerImpl call() {
-                return new WorkerImpl(config, set(testQueue), 
+                return new WorkerImpl(config, set(testQueue),
                         new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
             }
         }, 2);
@@ -72,7 +73,7 @@ public class AdminIntegrationTest {
     @Ignore
     @Test
     public void testPauseAndShutdownCommands() {
-        final Worker worker = new WorkerImpl(config, set(testQueue), 
+        final Worker worker = new WorkerImpl(config, set(testQueue),
                 new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
         final Admin admin = new AdminImpl(config);
         admin.setWorker(worker);

@@ -14,9 +14,9 @@ public class TestNoSuchConstructorException {
 
     @Test
     public void testClassArgsConstructor() {
-        final NoSuchConstructorException nsce = new NoSuchConstructorException(
-                TestNoSuchConstructorException.class, "foo", "bar");
+        final NoSuchConstructorException nsce =
+                new NoSuchConstructorException(TestNoSuchConstructorException.class, "foo", "bar");
         Assert.assertEquals(TestNoSuchConstructorException.class, nsce.getType());
-        Assert.assertArrayEquals(new String[]{"foo", "bar"}, nsce.getArgs());
+        Assert.assertArrayEquals(new String[] {"foo", "bar"}, nsce.getArgs());
     }
 }

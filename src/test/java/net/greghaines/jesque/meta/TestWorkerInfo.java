@@ -44,7 +44,7 @@ public class TestWorkerInfo {
         wInfo.setStatus(status);
         Assert.assertEquals(status, wInfo.getStatus());
     }
-    
+
     @Test
     public void testCompareToEqualsHashCode() {
         final WorkerInfo wi1 = new WorkerInfo();

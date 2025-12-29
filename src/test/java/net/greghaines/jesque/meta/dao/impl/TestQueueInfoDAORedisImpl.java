@@ -39,14 +39,14 @@ import redis.clients.jedis.resps.Tuple;
 import redis.clients.jedis.util.Pool;
 
 public class TestQueueInfoDAORedisImpl {
-    
+
     private static final String QUEUES_KEY = DEFAULT_NAMESPACE + COLON + QUEUES;
-    
+
     private Mockery mockCtx;
     private Pool<Jedis> pool;
     private Jedis jedis;
     private QueueInfoDAORedisImpl qInfoDAO;
-    
+
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
@@ -57,7 +57,7 @@ public class TestQueueInfoDAORedisImpl {
         this.jedis = this.mockCtx.mock(Jedis.class);
         this.qInfoDAO = new QueueInfoDAORedisImpl(new ConfigBuilder().build(), this.pool);
     }
-    
+
     @After
     public void tearDown() {
         this.mockCtx.assertIsSatisfied();
@@ -73,108 +73,139 @@ public class TestQueueInfoDAORedisImpl {
         final Config config = new ConfigBuilder().build();
         new QueueInfoDAORedisImpl(config, null);
     }
-    
+
     @Test
     public void testGetQueueNames() {
         final Set<String> queueSet = new HashSet<String>(Arrays.asList("queue1", "queue2"));
         final List<String> origQueueNames = new ArrayList<String>(queueSet);
         Collections.sort(origQueueNames);
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(pool).getResource(); will(returnValue(jedis));
-            oneOf(jedis).smembers(QUEUES_KEY); will(returnValue(queueSet));
-            oneOf(jedis).close();
-        }});
+        this.mockCtx.checking(new Expectations() {
+            {
+                oneOf(pool).getResource();
+                will(returnValue(jedis));
+                oneOf(jedis).smembers(QUEUES_KEY);
+                will(returnValue(queueSet));
+                oneOf(jedis).close();
+            }
+        });
         final List<String> queueNames = this.qInfoDAO.getQueueNames();
         Assert.assertNotNull(queueNames);
         Assert.assertEquals(queueSet.size(), queueNames.size());
         Assert.assertTrue(queueNames.containsAll(queueSet));
         Assert.assertEquals(origQueueNames, queueNames);
     }
-    
+
     @Test
     public void testGetPendingCount() {
-        final Map<String,Long> queueCountMap = new HashMap<String,Long>(2);
+        final Map<String, Long> queueCountMap = new HashMap<String, Long>(2);
         queueCountMap.put("queue1", 3L);
         queueCountMap.put("queue2", 5L);
-        final Map<String,String> queueTypeMap = new HashMap<String,String>(2);
+        final Map<String, String> queueTypeMap = new HashMap<String, String>(2);
         queueTypeMap.put("queue1", KeyType.LIST.toString());
         queueTypeMap.put("queue2", KeyType.ZSET.toString());
-        this.mockCtx.checking(new Expectations(){{
-            exactly(2).of(pool).getResource(); will(returnValue(jedis));
-            oneOf(jedis).smembers(QUEUES_KEY); will(returnValue(queueCountMap.keySet()));
-            for (final Entry<String,String> e : queueTypeMap.entrySet()) {
-                final String queueKey = "resque:queue:" + e.getKey();
-                oneOf(jedis).type(queueKey); will(returnValue(e.getValue()));
-                if (KeyType.ZSET.toString().equals(e.getValue())) {
-                    oneOf(jedis).zcard(queueKey); will(returnValue(queueCountMap.get(e.getKey())));
-                } else {
-                    oneOf(jedis).llen(queueKey); will(returnValue(queueCountMap.get(e.getKey())));
+        this.mockCtx.checking(new Expectations() {
+            {
+                exactly(2).of(pool).getResource();
+                will(returnValue(jedis));
+                oneOf(jedis).smembers(QUEUES_KEY);
+                will(returnValue(queueCountMap.keySet()));
+                for (final Entry<String, String> e : queueTypeMap.entrySet()) {
+                    final String queueKey = "resque:queue:" + e.getKey();
+                    oneOf(jedis).type(queueKey);
+                    will(returnValue(e.getValue()));
+                    if (KeyType.ZSET.toString().equals(e.getValue())) {
+                        oneOf(jedis).zcard(queueKey);
+                        will(returnValue(queueCountMap.get(e.getKey())));
+                    } else {
+                        oneOf(jedis).llen(queueKey);
+                        will(returnValue(queueCountMap.get(e.getKey())));
+                    }
                 }
+                exactly(2).of(jedis).close();
             }
-            exactly(2).of(jedis).close();
-        }});
+        });
         final long pendingCount = this.qInfoDAO.getPendingCount();
         Assert.assertEquals(8, pendingCount);
     }
-    
+
     @Test
     public void testGetProcessedCount() {
         final Long count = 5L;
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(pool).getResource(); will(returnValue(jedis));
-            oneOf(jedis).get("resque:stat:processed"); will(returnValue(Long.toString(count)));
-            oneOf(jedis).close();
-        }});
+        this.mockCtx.checking(new Expectations() {
+            {
+                oneOf(pool).getResource();
+                will(returnValue(jedis));
+                oneOf(jedis).get("resque:stat:processed");
+                will(returnValue(Long.toString(count)));
+                oneOf(jedis).close();
+            }
+        });
         final long processedCount = this.qInfoDAO.getProcessedCount();
-        Assert.assertEquals(count, (Long)processedCount);
+        Assert.assertEquals(count, (Long) processedCount);
     }
-    
+
     @Test
     public void testGetProcessedCount_Null() {
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(pool).getResource(); will(returnValue(jedis));
-            oneOf(jedis).get("resque:stat:processed"); will(returnValue(null));
-            oneOf(jedis).close();
-        }});
+        this.mockCtx.checking(new Expectations() {
+            {
+                oneOf(pool).getResource();
+                will(returnValue(jedis));
+                oneOf(jedis).get("resque:stat:processed");
+                will(returnValue(null));
+                oneOf(jedis).close();
+            }
+        });
         final long processedCount = this.qInfoDAO.getProcessedCount();
         Assert.assertEquals(0L, processedCount);
     }
-    
+
     @Test
     public void testRemoveQueue() {
         final String queue = "queue1";
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(pool).getResource(); will(returnValue(jedis));
-            oneOf(jedis).srem(QUEUES_KEY, queue);
-            oneOf(jedis).del("resque:queue:" + queue);
-            oneOf(jedis).close();
-        }});
+        this.mockCtx.checking(new Expectations() {
+            {
+                oneOf(pool).getResource();
+                will(returnValue(jedis));
+                oneOf(jedis).srem(QUEUES_KEY, queue);
+                oneOf(jedis).del("resque:queue:" + queue);
+                oneOf(jedis).close();
+            }
+        });
         this.qInfoDAO.removeQueue(queue);
     }
-    
+
     @Test
     public void testGetQueueInfos() {
-        final Map<String,Long> queueCountMap = new HashMap<String,Long>(2);
+        final Map<String, Long> queueCountMap = new HashMap<String, Long>(2);
         queueCountMap.put("queue1", 3L);
         queueCountMap.put("queue2", 5L);
-        final Map<String,String> queueTypeMap = new HashMap<String,String>(2);
+        final Map<String, String> queueTypeMap = new HashMap<String, String>(2);
         queueTypeMap.put("queue1", KeyType.LIST.toString());
         queueTypeMap.put("queue2", KeyType.ZSET.toString());
-        this.mockCtx.checking(new Expectations(){{
-            exactly(2).of(pool).getResource(); will(returnValue(jedis));
-            oneOf(jedis).smembers(QUEUES_KEY); will(returnValue(queueCountMap.keySet()));
-            for (final Entry<String,String> e : queueTypeMap.entrySet()) {
-                final String queueKey = "resque:queue:" + e.getKey();
-                exactly(2).of(jedis).type(queueKey); will(returnValue(e.getValue()));
-                if (KeyType.ZSET.toString().equals(e.getValue())) {
-                    oneOf(jedis).zcard(queueKey); will(returnValue(queueCountMap.get(e.getKey())));
-                    oneOf(jedis).zcount(with(equal(queueKey)), with(equal(0.0)), with(any(Double.class))); will(returnValue(1L));
-                } else {
-                    oneOf(jedis).llen(queueKey); will(returnValue(queueCountMap.get(e.getKey())));
+        this.mockCtx.checking(new Expectations() {
+            {
+                exactly(2).of(pool).getResource();
+                will(returnValue(jedis));
+                oneOf(jedis).smembers(QUEUES_KEY);
+                will(returnValue(queueCountMap.keySet()));
+                for (final Entry<String, String> e : queueTypeMap.entrySet()) {
+                    final String queueKey = "resque:queue:" + e.getKey();
+                    exactly(2).of(jedis).type(queueKey);
+                    will(returnValue(e.getValue()));
+                    if (KeyType.ZSET.toString().equals(e.getValue())) {
+                        oneOf(jedis).zcard(queueKey);
+                        will(returnValue(queueCountMap.get(e.getKey())));
+                        oneOf(jedis).zcount(with(equal(queueKey)), with(equal(0.0)),
+                                with(any(Double.class)));
+                        will(returnValue(1L));
+                    } else {
+                        oneOf(jedis).llen(queueKey);
+                        will(returnValue(queueCountMap.get(e.getKey())));
+                    }
                 }
+                exactly(2).of(jedis).close();
             }
-            exactly(2).of(jedis).close();
-        }});
+        });
         final List<QueueInfo> queueInfos = this.qInfoDAO.getQueueInfos();
         Assert.assertNotNull(queueInfos);
         Assert.assertEquals(queueCountMap.size(), queueInfos.size());
@@ -183,7 +214,7 @@ public class TestQueueInfoDAORedisImpl {
             Assert.assertEquals(queueCountMap.get(queueInfo.getName()), queueInfo.getSize());
         }
     }
-    
+
     @Test
     public void testGetQueueInfo_List() throws JsonProcessingException {
         final String name = "queue1";
@@ -194,13 +225,19 @@ public class TestQueueInfoDAORedisImpl {
         final Collection<String> payloads = new ArrayList<String>();
         payloads.add(ObjectMapperFactory.get().writeValueAsString(new Job("foo")));
         payloads.add(ObjectMapperFactory.get().writeValueAsString(new Job("bar")));
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(pool).getResource(); will(returnValue(jedis));
-            exactly(3).of(jedis).type(queueKey); will(returnValue(KeyType.LIST.toString()));
-            oneOf(jedis).llen(queueKey); will(returnValue(size));
-            oneOf(jedis).lrange(queueKey, jobOffset, jobOffset + jobCount - 1); will(returnValue(payloads));
-            oneOf(jedis).close();
-        }});
+        this.mockCtx.checking(new Expectations() {
+            {
+                oneOf(pool).getResource();
+                will(returnValue(jedis));
+                exactly(3).of(jedis).type(queueKey);
+                will(returnValue(KeyType.LIST.toString()));
+                oneOf(jedis).llen(queueKey);
+                will(returnValue(size));
+                oneOf(jedis).lrange(queueKey, jobOffset, jobOffset + jobCount - 1);
+                will(returnValue(payloads));
+                oneOf(jedis).close();
+            }
+        });
         final QueueInfo queueInfo = this.qInfoDAO.getQueueInfo(name, jobOffset, jobCount);
         Assert.assertNotNull(queueInfo);
         Assert.assertEquals(name, queueInfo.getName());
@@ -209,7 +246,7 @@ public class TestQueueInfoDAORedisImpl {
         Assert.assertNotNull(jobs);
         Assert.assertEquals(payloads.size(), jobs.size());
     }
-    
+
     @Test
     public void testGetQueueInfo_ZSet() throws JsonProcessingException {
         final String name = "queue1";
@@ -220,14 +257,22 @@ public class TestQueueInfoDAORedisImpl {
         final List<Tuple> payloads = new ArrayList<>(2);
         payloads.add(new Tuple(ObjectMapperFactory.get().writeValueAsString(new Job("foo")), 1d));
         payloads.add(new Tuple(ObjectMapperFactory.get().writeValueAsString(new Job("bar")), 1d));
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(pool).getResource(); will(returnValue(jedis));
-            exactly(3).of(jedis).type(queueKey); will(returnValue(KeyType.ZSET.toString()));
-            oneOf(jedis).zcard(queueKey); will(returnValue(size));
-            oneOf(jedis).zcount(with(equal(queueKey)), with(equal(0.0)), with(any(Double.class))); will(returnValue(jobCount));
-            oneOf(jedis).zrangeWithScores(queueKey, jobOffset, jobOffset + jobCount - 1); will(returnValue(payloads));
-            oneOf(jedis).close();
-        }});
+        this.mockCtx.checking(new Expectations() {
+            {
+                oneOf(pool).getResource();
+                will(returnValue(jedis));
+                exactly(3).of(jedis).type(queueKey);
+                will(returnValue(KeyType.ZSET.toString()));
+                oneOf(jedis).zcard(queueKey);
+                will(returnValue(size));
+                oneOf(jedis).zcount(with(equal(queueKey)), with(equal(0.0)),
+                        with(any(Double.class)));
+                will(returnValue(jobCount));
+                oneOf(jedis).zrangeWithScores(queueKey, jobOffset, jobOffset + jobCount - 1);
+                will(returnValue(payloads));
+                oneOf(jedis).close();
+            }
+        });
         final QueueInfo queueInfo = this.qInfoDAO.getQueueInfo(name, jobOffset, jobCount);
         Assert.assertNotNull(queueInfo);
         Assert.assertEquals(name, queueInfo.getName());

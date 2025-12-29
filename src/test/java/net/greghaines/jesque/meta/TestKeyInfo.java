@@ -7,17 +7,17 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class TestKeyInfo {
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullKey() {
         new KeyInfo(null, null);
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_BadKey() {
         new KeyInfo("foo", null);
     }
-    
+
     @Test
     public void testConstructor() {
         final KeyType type = KeyType.HASH;
@@ -47,7 +47,7 @@ public class TestKeyInfo {
         keyInfo.setArrayValue(arrayValue);
         Assert.assertEquals(arrayValue, keyInfo.getArrayValue());
     }
-    
+
     @Test
     public void testCompareToEqualsHashCode() {
         final KeyInfo ki1 = new KeyInfo();

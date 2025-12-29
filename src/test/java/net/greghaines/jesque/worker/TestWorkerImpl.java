@@ -35,18 +35,18 @@ public class TestWorkerImpl {
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullJobFactory() {
-        new WorkerImpl(CONFIG, Collections.<String> emptyList(), null, null);
+        new WorkerImpl(CONFIG, Collections.<String>emptyList(), null, null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullJedis() {
-        new WorkerImpl(CONFIG, Collections.<String> emptyList(),
+        new WorkerImpl(CONFIG, Collections.<String>emptyList(),
                 new MapBasedJobFactory(map(entry("Test", TestAction.class))), null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullNextQueueStrategy() {
-        new WorkerImpl(CONFIG, Collections.<String> emptyList(),
+        new WorkerImpl(CONFIG, Collections.<String>emptyList(),
                 new MapBasedJobFactory(map(entry("Test", TestAction.class))), getJedis(), null);
     }
 
@@ -80,10 +80,11 @@ public class TestWorkerImpl {
 
     @Test
     public void verifyNoExceptionsForAllNextQueueStrategies() throws InterruptedException {
-        final MapBasedJobFactory jobFactory = new MapBasedJobFactory(Collections.<String, Class<?>> emptyMap());
+        final MapBasedJobFactory jobFactory =
+                new MapBasedJobFactory(Collections.<String, Class<?>>emptyMap());
         for (NextQueueStrategy nextQueueStrategy : NextQueueStrategy.values()) {
-            final WorkerImpl worker = new WorkerImpl(CONFIG, new ArrayList<String>(), jobFactory, getJedis(),
-                    nextQueueStrategy);
+            final WorkerImpl worker = new WorkerImpl(CONFIG, new ArrayList<String>(), jobFactory,
+                    getJedis(), nextQueueStrategy);
             worker.pop(worker.getNextQueue());
         }
     }

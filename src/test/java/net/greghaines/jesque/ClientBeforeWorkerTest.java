@@ -1,17 +1,15 @@
 /*
  * Copyright 2012 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque;
 
@@ -42,7 +40,7 @@ import redis.clients.jedis.Jedis;
  * @author Greg Haines
  */
 public class ClientBeforeWorkerTest {
-    
+
     private static final Config config = new ConfigBuilder().build();
     private static final String testQueue = "foo";
 
@@ -54,7 +52,8 @@ public class ClientBeforeWorkerTest {
     @Test
     public void issue18() throws Exception {
         // Enqueue the job before worker is created and started
-        final Job job = new Job("TestAction", new Object[] { 1, 2.3, true, "test", Arrays.asList("inner", 4.5) });
+        final Job job = new Job("TestAction",
+                new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
         TestUtils.enqueueJobs(testQueue, Arrays.asList(job), config);
         try (Jedis jedis = createJedis(config)) { // Assert that we enqueued the job
             Assert.assertEquals(1L, jedis.llen(createKey(config.getNamespace(), QUEUE, testQueue)));

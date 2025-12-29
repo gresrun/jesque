@@ -1,17 +1,15 @@
 /*
  * Copyright 2012 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.admin;
 
@@ -29,7 +27,7 @@ import redis.clients.jedis.Jedis;
  * @author Greg Haines
  */
 public class AdminClientImpl extends AbstractAdminClient {
-    
+
     /**
      * The default behavior for checking connection validity before use.
      */
@@ -41,27 +39,22 @@ public class AdminClientImpl extends AbstractAdminClient {
     private final ScheduledExecutorService keepAliveService;
 
     /**
-     * Create a new AdminClientImpl, which creates it's own connection to Redis
-     * using values from the config. It will not verify the connection before
-     * use.
+     * Create a new AdminClientImpl, which creates it's own connection to Redis using values from
+     * the config. It will not verify the connection before use.
      * 
-     * @param config
-     *            used to create a connection to Redis
+     * @param config used to create a connection to Redis
      */
     public AdminClientImpl(final Config config) {
         this(config, DEFAULT_CHECK_CONNECTION_BEFORE_USE);
     }
 
     /**
-     * Create a new AdminClientImpl, which creates it's own connection to Redis
-     * using values from the config.
+     * Create a new AdminClientImpl, which creates it's own connection to Redis using values from
+     * the config.
      * 
-     * @param config
-     *            used to create a connection to Redis
-     * @param checkConnectionBeforeUse
-     *            check to make sure the connection is alive before using it
-     * @throws IllegalArgumentException
-     *             if the config is null
+     * @param config used to create a connection to Redis
+     * @param checkConnectionBeforeUse check to make sure the connection is alive before using it
+     * @throws IllegalArgumentException if the config is null
      */
     public AdminClientImpl(final Config config, final boolean checkConnectionBeforeUse) {
         super(config);
@@ -73,20 +66,16 @@ public class AdminClientImpl extends AbstractAdminClient {
     }
 
     /**
-     * Create a new AdminClientImpl, which creates it's own connection to Redis
-     * using values from the config and spawns a thread to ensure the connection
-     * stays open.
+     * Create a new AdminClientImpl, which creates it's own connection to Redis using values from
+     * the config and spawns a thread to ensure the connection stays open.
      * 
-     * @param config
-     *            used to create a connection to Redis
-     * @param initialDelay
-     *            the time to delay first connection check
-     * @param period
-     *            the period between successive connection checks
-     * @param timeUnit
-     *            the time unit of the initialDelay and period parameters
+     * @param config used to create a connection to Redis
+     * @param initialDelay the time to delay first connection check
+     * @param period the period between successive connection checks
+     * @param timeUnit the time unit of the initialDelay and period parameters
      */
-    public AdminClientImpl(final Config config, final long initialDelay, final long period, final TimeUnit timeUnit) {
+    public AdminClientImpl(final Config config, final long initialDelay, final long period,
+            final TimeUnit timeUnit) {
         super(config);
         this.config = config;
         this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
@@ -102,7 +91,7 @@ public class AdminClientImpl extends AbstractAdminClient {
             }
         }, initialDelay, period, timeUnit);
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -111,7 +100,7 @@ public class AdminClientImpl extends AbstractAdminClient {
         ensureJedisConnection();
         doPublish(this.jedis, getNamespace(), queue, jobJson);
     }
-    
+
     /**
      * {@inheritDoc}
      */

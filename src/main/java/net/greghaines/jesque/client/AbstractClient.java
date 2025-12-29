@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.client;
 
@@ -43,8 +41,7 @@ public abstract class AbstractClient implements Client {
     /**
      * Constructor.
      * 
-     * @param config
-     *            used to get the namespace for key creation
+     * @param config used to get the namespace for key creation
      */
     protected AbstractClient(final Config config) {
         if (config == null) {
@@ -63,8 +60,7 @@ public abstract class AbstractClient implements Client {
     /**
      * Builds a namespaced Redis key with the given arguments.
      * 
-     * @param parts
-     *            the key parts to be joined
+     * @param parts the key parts to be joined
      * @return an assembled String key
      */
     protected String key(final String... parts) {
@@ -135,7 +131,8 @@ public abstract class AbstractClient implements Client {
             throw new IllegalArgumentException("lockName must not be null or empty: " + lockName);
         }
         if ((lockHolder == null) || "".equals(lockHolder)) {
-            throw new IllegalArgumentException("lockHolder must not be null or empty: " + lockHolder);
+            throw new IllegalArgumentException(
+                    "lockHolder must not be null or empty: " + lockHolder);
         }
         if (timeout < 1) {
             throw new IllegalArgumentException("timeout must be a positive number");
@@ -152,69 +149,52 @@ public abstract class AbstractClient implements Client {
     /**
      * Actually enqueue the serialized job.
      * 
-     * @param queue
-     *            the queue to add the Job to
-     * @param msg
-     *            the serialized Job
-     * @throws Exception
-     *             in case something goes wrong
+     * @param queue the queue to add the Job to
+     * @param msg the serialized Job
+     * @throws Exception in case something goes wrong
      */
     protected abstract void doEnqueue(String queue, String msg) throws Exception;
 
     /**
      * Actually enqueue the serialized jobs.
      * 
-     * @param queue
-     *            the queue to add the Jobs to
-     * @param msgs
-     *            the serialized Jobs
-     * @throws Exception
-     *             in case something goes wrong
+     * @param queue the queue to add the Jobs to
+     * @param msgs the serialized Jobs
+     * @throws Exception in case something goes wrong
      */
     protected abstract void doBatchEnqueue(String queue, List<String> msgs) throws Exception;
 
     /**
      * Actually enqueue the serialized job with high priority.
      * 
-     * @param queue
-     *            the queue to add the Job to
-     * @param msg
-     *            the serialized Job
-     * @throws Exception
-     *             in case something goes wrong
+     * @param queue the queue to add the Job to
+     * @param msg the serialized Job
+     * @throws Exception in case something goes wrong
      */
     protected abstract void doPriorityEnqueue(String queue, String msg) throws Exception;
 
     /**
      * Actually acquire the lock based upon the client acquisition model.
      * 
-     * @param lockName
-     *            the name of the lock to acquire
-     * @param timeout
-     *            number of seconds until the lock will expire
-     * @param lockHolder
-     *            a unique string identifying the caller
+     * @param lockName the name of the lock to acquire
+     * @param timeout number of seconds until the lock will expire
+     * @param lockHolder a unique string identifying the caller
      * @return true, if the lock was acquired, false otherwise
-     * @throws Exception
-     *             in case something goes wrong
+     * @throws Exception in case something goes wrong
      */
-    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder, 
+    protected abstract boolean doAcquireLock(final String lockName, final String lockHolder,
             final int timeout) throws Exception;
 
     /**
-     * Helper method that encapsulates the minimum logic for adding a job to a
-     * queue.
+     * Helper method that encapsulates the minimum logic for adding a job to a queue.
      * 
-     * @param jedis
-     *            the connection to Redis
-     * @param namespace
-     *            the Resque namespace
-     * @param queue
-     *            the Resque queue name
-     * @param jobJson
-     *            the job serialized as JSON
+     * @param jedis the connection to Redis
+     * @param namespace the Resque namespace
+     * @param queue the Resque queue name
+     * @param jobJson the job serialized as JSON
      */
-    public static void doEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
+    public static void doEnqueue(final Jedis jedis, final String namespace, final String queue,
+            final String jobJson) {
         jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
         jedis.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
     }
@@ -222,16 +202,13 @@ public abstract class AbstractClient implements Client {
     /**
      * Helper method that encapsulates the minimum logic for adding jobs to a queue.
      * 
-     * @param jedis
-     *            the connection to Redis
-     * @param namespace
-     *            the Resque namespace
-     * @param queue
-     *            the Resque queue name
-     * @param jobJsons
-     *            a list of jobs serialized as JSON
+     * @param jedis the connection to Redis
+     * @param namespace the Resque namespace
+     * @param queue the Resque queue name
+     * @param jobJsons a list of jobs serialized as JSON
      */
-    public static void doBatchEnqueue(final Jedis jedis, final String namespace, final String queue, final List<String> jobJsons) {
+    public static void doBatchEnqueue(final Jedis jedis, final String namespace, final String queue,
+            final List<String> jobJsons) {
         Pipeline pipelined = jedis.pipelined();
         pipelined.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
         for (String jobJson : jobJsons) {
@@ -241,19 +218,15 @@ public abstract class AbstractClient implements Client {
     }
 
     /**
-     * Helper method that encapsulates the minimum logic for adding a high
-     * priority job to a queue.
+     * Helper method that encapsulates the minimum logic for adding a high priority job to a queue.
      * 
-     * @param jedis
-     *            the connection to Redis
-     * @param namespace
-     *            the Resque namespace
-     * @param queue
-     *            the Resque queue name
-     * @param jobJson
-     *            the job serialized as JSON
+     * @param jedis the connection to Redis
+     * @param namespace the Resque namespace
+     * @param queue the Resque queue name
+     * @param jobJson the job serialized as JSON
      */
-    public static void doPriorityEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
+    public static void doPriorityEnqueue(final Jedis jedis, final String namespace,
+            final String queue, final String jobJson) {
         jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
         jedis.lpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
     }
@@ -261,21 +234,17 @@ public abstract class AbstractClient implements Client {
     /**
      * Helper method that encapsulates the logic to acquire a lock.
      * 
-     * @param jedis
-     *            the connection to Redis
-     * @param namespace
-     *            the Resque namespace
-     * @param lockName
-     *            all calls to this method will contend for a unique lock with
-     *            the name of lockName
-     * @param timeout
-     *            seconds until the lock will expire
-     * @param lockHolder
-     *            a unique string used to tell if you are the current holder of
-     *            a lock for both acquisition, and extension
+     * @param jedis the connection to Redis
+     * @param namespace the Resque namespace
+     * @param lockName all calls to this method will contend for a unique lock with the name of
+     *        lockName
+     * @param timeout seconds until the lock will expire
+     * @param lockHolder a unique string used to tell if you are the current holder of a lock for
+     *        both acquisition, and extension
      * @return Whether or not the lock was acquired.
      */
-    public static boolean doAcquireLock(final Jedis jedis, final String namespace, final String lockName, final String lockHolder, final int timeout) {
+    public static boolean doAcquireLock(final Jedis jedis, final String namespace,
+            final String lockName, final String lockHolder, final int timeout) {
         final String key = JesqueUtils.createKey(namespace, lockName);
         // If lock already exists, extend it
         String existingLockHolder = jedis.get(key);
@@ -330,7 +299,8 @@ public abstract class AbstractClient implements Client {
         return false;
     }
 
-    public static void doDelayedEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future) {
+    public static void doDelayedEnqueue(final Jedis jedis, final String namespace,
+            final String queue, final String jobJson, final long future) {
         final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
         // Add task only if this queue is either delayed or unused
         if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
@@ -341,7 +311,8 @@ public abstract class AbstractClient implements Client {
         }
     }
 
-    protected abstract void doDelayedEnqueue(String queue, String msg, long future) throws Exception;
+    protected abstract void doDelayedEnqueue(String queue, String msg, long future)
+            throws Exception;
 
     /**
      * {@inheritDoc}
@@ -358,7 +329,8 @@ public abstract class AbstractClient implements Client {
         }
     }
 
-    public static void doRemoveDelayedEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
+    public static void doRemoveDelayedEnqueue(final Jedis jedis, final String namespace,
+            final String queue, final String jobJson) {
         final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
         // remove task only if this queue is either delayed or unused
         if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
@@ -385,7 +357,8 @@ public abstract class AbstractClient implements Client {
         }
     }
 
-    public static void doRecurringEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson, final long future, final long frequency){
+    public static void doRecurringEnqueue(final Jedis jedis, final String namespace,
+            final String queue, final String jobJson, final long future, final long frequency) {
         final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
         final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
@@ -394,14 +367,16 @@ public abstract class AbstractClient implements Client {
             transaction.zadd(queueKey, future, jobJson);
             transaction.hset(hashKey, jobJson, String.valueOf(frequency));
             if (transaction.exec() == null) {
-                throw new RuntimeException("cannot add " + jobJson + " to recurring queue " + queue);
+                throw new RuntimeException(
+                        "cannot add " + jobJson + " to recurring queue " + queue);
             }
         } else {
             throw new IllegalArgumentException(queue + " cannot be used as a recurring queue");
         }
     }
 
-    protected abstract void doRecurringEnqueue(String queue, String msg, long future, long frequency) throws Exception;
+    protected abstract void doRecurringEnqueue(String queue, String msg, long future,
+            long frequency) throws Exception;
 
     /**
      * {@inheritDoc}
@@ -410,7 +385,8 @@ public abstract class AbstractClient implements Client {
     public void recurringEnqueue(String queue, Job job, long future, long frequency) {
         validateArguments(queue, job, future, frequency);
         try {
-            doRecurringEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future, frequency);
+            doRecurringEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future,
+                    frequency);
         } catch (RuntimeException re) {
             throw re;
         } catch (Exception e) {
@@ -418,7 +394,8 @@ public abstract class AbstractClient implements Client {
         }
     }
 
-    public static void doRemoveRecurringEnqueue(final Jedis jedis, final String namespace, final String queue, final String jobJson) {
+    public static void doRemoveRecurringEnqueue(final Jedis jedis, final String namespace,
+            final String queue, final String jobJson) {
         final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
         final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
@@ -427,7 +404,8 @@ public abstract class AbstractClient implements Client {
             transaction.hdel(hashKey, jobJson);
             transaction.zrem(queueKey, jobJson);
             if (transaction.exec() == null) {
-                throw new RuntimeException("cannot remove " + jobJson + " from recurring queue " + queue);
+                throw new RuntimeException(
+                        "cannot remove " + jobJson + " from recurring queue " + queue);
             }
         } else {
             throw new IllegalArgumentException(queue + " cannot be used as a recurring queue");
@@ -479,7 +457,8 @@ public abstract class AbstractClient implements Client {
         }
     }
 
-    private static void validateArguments(final String queue, final Job job, final long future, final long frequency) {
+    private static void validateArguments(final String queue, final Job job, final long future,
+            final long frequency) {
         validateArguments(queue, job, future);
         validateFrequency(frequency);
     }

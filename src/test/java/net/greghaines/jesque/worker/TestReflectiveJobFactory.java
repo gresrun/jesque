@@ -23,19 +23,19 @@ public class TestReflectiveJobFactory {
         Assert.assertNotNull(action2);
         Assert.assertEquals(TestCallableJob.class, action2.getClass());
     }
-    
+
     @Test(expected = ClassCastException.class)
     public void testMaterializeJob_NotRunnable() throws Exception {
         JesqueUtils.materializeJob(new Job(TestBadJob.class.getName()));
     }
-    
+
     public static class TestRunnableJob implements Runnable {
         @Override
         public void run() {
             // Do nothing
         }
     }
-    
+
     public static class TestCallableJob implements Callable<Object> {
         @Override
         public Object call() {
@@ -43,7 +43,7 @@ public class TestReflectiveJobFactory {
             return null;
         }
     }
-    
+
     public static class TestBadJob {
         public void run() {
             // Do nothing

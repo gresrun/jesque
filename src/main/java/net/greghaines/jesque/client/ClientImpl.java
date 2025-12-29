@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.client;
 
@@ -41,26 +39,22 @@ public class ClientImpl extends AbstractClient {
     private final ScheduledExecutorService keepAliveService;
 
     /**
-     * Create a new ClientImpl, which creates it's own connection to Redis using
-     * values from the config. It will not verify the connection before use.
+     * Create a new ClientImpl, which creates it's own connection to Redis using values from the
+     * config. It will not verify the connection before use.
      *
-     * @param config
-     *            used to create a connection to Redis
+     * @param config used to create a connection to Redis
      */
     public ClientImpl(final Config config) {
         this(config, DEFAULT_CHECK_CONNECTION_BEFORE_USE);
     }
 
     /**
-     * Create a new ClientImpl, which creates it's own connection to Redis using
-     * values from the config.
+     * Create a new ClientImpl, which creates it's own connection to Redis using values from the
+     * config.
      *
-     * @param config
-     *            used to create a connection to Redis
-     * @param checkConnectionBeforeUse
-     *            check to make sure the connection is alive before using it
-     * @throws IllegalArgumentException
-     *             if the config is null
+     * @param config used to create a connection to Redis
+     * @param checkConnectionBeforeUse check to make sure the connection is alive before using it
+     * @throws IllegalArgumentException if the config is null
      */
     public ClientImpl(final Config config, final boolean checkConnectionBeforeUse) {
         super(config);
@@ -72,20 +66,16 @@ public class ClientImpl extends AbstractClient {
     }
 
     /**
-     * Create a new ClientImpl, which creates it's own connection to Redis using
-     * values from the config and spawns a thread to ensure the connection stays
-     * open.
+     * Create a new ClientImpl, which creates it's own connection to Redis using values from the
+     * config and spawns a thread to ensure the connection stays open.
      *
-     * @param config
-     *            used to create a connection to Redis
-     * @param initialDelay
-     *            the time to delay first connection check
-     * @param period
-     *            the period between successive connection checks
-     * @param timeUnit
-     *            the time unit of the initialDelay and period parameters
+     * @param config used to create a connection to Redis
+     * @param initialDelay the time to delay first connection check
+     * @param period the period between successive connection checks
+     * @param timeUnit the time unit of the initialDelay and period parameters
      */
-    public ClientImpl(final Config config, final long initialDelay, final long period, final TimeUnit timeUnit) {
+    public ClientImpl(final Config config, final long initialDelay, final long period,
+            final TimeUnit timeUnit) {
         super(config);
         this.config = config;
         this.jedis = new Jedis(config.getHost(), config.getPort(), config.getTimeout());
@@ -132,7 +122,8 @@ public class ClientImpl extends AbstractClient {
      * {@inheritDoc}
      */
     @Override
-    protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout) throws Exception {
+    protected boolean doAcquireLock(final String lockName, final String lockHolder,
+            final int timeout) throws Exception {
         ensureJedisConnection();
         return doAcquireLock(this.jedis, getNamespace(), lockName, lockHolder, timeout);
     }
@@ -153,7 +144,8 @@ public class ClientImpl extends AbstractClient {
      * {@inheritDoc}
      */
     @Override
-    protected void doDelayedEnqueue(final String queue, final String msg, final long future) throws Exception {
+    protected void doDelayedEnqueue(final String queue, final String msg, final long future)
+            throws Exception {
         ensureJedisConnection();
         doDelayedEnqueue(this.jedis, getNamespace(), queue, msg, future);
     }
@@ -171,7 +163,8 @@ public class ClientImpl extends AbstractClient {
      * {@inheritDoc}
      */
     @Override
-    protected void doRecurringEnqueue(final String queue, final String msg, final long future, final long frequency) throws Exception{
+    protected void doRecurringEnqueue(final String queue, final String msg, final long future,
+            final long frequency) throws Exception {
         ensureJedisConnection();
         doRecurringEnqueue(this.jedis, getNamespace(), queue, msg, future, frequency);
     }
@@ -180,7 +173,7 @@ public class ClientImpl extends AbstractClient {
      * {@inheritDoc}
      */
     @Override
-    protected void doRemoveRecurringEnqueue(final String queue, final String msg) throws Exception{
+    protected void doRemoveRecurringEnqueue(final String queue, final String msg) throws Exception {
         ensureJedisConnection();
         doRemoveRecurringEnqueue(this.jedis, getNamespace(), queue, msg);
     }

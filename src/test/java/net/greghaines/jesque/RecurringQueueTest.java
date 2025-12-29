@@ -30,7 +30,8 @@ public class RecurringQueueTest {
     private static final String recurringTestQueue = "fooRecurring";
     private static final long recurringFrequency = 1000;
     private static final Client client = new ClientImpl(config);
-    private static final String queueKey = createKey(config.getNamespace(), QUEUE, recurringTestQueue);
+    private static final String queueKey =
+            createKey(config.getNamespace(), QUEUE, recurringTestQueue);
     private static final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
     @Before
@@ -41,17 +42,17 @@ public class RecurringQueueTest {
     @Test
     public void testCode() throws Exception {
 
-        Job job = new Job("TestAction", new Object[]{1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
-        client.recurringEnqueue(recurringTestQueue, job, System.currentTimeMillis() + recurringFrequency, recurringFrequency);
+        Job job = new Job("TestAction",
+                new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
+        client.recurringEnqueue(recurringTestQueue, job,
+                System.currentTimeMillis() + recurringFrequency, recurringFrequency);
 
         try (Jedis jedis = createJedis(config)) { // Assert that we enqueued the job
-            Assert.assertEquals(1L,
-                    jedis.zcount(queueKey, "-inf", "+inf"));
+            Assert.assertEquals(1L, jedis.zcount(queueKey, "-inf", "+inf"));
             List<String> jobSet = jedis.zrangeByScore(queueKey, "-inf", "+inf", 0, 1);
 
             String jobString = jobSet.iterator().next();
-            Assert.assertEquals(String.valueOf(recurringFrequency),
-                    jedis.hget(hashKey, jobString));
+            Assert.assertEquals(String.valueOf(recurringFrequency), jedis.hget(hashKey, jobString));
         }
 
         // Create and mark the start worker
@@ -72,19 +73,20 @@ public class RecurringQueueTest {
         Long endMillis = System.currentTimeMillis();
 
         // should have run (startMillis-endMillis/frequency)
-        Long times = ((endMillis - startMillis)/recurringFrequency);
+        Long times = ((endMillis - startMillis) / recurringFrequency);
 
         // Assert that the job was run by the worker
         try (Jedis jedis = createJedis(config)) {
-            Long processedTimes = Long.valueOf(jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
+            Long processedTimes =
+                    Long.valueOf(jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
 
             // allowing for off by one error
             Long oneOrZero = Math.abs(times - processedTimes);
 
             Assert.assertTrue(oneOrZero == 0 || oneOrZero == 1);
             Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-            Assert.assertEquals(0L,
-                    jedis.zcount(createKey(config.getNamespace(), QUEUE, recurringTestQueue), "-inf", "+inf"));
+            Assert.assertEquals(0L, jedis.zcount(
+                    createKey(config.getNamespace(), QUEUE, recurringTestQueue), "-inf", "+inf"));
             Assert.assertEquals(0L, jedis.hlen(hashKey));
         }
     }

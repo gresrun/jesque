@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.meta.dao.impl;
 
@@ -43,12 +41,13 @@ import redis.clients.jedis.util.Pool;
  * @author Greg Haines
  */
 public class FailureDAORedisImpl implements FailureDAO {
-    
+
     private final Config config;
     private final Pool<Jedis> jedisPool;
 
     /**
      * Constructor.
+     * 
      * @param config the Jesque configuration
      * @param jedisPool the connection pool to Redis
      */
@@ -101,22 +100,26 @@ public class FailureDAORedisImpl implements FailureDAO {
      */
     @Override
     public List<JobFailure> getFailures(final long offset, final long count) {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<JobFailure>>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public List<JobFailure> doWork(final Jedis jedis) throws Exception {
-                final List<String> payloads = jedis.lrange(key(FAILED), offset, offset + count - 1);
-                final List<JobFailure> failures = new ArrayList<JobFailure>(payloads.size());
-                for (final String payload : payloads) {
-                    if (payload.charAt(0) == '{') { // Ignore non-JSON strings
-                        failures.add(ObjectMapperFactory.get().readValue(payload, JobFailure.class));
+        return PoolUtils.doWorkInPoolNicely(this.jedisPool,
+                new PoolWork<Jedis, List<JobFailure>>() {
+                    /**
+                     * {@inheritDoc}
+                     */
+                    @Override
+                    public List<JobFailure> doWork(final Jedis jedis) throws Exception {
+                        final List<String> payloads =
+                                jedis.lrange(key(FAILED), offset, offset + count - 1);
+                        final List<JobFailure> failures =
+                                new ArrayList<JobFailure>(payloads.size());
+                        for (final String payload : payloads) {
+                            if (payload.charAt(0) == '{') { // Ignore non-JSON strings
+                                failures.add(ObjectMapperFactory.get().readValue(payload,
+                                        JobFailure.class));
+                            }
+                        }
+                        return failures;
                     }
-                }
-                return failures;
-            }
-        });
+                });
     }
 
     /**
@@ -153,7 +156,8 @@ public class FailureDAORedisImpl implements FailureDAO {
                     final Date retriedAt = new Date();
                     final JobFailure failure = failures.get(0);
                     failure.setRetriedAt(retriedAt);
-                    jedis.lset(key(FAILED), index, ObjectMapperFactory.get().writeValueAsString(failure));
+                    jedis.lset(key(FAILED), index,
+                            ObjectMapperFactory.get().writeValueAsString(failure));
                     enqueue(jedis, failure.getQueue(), failure.getPayload());
                     return retriedAt;
                 }
@@ -182,7 +186,8 @@ public class FailureDAORedisImpl implements FailureDAO {
         });
     }
 
-    protected void enqueue(final Jedis jedis, final String queue, final Job job) throws IOException {
+    protected void enqueue(final Jedis jedis, final String queue, final Job job)
+            throws IOException {
         if (queue == null || "".equals(queue)) {
             throw new IllegalArgumentException("queue must not be null or empty: " + queue);
         }
@@ -200,8 +205,7 @@ public class FailureDAORedisImpl implements FailureDAO {
     /**
      * Builds a namespaced Redis key with the given arguments.
      * 
-     * @param parts
-     *            the key parts to be joined
+     * @param parts the key parts to be joined
      * @return an assembled String key
      */
     private String key(final String... parts) {

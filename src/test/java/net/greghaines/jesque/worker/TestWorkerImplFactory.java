@@ -21,10 +21,11 @@ public class TestWorkerImplFactory {
     @Test
     public void testCall() {
         final Collection<String> queues = Arrays.asList("foo", "bar");
-        final Map<String,Class<?>> jobTypes = new LinkedHashMap<String,Class<?>>(1);
+        final Map<String, Class<?>> jobTypes = new LinkedHashMap<String, Class<?>>(1);
         jobTypes.put("test", TestAction.class);
         final MapBasedJobFactory jobFactory = new MapBasedJobFactory(jobTypes);
-        final WorkerImplFactory factory = new WorkerImplFactory(new ConfigBuilder().build(), queues, jobFactory);
+        final WorkerImplFactory factory =
+                new WorkerImplFactory(new ConfigBuilder().build(), queues, jobFactory);
         final WorkerImpl worker = factory.call();
         Assert.assertNotNull(worker);
         Assert.assertEquals(queues.size(), worker.getQueues().size());

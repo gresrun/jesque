@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque;
 
@@ -34,14 +32,13 @@ import redis.clients.jedis.Jedis;
  * @author Animesh Kumar
  */
 public final class TestUtils {
-    
+
     private static final Logger log = LoggerFactory.getLogger(TestUtils.class);
 
     /**
      * Reset the Redis database using the supplied Config.
      * 
-     * @param config
-     *            the location of the Redis server
+     * @param config the location of the Redis server
      */
     public static void resetRedis(final Config config) {
         try (Jedis jedis = createJedis(config)) {
@@ -53,8 +50,7 @@ public final class TestUtils {
     /**
      * Create a connection to Redis from the given Config.
      * 
-     * @param config
-     *            the location of the Redis server
+     * @param config the location of the Redis server
      * @return a new connection
      */
     public static Jedis createJedis(final Config config) {
@@ -93,7 +89,8 @@ public final class TestUtils {
         stopWorker(worker, workerThread, false);
     }
 
-    public static void stopWorker(final JobExecutor worker, final Thread workerThread, boolean now) {
+    public static void stopWorker(final JobExecutor worker, final Thread workerThread,
+            boolean now) {
         try {
             Thread.sleep(2000);
         } catch (Exception e) {
@@ -106,7 +103,8 @@ public final class TestUtils {
         }
     }
 
-    public static void delayEnqueueJobs(final String queue, final List<Job> jobs, final Config config) {
+    public static void delayEnqueueJobs(final String queue, final List<Job> jobs,
+            final Config config) {
         final Client client = new ClientImpl(config);
         try {
             int i = 1;
@@ -119,7 +117,8 @@ public final class TestUtils {
         }
     }
 
-    public static void removeDelayEnqueueJobs(final String queue, final List<Job> jobs, final Config config) {
+    public static void removeDelayEnqueueJobs(final String queue, final List<Job> jobs,
+            final Config config) {
         final Client client = new ClientImpl(config);
         try {
             for (final Job job : jobs) {

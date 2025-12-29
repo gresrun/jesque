@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.utils;
 
@@ -53,10 +51,8 @@ public final class JesqueUtils {
     /**
      * Join the given strings, separated by the given separator.
      *
-     * @param sep
-     *            the separator
-     * @param strs
-     *            the strings to join
+     * @param sep the separator
+     * @param strs the strings to join
      * @return the joined string
      */
     public static String join(final String sep, final String... strs) {
@@ -66,10 +62,8 @@ public final class JesqueUtils {
     /**
      * Join the given strings, separated by the given separator.
      *
-     * @param sep
-     *            the separator
-     * @param strs
-     *            the strings to join
+     * @param sep the separator
+     * @param strs the strings to join
      * @return the joined string
      */
     public static String join(final String sep, final Iterable<String> strs) {
@@ -85,10 +79,8 @@ public final class JesqueUtils {
     /**
      * Builds a namespaced Redis key with the given arguments.
      *
-     * @param namespace
-     *            the namespace to use
-     * @param parts
-     *            the key parts to be joined
+     * @param namespace the namespace to use
+     * @param parts the key parts to be joined
      * @return an assembled String key
      */
     public static String createKey(final String namespace, final String... parts) {
@@ -102,10 +94,8 @@ public final class JesqueUtils {
     /**
      * Builds a namespaced Redis key with the given arguments.
      *
-     * @param namespace
-     *            the namespace to use
-     * @param parts
-     *            the key parts to be joined
+     * @param namespace the namespace to use
+     * @param parts the key parts to be joined
      * @return an assembled String key
      */
     public static String createKey(final String namespace, final Iterable<String> parts) {
@@ -120,13 +110,10 @@ public final class JesqueUtils {
     }
 
     /**
-     * Creates a Resque backtrace from a Throwable's stack trace. Includes
-     * causes.
+     * Creates a Resque backtrace from a Throwable's stack trace. Includes causes.
      *
-     * @param t
-     *            the Exception to use
-     * @return a list of strings that represent how the exception's stacktrace
-     *         appears.
+     * @param t the Exception to use
+     * @return a list of strings that represent how the exception's stacktrace appears.
      */
     public static List<String> createBacktrace(final Throwable t) {
         final List<String> bTrace = new LinkedList<String>();
@@ -142,16 +129,15 @@ public final class JesqueUtils {
     /**
      * Add a cause to the backtrace.
      *
-     * @param cause
-     *            the cause
-     * @param bTrace
-     *            the backtrace list
+     * @param cause the cause
+     * @param bTrace the backtrace list
      */
     private static void addCauseToBacktrace(final Throwable cause, final List<String> bTrace) {
         if (cause.getMessage() == null) {
             bTrace.add(BT_CAUSED_BY_PREFIX + cause.getClass().getName());
         } else {
-            bTrace.add(BT_CAUSED_BY_PREFIX + cause.getClass().getName() + ": " + cause.getMessage());
+            bTrace.add(
+                    BT_CAUSED_BY_PREFIX + cause.getClass().getName() + ": " + cause.getMessage());
         }
         for (final StackTraceElement ste : cause.getStackTrace()) {
             bTrace.add(BT_PREFIX + ste.toString());
@@ -162,52 +148,40 @@ public final class JesqueUtils {
     }
 
     /**
-     * Recreate an exception from a type name, a message and a backtrace
-     * (created from <code>JesqueUtils.createBacktrace(Throwable)</code>).
+     * Recreate an exception from a type name, a message and a backtrace (created from
+     * <code>JesqueUtils.createBacktrace(Throwable)</code>).
      * <p>
      * <b>Limitations:</b><br>
      * This method cannot recreate Throwables with unusual/custom Constructors.
      * <ul>
-     * <li>If the message is non-null and the cause is null, there must be a
-     * Constructor with a single String as it's only parameter.</li>
-     * <li>If the message is non-null and the cause is non-null, there must be a
-     * Constructor with a single String as it's only parameter or a Constructor
-     * with a String and a Throwable as its parameters.</li>
-     * <li>If the message is null and the cause is null, there must be either a
-     * no-arg Constructor or a Constructor with a single String as it's only
-     * parameter.</li>
-     * <li>If the message is null and the cause is non-null, there must be
-     * either a no-arg Constructor, a Constructor with a single String as its
-     * only parameter or a Constructor with a String and a Throwable as its
+     * <li>If the message is non-null and the cause is null, there must be a Constructor with a
+     * single String as it's only parameter.</li>
+     * <li>If the message is non-null and the cause is non-null, there must be a Constructor with a
+     * single String as it's only parameter or a Constructor with a String and a Throwable as its
      * parameters.</li>
+     * <li>If the message is null and the cause is null, there must be either a no-arg Constructor
+     * or a Constructor with a single String as it's only parameter.</li>
+     * <li>If the message is null and the cause is non-null, there must be either a no-arg
+     * Constructor, a Constructor with a single String as its only parameter or a Constructor with a
+     * String and a Throwable as its parameters.</li>
      * </ul>
      *
-     * @param type
-     *            the String name of the Throwable type
-     * @param message
-     *            the message of the exception
-     * @param backtrace
-     *            the backtrace of the exception
-     * @return a new Throwable of the given type with the given message and
-     *         given backtrace/causes
-     * @throws ParseException
-     *             if there is a problem parsing the given backtrace
-     * @throws ClassNotFoundException
-     *             if the given type is not available
-     * @throws NoSuchConstructorException
-     *             if there is not a common constructor available for the given
-     *             type
-     * @throws AmbiguousConstructorException
-     *             if there is more than one constructor that is viable
-     * @throws InstantiationException
-     *             if there is a problem instantiating the given type
-     * @throws IllegalAccessException
-     *             if the common constructor is not visible
-     * @throws InvocationTargetException
-     *             if the constructor threw an exception
+     * @param type the String name of the Throwable type
+     * @param message the message of the exception
+     * @param backtrace the backtrace of the exception
+     * @return a new Throwable of the given type with the given message and given backtrace/causes
+     * @throws ParseException if there is a problem parsing the given backtrace
+     * @throws ClassNotFoundException if the given type is not available
+     * @throws NoSuchConstructorException if there is not a common constructor available for the
+     *         given type
+     * @throws AmbiguousConstructorException if there is more than one constructor that is viable
+     * @throws InstantiationException if there is a problem instantiating the given type
+     * @throws IllegalAccessException if the common constructor is not visible
+     * @throws InvocationTargetException if the constructor threw an exception
      * @see JesqueUtils#createBacktrace(Throwable)
      */
-    public static Throwable recreateThrowable(final String type, final String message, final List<String> backtrace)
+    public static Throwable recreateThrowable(final String type, final String message,
+            final List<String> backtrace)
             throws ParseException, ClassNotFoundException, NoSuchConstructorException,
             AmbiguousConstructorException, ReflectiveOperationException {
         final LinkedList<String> bTrace = new LinkedList<String>(backtrace);
@@ -225,8 +199,9 @@ public final class JesqueUtils {
         return instantiateThrowable(type, message, cause, stes);
     }
 
-    protected static Throwable instantiateThrowable(final String type, final String message, final Throwable cause,
-            final StackTraceElement[] stes) throws ClassNotFoundException, AmbiguousConstructorException,
+    protected static Throwable instantiateThrowable(final String type, final String message,
+            final Throwable cause, final StackTraceElement[] stes)
+            throws ClassNotFoundException, AmbiguousConstructorException,
             ReflectiveOperationException, NoSuchConstructorException {
         Throwable throwable = null;
         boolean causeInited = false;
@@ -244,13 +219,15 @@ public final class JesqueUtils {
                 }
             } catch (NoSuchConstructorException nsce) {
                 try {
-                    throwable = (Throwable) ReflectionUtils.createObject(throwableType, (String) null);
+                    throwable =
+                            (Throwable) ReflectionUtils.createObject(throwableType, (String) null);
                 } catch (NoSuchConstructorException nsce3) {
                     if (cause == null) {
                         throw nsce3;
                     }
                     causeInited = true;
-                    throwable = (Throwable) ReflectionUtils.createObject(throwableType, (String) null, cause);
+                    throwable = (Throwable) ReflectionUtils.createObject(throwableType,
+                            (String) null, cause);
                 }
             }
         } else {
@@ -271,7 +248,8 @@ public final class JesqueUtils {
         return throwable;
     }
 
-    protected static StackTraceElement[] recreateStackTrace(final List<String> bTrace) throws ParseException {
+    protected static StackTraceElement[] recreateStackTrace(final List<String> bTrace)
+            throws ParseException {
         final List<StackTraceElement> stes = new LinkedList<StackTraceElement>();
         if (bTrace != null) {
             final ListIterator<String> iter = bTrace.listIterator(bTrace.size());
@@ -281,7 +259,8 @@ public final class JesqueUtils {
                     iter.remove();
                     final String[] stParts = BT_PATTERN.split(prev.substring(BT_PREFIX.length()));
                     if (stParts.length < 2 || stParts.length > 3) {
-                        throw new ParseException("Malformed stack trace element string: " + prev, 0);
+                        throw new ParseException("Malformed stack trace element string: " + prev,
+                                0);
                     }
                     final int periodPos = stParts[0].lastIndexOf('.');
                     final String className = stParts[0].substring(0, periodPos);
@@ -312,8 +291,7 @@ public final class JesqueUtils {
      *
      * @param <K> the key type
      * @param <V> the value type
-     * @param entries
-     *            Map.Entry objects to be added to the map
+     * @param entries Map.Entry objects to be added to the map
      * @return a LinkedHashMap with the supplied entries
      */
     @SafeVarargs
@@ -326,15 +304,13 @@ public final class JesqueUtils {
     }
 
     /**
-     * Creates a Map.Entry out of the given key and value. Commonly used in
-     * conjunction with map(Entry...)
+     * Creates a Map.Entry out of the given key and value. Commonly used in conjunction with
+     * map(Entry...)
      *
      * @param <K> the key type
      * @param <V> the value type
-     * @param key
-     *            the key
-     * @param value
-     *            the value
+     * @param key the key
+     * @param value the value
      * @return a Map.Entry object with the given key and value
      */
     public static <K, V> Entry<K, V> entry(final K key, final V value) {
@@ -345,8 +321,7 @@ public final class JesqueUtils {
      * Creates a Set out of the given keys
      *
      * @param <K> the key type
-     * @param keys
-     *            the keys
+     * @param keys the keys
      * @return a Set containing the given keys
      */
     @SafeVarargs
@@ -356,6 +331,7 @@ public final class JesqueUtils {
 
     /**
      * Test for equality.
+     * 
      * @param obj1 the first object
      * @param obj2 the second object
      * @return true if both are null or the two objects are equal
@@ -366,40 +342,32 @@ public final class JesqueUtils {
     }
 
     /**
-     * Materializes a job by assuming the {@link Job#getClassName()} is a
-     * fully-qualified Java type.
+     * Materializes a job by assuming the {@link Job#getClassName()} is a fully-qualified Java type.
      *
-     * @param job
-     *            the job to materialize
+     * @param job the job to materialize
      * @return the materialized job
-     * @throws ClassNotFoundException
-     *             if the class could not be found
-     * @throws Exception
-     *             if there was an exception creating the object
+     * @throws ClassNotFoundException if the class could not be found
+     * @throws Exception if there was an exception creating the object
      */
     public static Object materializeJob(final Job job) throws ClassNotFoundException, Exception {
         final Class<?> clazz = ReflectionUtils.forName(job.getClassName());
         // A bit redundant since we check when the job type is added...
         if (!Runnable.class.isAssignableFrom(clazz) && !Callable.class.isAssignableFrom(clazz)) {
-            throw new ClassCastException("jobs must be a Runnable or a Callable: " + clazz.getName() + " - " + job);
+            throw new ClassCastException(
+                    "jobs must be a Runnable or a Callable: " + clazz.getName() + " - " + job);
         }
         return ReflectionUtils.createObject(clazz, job.getArgs(), job.getVars());
     }
 
     /**
-     * Materializes a job by looking up {@link Job#getClassName()} in the
-     * provided map of job types.
+     * Materializes a job by looking up {@link Job#getClassName()} in the provided map of job types.
      *
-     * @param job
-     *            the job to materialize
-     * @param jobTypes
-     *            a map of String names to Java types
+     * @param job the job to materialize
+     * @param jobTypes a map of String names to Java types
      * @return the materialized job
-     * @throws UnpermittedJobException
-     *             if there was not a non-null mapping in jobTypes for the class
-     *             name
-     * @throws Exception
-     *             if there was an exception creating the object
+     * @throws UnpermittedJobException if there was not a non-null mapping in jobTypes for the class
+     *         name
+     * @throws Exception if there was an exception creating the object
      */
     public static Object materializeJob(final Job job, final Map<String, Class<?>> jobTypes)
             throws UnpermittedJobException, Exception {
@@ -410,19 +378,18 @@ public final class JesqueUtils {
         }
         // A bit redundant since we check when the job type is added...
         if (!Runnable.class.isAssignableFrom(clazz) && !Callable.class.isAssignableFrom(clazz)) {
-            throw new ClassCastException("jobs must be a Runnable or a Callable: " + clazz.getName() + " - " + job);
+            throw new ClassCastException(
+                    "jobs must be a Runnable or a Callable: " + clazz.getName() + " - " + job);
         }
         return ReflectionUtils.createObject(clazz, job.getArgs(), job.getVars());
     }
 
     /**
-     * This is needed because Throwable doesn't override equals() and object
-     * equality is not what we want to test.
+     * This is needed because Throwable doesn't override equals() and object equality is not what we
+     * want to test.
      *
-     * @param ex1
-     *            first Throwable
-     * @param ex2
-     *            second Throwable
+     * @param ex1 first Throwable
+     * @param ex2 second Throwable
      * @return true if the two arguments are equal, as we define it.
      */
     public static boolean equal(final Throwable ex1, final Throwable ex2) {

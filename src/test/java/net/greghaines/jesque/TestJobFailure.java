@@ -23,7 +23,7 @@ public class TestJobFailure {
         Assert.assertNull(job.getRetriedAt());
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testConstructor_Clone_Null() {
         new JobFailure(null);
     }
@@ -73,7 +73,7 @@ public class TestJobFailure {
         Assert.assertEquals(retriedAt, fail.getRetriedAt());
         Assert.assertEquals(worker, fail.getWorker());
     }
-    
+
     @Test
     public void testEquals() {
         final JobFailure fail1 = new JobFailure();

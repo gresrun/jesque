@@ -28,8 +28,9 @@ public class Issue56Test {
     @Test
     public void testZREM() {
         // Start workers
-        final WorkerImplFactory workerFactory = new WorkerImplFactory(CONFIG, Arrays.asList(QUEUE), 
-                new MapBasedJobFactory(map(entry(TestAction.class.getSimpleName(), TestAction.class))));
+        final WorkerImplFactory workerFactory =
+                new WorkerImplFactory(CONFIG, Arrays.asList(QUEUE), new MapBasedJobFactory(
+                        map(entry(TestAction.class.getSimpleName(), TestAction.class))));
         final WorkerPool workerPool = new WorkerPool(workerFactory, 10);
         workerPool.run();
 
@@ -37,9 +38,16 @@ public class Issue56Test {
         enqueue();
 
         // Wait a few seconds then shutdown
-        try { Thread.sleep(15000); } catch (Exception e){} // Give ourselves time to process
+        try {
+            Thread.sleep(15000);
+        } catch (Exception e) {
+        } // Give ourselves time to process
         CLIENT.end();
-        try { workerPool.endAndJoin(true, 100); } catch (Exception e){ e.printStackTrace(); }
+        try {
+            workerPool.endAndJoin(true, 100);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void enqueue() {
@@ -49,9 +57,9 @@ public class Issue56Test {
     }
 
     public static class TestAction implements Runnable {
-        
+
         private static final AtomicLong RUN_COUNT = new AtomicLong(0);
-        
+
         /**
          * {@inheritDoc}
          */

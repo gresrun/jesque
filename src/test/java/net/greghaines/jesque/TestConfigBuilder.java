@@ -39,9 +39,8 @@ public class TestConfigBuilder {
 
     @Test
     public void testConstructor_Cloning() {
-        final Config orig = new ConfigBuilder().withNamespace("foo")
-                .withDatabase(10).withPassword("bar").withPort(123)
-                .withHost("abc.com").withTimeout(10000).build();
+        final Config orig = new ConfigBuilder().withNamespace("foo").withDatabase(10)
+                .withPassword("bar").withPort(123).withHost("abc.com").withTimeout(10000).build();
         final Config copy = new ConfigBuilder(orig).build();
         TestUtils.assertFullyEquals(orig, copy);
     }
@@ -175,7 +174,8 @@ public class TestConfigBuilder {
     public void testWithMasterNameAndSentinels() {
         final String myMasterName = "foo";
         final Set<String> mySentinels = new HashSet<>(Arrays.asList("a", "b"));
-        final Config config = new ConfigBuilder().withSentinels(mySentinels).withMasterName(myMasterName).build();
+        final Config config =
+                new ConfigBuilder().withSentinels(mySentinels).withMasterName(myMasterName).build();
         Assert.assertNotNull(config);
         Assert.assertEquals(ConfigBuilder.DEFAULT_HOST, config.getHost());
         Assert.assertEquals(ConfigBuilder.DEFAULT_NAMESPACE, config.getNamespace());

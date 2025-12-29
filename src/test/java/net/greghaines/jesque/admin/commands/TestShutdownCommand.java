@@ -14,7 +14,7 @@ import org.junit.Test;
  */
 public class TestShutdownCommand {
 
-    @Test(expected=IllegalStateException.class)
+    @Test(expected = IllegalStateException.class)
     public void testRun_NoWorker() {
         final ShutdownCommand shutdownCmd = new ShutdownCommand(false);
         shutdownCmd.run();
@@ -25,9 +25,11 @@ public class TestShutdownCommand {
         final boolean shutdown = true;
         final Mockery mockCtx = new JUnit4Mockery();
         final Worker worker = mockCtx.mock(Worker.class);
-        mockCtx.checking(new Expectations(){{
-            oneOf(worker).end(shutdown);
-        }});
+        mockCtx.checking(new Expectations() {
+            {
+                oneOf(worker).end(shutdown);
+            }
+        });
         final ShutdownCommand shutdownCmd = new ShutdownCommand(shutdown);
         shutdownCmd.setWorker(worker);
         shutdownCmd.run();

@@ -17,30 +17,30 @@ public class TestConcurrentHashSet {
         Assert.assertEquals(0, set.size());
         Assert.assertFalse(set.contains(foo));
         Assert.assertFalse(set.remove(foo));
-        
+
         Assert.assertTrue(set.add(foo));
         Assert.assertFalse(set.add(foo));
         Assert.assertFalse(set.isEmpty());
         Assert.assertEquals(1, set.size());
         Assert.assertTrue(set.contains(foo));
-        
+
         final Object[] arr1 = set.toArray();
         Assert.assertNotNull(arr1);
-        Assert.assertArrayEquals(arr1, new Object[]{foo});
-        
+        Assert.assertArrayEquals(arr1, new Object[] {foo});
+
         final String[] arr2 = new String[set.size()];
         final String[] arr3 = set.toArray(arr2);
         Assert.assertNotNull(arr3);
         Assert.assertSame(arr2, arr3);
-        Assert.assertArrayEquals(arr3, new String[]{foo});
-        
+        Assert.assertArrayEquals(arr3, new String[] {foo});
+
         Assert.assertTrue(set.remove(foo));
         Assert.assertFalse(set.remove(foo));
         Assert.assertTrue(set.isEmpty());
         Assert.assertEquals(0, set.size());
         Assert.assertFalse(set.contains(foo));
     }
-    
+
     @Test
     public void testMultiElem() {
         final ConcurrentHashSet<String> set = new ConcurrentHashSet<>(4);
@@ -51,7 +51,7 @@ public class TestConcurrentHashSet {
         final List<String> fullList = Arrays.asList(foo, bar, baz, qux);
         final List<String> noQux = Arrays.asList(foo, bar, baz);
         final List<String> noFooBar = Arrays.asList(baz, qux);
-        
+
         Assert.assertTrue(set.addAll(fullList));
         Assert.assertFalse(set.addAll(noQux));
         Assert.assertFalse(set.isEmpty());
@@ -61,7 +61,7 @@ public class TestConcurrentHashSet {
         Assert.assertTrue(set.contains(bar));
         Assert.assertTrue(set.contains(baz));
         Assert.assertTrue(set.contains(qux));
-        
+
         final Iterator<String> iter = set.iterator();
         Assert.assertNotNull(iter);
         int i = 0;
@@ -88,17 +88,17 @@ public class TestConcurrentHashSet {
         Assert.assertTrue(set.contains(bar));
         Assert.assertFalse(set.contains(baz));
         Assert.assertFalse(set.contains(qux));
-        
+
         set.clear();
         Assert.assertTrue(set.isEmpty());
         Assert.assertEquals(0, set.size());
     }
-    
-    @Test(expected=IllegalArgumentException.class)
+
+    @Test(expected = IllegalArgumentException.class)
     public void testCollectionConstructor_Null() {
         new ConcurrentHashSet<String>(null);
     }
-    
+
     @Test
     public void testCollectionConstructor() {
         final List<String> fullList = Arrays.asList("foo", "bar", "baz", "qux");
@@ -106,7 +106,7 @@ public class TestConcurrentHashSet {
         Assert.assertEquals(fullList.size(), set.size());
         Assert.assertTrue(set.containsAll(fullList));
     }
-    
+
     @Test
     public void testOtherConstructors() {
         Assert.assertNotNull(new ConcurrentHashSet<String>(4, 0.75f));

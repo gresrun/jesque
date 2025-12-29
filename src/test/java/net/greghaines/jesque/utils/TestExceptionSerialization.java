@@ -9,7 +9,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class TestExceptionSerialization {
-    
+
     @Test
     public void simpleNoMsg() throws Exception {
         try {
@@ -125,13 +125,16 @@ public class TestExceptionSerialization {
 
     @Test
     public void testDeseralize() throws Exception {
-        final String payload = "{\"worker\":\"test5:12385-1:JAVA_DYNAMIC_QUEUES,SomeQueue\",\"queue\":\"audioTranscode\",\"payload\":{\"class\":\"SomeClass\",\"args\":[1234]},\"exception\":\"groovy.lang.MissingMethodException\",\"error\":\"SomeError\",\"backtrace\":[\"\\tat sompackage.someclass(somefile.java:42)\"],\"failed_at\":\"2011-10-17T18:01:33.185+0000\",\"retried_at\":null}";
-        final JobFailure jobFailure = ObjectMapperFactory.get().readValue(payload, JobFailure.class);
+        final String payload =
+                "{\"worker\":\"test5:12385-1:JAVA_DYNAMIC_QUEUES,SomeQueue\",\"queue\":\"audioTranscode\",\"payload\":{\"class\":\"SomeClass\",\"args\":[1234]},\"exception\":\"groovy.lang.MissingMethodException\",\"error\":\"SomeError\",\"backtrace\":[\"\\tat sompackage.someclass(somefile.java:42)\"],\"failed_at\":\"2011-10-17T18:01:33.185+0000\",\"retried_at\":null}";
+        final JobFailure jobFailure =
+                ObjectMapperFactory.get().readValue(payload, JobFailure.class);
         Assert.assertNull(jobFailure.getThrowable());
     }
 
     private static void serialize(final Throwable t) throws Exception {
-        assertEquals(t, recreateThrowable(t.getClass().getName(), t.getMessage(), createBacktrace(t)));
+        assertEquals(t,
+                recreateThrowable(t.getClass().getName(), t.getMessage(), createBacktrace(t)));
     }
 
     private static void assertEquals(final Throwable t, final Throwable newT) {
@@ -148,7 +151,7 @@ public class TestExceptionSerialization {
     }
 
     public static final class NonRegularException extends Exception {
-        
+
         private static final long serialVersionUID = -5336815460233912386L;
 
         private final double number;

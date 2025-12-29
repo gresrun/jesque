@@ -1,17 +1,15 @@
 /*
  * Copyright 2011 Greg Haines
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.greghaines.jesque.meta.dao.impl;
 
@@ -51,7 +49,7 @@ import redis.clients.jedis.util.Pool;
  * @author Greg Haines
  */
 public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
-    
+
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
     private static final Pattern COMMA_PATTERN = Pattern.compile(",");
 
@@ -60,6 +58,7 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
 
     /**
      * Constructor.
+     * 
      * @param config the Jesque configuration
      * @param jedisPool the pool of Jedis connections
      */
@@ -161,23 +160,25 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
     }
 
     private List<WorkerInfo> getWorkerInfos(final WorkerInfo.State requestedState) {
-        return PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, List<WorkerInfo>>() {
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            public List<WorkerInfo> doWork(final Jedis jedis) throws Exception {
-                final Set<String> workerNames = jedis.smembers(key(WORKERS));
-                final List<WorkerInfo> workerInfos = new ArrayList<WorkerInfo>(workerNames.size());
-                for (final String workerName : workerNames) {
-                    if (isWorkerInState(workerName, requestedState, jedis)) {
-                        workerInfos.add(createWorker(workerName, jedis));
+        return PoolUtils.doWorkInPoolNicely(this.jedisPool,
+                new PoolWork<Jedis, List<WorkerInfo>>() {
+                    /**
+                     * {@inheritDoc}
+                     */
+                    @Override
+                    public List<WorkerInfo> doWork(final Jedis jedis) throws Exception {
+                        final Set<String> workerNames = jedis.smembers(key(WORKERS));
+                        final List<WorkerInfo> workerInfos =
+                                new ArrayList<WorkerInfo>(workerNames.size());
+                        for (final String workerName : workerNames) {
+                            if (isWorkerInState(workerName, requestedState, jedis)) {
+                                workerInfos.add(createWorker(workerName, jedis));
+                            }
+                        }
+                        Collections.sort(workerInfos);
+                        return workerInfos;
                     }
-                }
-                Collections.sort(workerInfos);
-                return workerInfos;
-            }
-        });
+                });
     }
 
     /**
@@ -221,15 +222,14 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
     /**
      * Builds a namespaced Redis key with the given arguments.
      * 
-     * @param parts
-     *            the key parts to be joined
+     * @param parts the key parts to be joined
      * @return an assembled String key
      */
     private String key(final String... parts) {
         return JesqueUtils.createKey(this.config.getNamespace(), parts);
     }
 
-    protected WorkerInfo createWorker(final String workerName, final Jedis jedis) 
+    protected WorkerInfo createWorker(final String workerName, final Jedis jedis)
             throws ParseException, IOException {
         final WorkerInfo workerInfo = new WorkerInfo();
         workerInfo.setName(workerName);
@@ -239,13 +239,15 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
         }
         workerInfo.setHost(nameParts[0]);
         workerInfo.setPid(nameParts[1]);
-        workerInfo.setQueues(new ArrayList<String>(Arrays.asList(COMMA_PATTERN.split(nameParts[2]))));
+        workerInfo
+                .setQueues(new ArrayList<String>(Arrays.asList(COMMA_PATTERN.split(nameParts[2]))));
         final String statusPayload = jedis.get(key(WORKER, workerName));
         if (statusPayload != null) {
-            workerInfo.setStatus(ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class));
-            final WorkerInfo.State state = (workerInfo.getStatus().isPaused()) 
-                    ? WorkerInfo.State.PAUSED 
-                    : WorkerInfo.State.WORKING;
+            workerInfo.setStatus(
+                    ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class));
+            final WorkerInfo.State state =
+                    (workerInfo.getStatus().isPaused()) ? WorkerInfo.State.PAUSED
+                            : WorkerInfo.State.WORKING;
             workerInfo.setState(state);
         } else {
             workerInfo.setState(WorkerInfo.State.IDLE);
@@ -281,20 +283,19 @@ public class WorkerInfoDAORedisImpl implements WorkerInfoDAO {
             @Override
             public Void doWork(final Jedis jedis) throws Exception {
                 jedis.srem(key(WORKERS), workerName);
-                jedis.del(key(WORKER, workerName), key(WORKER, workerName, STARTED), 
+                jedis.del(key(WORKER, workerName), key(WORKER, workerName, STARTED),
                         key(STAT, FAILED, workerName), key(STAT, PROCESSED, workerName));
                 return null;
             }
         });
     }
 
-    protected boolean isWorkerInState(final String workerName, final WorkerInfo.State requestedState, 
-            final Jedis jedis) throws IOException {
+    protected boolean isWorkerInState(final String workerName,
+            final WorkerInfo.State requestedState, final Jedis jedis) throws IOException {
         boolean proceed = true;
         if (requestedState != null) {
             final String statusPayload = jedis.get(key(WORKER, workerName));
-            final WorkerStatus status = (statusPayload == null) 
-                    ? null 
+            final WorkerStatus status = (statusPayload == null) ? null
                     : ObjectMapperFactory.get().readValue(statusPayload, WorkerStatus.class);
             switch (requestedState) {
                 case IDLE:

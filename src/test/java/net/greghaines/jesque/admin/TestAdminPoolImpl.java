@@ -26,7 +26,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.util.Pool;
 
 public class TestAdminPoolImpl {
-    
+
     private static final Config CONFIG = new ConfigBuilder().build();
 
     private Mockery mockCtx;
@@ -41,60 +41,64 @@ public class TestAdminPoolImpl {
         this.mockCtx.setThreadingPolicy(new Synchroniser());
         this.jedisPool = this.mockCtx.mock(Pool.class);
         this.jedis = this.mockCtx.mock(Jedis.class);
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(jedisPool).getResource(); will(returnValue(jedis));
-            oneOf(jedis).close();
-        }});
+        this.mockCtx.checking(new Expectations() {
+            {
+                oneOf(jedisPool).getResource();
+                will(returnValue(jedis));
+                oneOf(jedis).close();
+            }
+        });
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testConstructor_TwoArg_NullConfig() {
         new AdminPoolImpl(null, this.jedisPool);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testConstructor_TwoArg_NullPool() {
         new AdminPoolImpl(CONFIG, null);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testConstructor_FourArg_NullConfig() {
         new AdminPoolImpl(null, null, null, null);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testConstructor_FourArg_NullChannels() {
         new AdminPoolImpl(CONFIG, null, null, null);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testConstructor_FourArg_NullJobFactory() {
         new AdminPoolImpl(CONFIG, set(ADMIN_CHANNEL), null, null);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testConstructor_FourArg_NullPool() {
-        new AdminImpl(CONFIG, set(ADMIN_CHANNEL), new MapBasedJobFactory(map(
-                entry("PauseCommand", PauseCommand.class), 
-                entry("ShutdownCommand", ShutdownCommand.class))), null);
+        new AdminImpl(CONFIG, set(ADMIN_CHANNEL),
+                new MapBasedJobFactory(map(entry("PauseCommand", PauseCommand.class),
+                        entry("ShutdownCommand", ShutdownCommand.class))),
+                null);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testSetChannels_Null() {
         new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(null);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testSetChannels_NullChannel() {
-        new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(set((String)null));
+        new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(set((String) null));
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testSetChannels_EmptyChannel() {
         new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(set(""));
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testSetExceptionHandler_Null() {
         new AdminPoolImpl(CONFIG, this.jedisPool).setExceptionHandler(null);
     }
@@ -102,14 +106,14 @@ public class TestAdminPoolImpl {
     @Test
     public void testSetExceptionHandler() {
         final AdminPoolImpl admin = new AdminPoolImpl(CONFIG, this.jedisPool);
-        final ExceptionHandler handler = new ExceptionHandler(){
+        final ExceptionHandler handler = new ExceptionHandler() {
 
             /**
              * {@inheritDoc}
              */
             @Override
-            public RecoveryStrategy onException(final JobExecutor jobExecutor, final Exception exception, 
-                    final String curQueue) {
+            public RecoveryStrategy onException(final JobExecutor jobExecutor,
+                    final Exception exception, final String curQueue) {
                 return RecoveryStrategy.TERMINATE;
             }
         };

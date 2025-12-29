@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 
 public class LongRunningTest {
-    
+
     private static final Logger log = LoggerFactory.getLogger(LongRunningTest.class);
     private static final Config config = new ConfigBuilder().build();
 
@@ -49,14 +49,15 @@ public class LongRunningTest {
     @Ignore
     public void issue28() throws InterruptedException {
         changeRedisTimeout(10);
-        TestUtils.enqueueJobs("longRunning", Arrays.asList(new Job("LongRunningAction", 20 * 1000L)), config);
-        final Worker worker2 = new WorkerImpl(config, Arrays.asList("longRunning"), 
+        TestUtils.enqueueJobs("longRunning",
+                Arrays.asList(new Job("LongRunningAction", 20 * 1000L)), config);
+        final Worker worker2 = new WorkerImpl(config, Arrays.asList("longRunning"),
                 new MapBasedJobFactory(map(entry("LongRunningAction", LongRunningAction.class))));
         final AtomicBoolean successRef = new AtomicBoolean(false);
         worker2.getWorkerEventEmitter().addListener(new WorkerListener() {
             @Override
-            public void onEvent(final WorkerEvent event, final Worker worker, final String queue, final Job job,
-                    final Object runner, final Object result, final Throwable t) {
+            public void onEvent(final WorkerEvent event, final Worker worker, final String queue,
+                    final Job job, final Object runner, final Object result, final Throwable t) {
                 successRef.set(true);
                 log.info("SUCCCESS: {}", job);
             }
@@ -72,7 +73,7 @@ public class LongRunningTest {
     }
 
     public static class LongRunningAction implements Runnable {
-        
+
         private final int millis;
 
         public LongRunningAction(final int millis) {

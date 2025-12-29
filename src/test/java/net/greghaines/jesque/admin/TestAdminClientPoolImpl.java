@@ -14,7 +14,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.util.Pool;
 
 public class TestAdminClientPoolImpl {
-    
+
     private static final Config CONFIG = new ConfigBuilder().build();
 
     private Mockery mockCtx;
@@ -30,29 +30,35 @@ public class TestAdminClientPoolImpl {
         this.mockCtx.setThreadingPolicy(new Synchroniser());
         this.jedisPool = this.mockCtx.mock(Pool.class);
         this.jedis = this.mockCtx.mock(Jedis.class);
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(jedisPool).getResource(); will(returnValue(jedis));
-            oneOf(jedis).close();
-        }});
+        this.mockCtx.checking(new Expectations() {
+            {
+                oneOf(jedisPool).getResource();
+                will(returnValue(jedis));
+                oneOf(jedis).close();
+            }
+        });
         this.adminClient = new AdminClientPoolImpl(CONFIG, this.jedisPool);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullConfig() {
         new AdminClientPoolImpl(null, this.jedisPool);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testConstructor_NullPool() {
         new AdminClientPoolImpl(CONFIG, null);
     }
 
     @Test
     public void testShutdownWorkers() {
-        this.mockCtx.checking(new Expectations(){{
-            oneOf(jedis).publish("resque:channel:admin", 
-                "{\"class\":\"ShutdownCommand\",\"args\":[true],\"vars\":null}"); will(returnValue(0L));
-        }});
+        this.mockCtx.checking(new Expectations() {
+            {
+                oneOf(jedis).publish("resque:channel:admin",
+                        "{\"class\":\"ShutdownCommand\",\"args\":[true],\"vars\":null}");
+                will(returnValue(0L));
+            }
+        });
         this.adminClient.shutdownWorkers(true);
     }
 }
