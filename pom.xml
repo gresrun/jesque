@@ -210,7 +210,7 @@
                         <dependency>
                             <groupId>com.google.googlejavaformat</groupId>
                             <artifactId>google-java-format</artifactId>
-                            <version>1.27.0</version>
+                            <version>1.33.0</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -297,7 +297,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.11.0</version>
+            <version>5.21.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
