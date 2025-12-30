@@ -1,11 +1,11 @@
 package net.greghaines.jesque.meta;
 
-import java.util.Arrays;
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.Date;
 import java.util.List;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.meta.WorkerInfo.State;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class TestWorkerInfo {
@@ -15,71 +15,71 @@ public class TestWorkerInfo {
     final WorkerInfo wInfo = new WorkerInfo();
     final String name = "foo";
     wInfo.setName(name);
-    Assert.assertEquals(name, wInfo.getName());
-    Assert.assertEquals(name, wInfo.toString());
+    assertThat(wInfo.getName()).isEqualTo(name);
+    assertThat(wInfo.toString()).isEqualTo(name);
     final State state = State.IDLE;
     wInfo.setState(state);
-    Assert.assertEquals(state, wInfo.getState());
+    assertThat(wInfo.getState()).isEqualTo(state);
     final Date started = new Date();
     wInfo.setStarted(started);
-    Assert.assertEquals(started, wInfo.getStarted());
+    assertThat(wInfo.getStarted()).isEqualTo(started);
     final Long processed = 3l;
     wInfo.setProcessed(processed);
-    Assert.assertEquals(processed, wInfo.getProcessed());
+    assertThat(wInfo.getProcessed()).isEqualTo(processed);
     final Long failed = 4l;
     wInfo.setFailed(failed);
-    Assert.assertEquals(failed, wInfo.getFailed());
+    assertThat(wInfo.getFailed()).isEqualTo(failed);
     final String host = "bar";
     wInfo.setHost(host);
-    Assert.assertEquals(host, wInfo.getHost());
+    assertThat(wInfo.getHost()).isEqualTo(host);
     final String pid = "123";
     wInfo.setPid(pid);
-    Assert.assertEquals(pid, wInfo.getPid());
-    final List<String> queues = Arrays.asList("queue1", "queue2");
+    assertThat(wInfo.getPid()).isEqualTo(pid);
+    final List<String> queues = List.of("queue1", "queue2");
     wInfo.setQueues(queues);
-    Assert.assertEquals(queues, wInfo.getQueues());
+    assertThat(wInfo.getQueues()).isEqualTo(queues);
     final WorkerStatus status = new WorkerStatus();
     wInfo.setStatus(status);
-    Assert.assertEquals(status, wInfo.getStatus());
+    assertThat(wInfo.getStatus()).isEqualTo(status);
   }
 
   @Test
   public void testCompareToEqualsHashCode() {
     final WorkerInfo wi1 = new WorkerInfo();
-    Assert.assertTrue(wi1.compareTo(null) > 0);
-    Assert.assertFalse(wi1.equals(null));
-    Assert.assertTrue(wi1.equals(wi1));
+    assertThat(wi1.compareTo(null)).isGreaterThan(0);
+    assertThat(wi1.equals(null)).isFalse();
+    assertThat(wi1).isEqualTo(wi1);
     final WorkerInfo wi2 = new WorkerInfo();
-    Assert.assertEquals(0, wi1.compareTo(wi2));
-    Assert.assertTrue(wi1.equals(wi2));
-    Assert.assertEquals(wi1.hashCode(), wi2.hashCode());
+    assertThat(wi1).isEquivalentAccordingToCompareTo(wi2);
+    assertThat(wi1).isEqualTo(wi2);
+    assertThat(wi1.hashCode()).isEqualTo(wi2.hashCode());
     final WorkerStatus status1 = new WorkerStatus();
     wi1.setStatus(status1);
-    Assert.assertTrue(wi1.compareTo(wi2) > 0);
-    Assert.assertFalse(wi1.equals(wi2));
+    assertThat(wi1).isGreaterThan(wi2);
+    assertThat(wi1.equals(wi2)).isFalse();
     wi2.setStatus(status1);
-    Assert.assertEquals(0, wi1.compareTo(wi2));
-    Assert.assertTrue(wi1.equals(wi2));
-    Assert.assertEquals(wi1.hashCode(), wi2.hashCode());
+    assertThat(wi1).isEquivalentAccordingToCompareTo(wi2);
+    assertThat(wi1).isEqualTo(wi2);
+    assertThat(wi1.hashCode()).isEqualTo(wi2.hashCode());
     wi1.setStatus(null);
-    Assert.assertTrue(wi1.compareTo(wi2) < 0);
-    Assert.assertFalse(wi1.equals(wi2));
+    assertThat(wi1).isLessThan(wi2);
+    assertThat(wi1).isNotEqualTo(wi2);
     wi1.setStatus(status1);
     final Date runAt1 = new Date();
     status1.setRunAt(runAt1);
-    Assert.assertEquals(0, wi1.compareTo(wi2));
-    Assert.assertTrue(wi1.equals(wi2));
-    Assert.assertEquals(wi1.hashCode(), wi2.hashCode());
+    assertThat(wi1).isEquivalentAccordingToCompareTo(wi2);
+    assertThat(wi1).isEqualTo(wi2);
+    assertThat(wi1.hashCode()).isEqualTo(wi2.hashCode());
     final WorkerStatus status2 = new WorkerStatus();
     wi2.setStatus(status2);
-    Assert.assertTrue(wi1.compareTo(wi2) > 0);
-    Assert.assertFalse(wi1.equals(wi2));
+    assertThat(wi1).isGreaterThan(wi2);
+    assertThat(wi1).isNotEqualTo(wi2);
     final Date runAt2 = new Date(runAt1.getTime() + 1000);
     status2.setRunAt(runAt2);
-    Assert.assertTrue(wi1.compareTo(wi2) < 0);
-    Assert.assertFalse(wi1.equals(wi2));
+    assertThat(wi1).isLessThan(wi2);
+    assertThat(wi1).isNotEqualTo(wi2);
     status1.setRunAt(null);
-    Assert.assertTrue(wi1.compareTo(wi2) < 0);
-    Assert.assertFalse(wi1.equals(wi2));
+    assertThat(wi1).isLessThan(wi2);
+    assertThat(wi1).isNotEqualTo(wi2);
   }
 }

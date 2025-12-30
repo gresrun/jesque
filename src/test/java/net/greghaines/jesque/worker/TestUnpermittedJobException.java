@@ -1,6 +1,7 @@
 package net.greghaines.jesque.worker;
 
-import org.junit.Assert;
+import static com.google.common.truth.Truth.assertThat;
+
 import org.junit.Test;
 
 /**
@@ -14,13 +15,13 @@ public class TestUnpermittedJobException {
   public void testGetMessage() {
     final String message = "Foo";
     final UnpermittedJobException upje = new UnpermittedJobException(message);
-    Assert.assertEquals(message, upje.getMessage());
+    assertThat(upje.getMessage()).isEqualTo(message);
   }
 
   @Test
   public void testGetType() {
     final Class<?> type = String.class;
     final UnpermittedJobException upje = new UnpermittedJobException(type);
-    Assert.assertEquals(type, upje.getType());
+    assertThat(upje.getType()).isEqualTo(type);
   }
 }

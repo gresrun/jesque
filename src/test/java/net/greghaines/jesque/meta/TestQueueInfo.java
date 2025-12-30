@@ -1,9 +1,10 @@
 package net.greghaines.jesque.meta;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.Arrays;
 import java.util.List;
 import net.greghaines.jesque.Job;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class TestQueueInfo {
@@ -13,45 +14,45 @@ public class TestQueueInfo {
     final QueueInfo qInfo = new QueueInfo();
     final String name = "foo";
     qInfo.setName(name);
-    Assert.assertEquals(name, qInfo.getName());
-    Assert.assertEquals(name, qInfo.toString());
+    assertThat(qInfo.getName()).isEqualTo(name);
+    assertThat(qInfo.toString()).isEqualTo(name);
     final Long size = 3l;
     qInfo.setSize(size);
-    Assert.assertEquals(size, qInfo.getSize());
+    assertThat(qInfo.getSize()).isEqualTo(size);
     final List<Job> jobs = Arrays.asList(new Job());
     qInfo.setJobs(jobs);
-    Assert.assertEquals(jobs, qInfo.getJobs());
+    assertThat(qInfo.getJobs()).isEqualTo(jobs);
     final boolean delayed = true;
     qInfo.setDelayed(delayed);
-    Assert.assertEquals(delayed, qInfo.isDelayed());
+    assertThat(qInfo.isDelayed()).isEqualTo(delayed);
   }
 
   @Test
   public void testCompareToEqualsHashCode() {
     final QueueInfo qi1 = new QueueInfo();
-    Assert.assertTrue(qi1.compareTo(null) > 0);
-    Assert.assertFalse(qi1.equals(null));
-    Assert.assertTrue(qi1.equals(qi1));
+    assertThat(qi1.compareTo(null)).isGreaterThan(0);
+    assertThat(qi1.equals(null)).isFalse();
+    assertThat(qi1).isEqualTo(qi1);
     final QueueInfo qi2 = new QueueInfo();
-    Assert.assertEquals(0, qi1.compareTo(qi2));
-    Assert.assertTrue(qi1.equals(qi2));
-    Assert.assertEquals(qi1.hashCode(), qi2.hashCode());
+    assertThat(qi1).isEquivalentAccordingToCompareTo(qi2);
+    assertThat(qi1).isEqualTo(qi2);
+    assertThat(qi1.hashCode()).isEqualTo(qi2.hashCode());
     qi1.setName("foo");
-    Assert.assertTrue(qi1.compareTo(qi2) > 0);
-    Assert.assertFalse(qi1.equals(qi2));
+    assertThat(qi1).isGreaterThan(qi2);
+    assertThat(qi1).isNotEqualTo(qi2);
     qi1.setName(null);
     qi2.setName("foo");
-    Assert.assertTrue(qi1.compareTo(qi2) < 0);
-    Assert.assertFalse(qi1.equals(qi2));
+    assertThat(qi1).isLessThan(qi2);
+    assertThat(qi1).isNotEqualTo(qi2);
     qi1.setName("foo");
-    Assert.assertEquals(0, qi1.compareTo(qi2));
-    Assert.assertTrue(qi1.equals(qi2));
-    Assert.assertEquals(qi1.hashCode(), qi2.hashCode());
+    assertThat(qi1).isEquivalentAccordingToCompareTo(qi2);
+    assertThat(qi1).isEqualTo(qi2);
+    assertThat(qi1.hashCode()).isEqualTo(qi2.hashCode());
     qi1.setName("bar");
-    Assert.assertTrue(qi1.compareTo(qi2) < 0);
-    Assert.assertFalse(qi1.equals(qi2));
+    assertThat(qi1).isLessThan(qi2);
+    assertThat(qi1).isNotEqualTo(qi2);
     qi1.setName("qux");
-    Assert.assertTrue(qi1.compareTo(qi2) > 0);
-    Assert.assertFalse(qi1.equals(qi2));
+    assertThat(qi1).isGreaterThan(qi2);
+    assertThat(qi1).isNotEqualTo(qi2);
   }
 }

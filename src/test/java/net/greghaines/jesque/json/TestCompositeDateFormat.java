@@ -1,5 +1,7 @@
 package net.greghaines.jesque.json;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Calendar;
@@ -7,7 +9,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 import net.greghaines.jesque.utils.CompositeDateFormat;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,8 +34,8 @@ public class TestCompositeDateFormat {
   public void testParse_ISO8601() throws ParseException {
     final DateFormat dateFormat = new CompositeDateFormat();
     // yyyy-MM-dd'T'HH:mm:ss.SSSZ
-    Assert.assertEquals(date, dateFormat.parse("2013-03-07T21:26:05.234-0500"));
-    Assert.assertEquals(date, dateFormat.parse("2013-03-08T02:26:05.234+0000"));
+    assertThat(dateFormat.parse("2013-03-07T21:26:05.234-0500")).isEqualTo(date);
+    assertThat(dateFormat.parse("2013-03-08T02:26:05.234+0000")).isEqualTo(date);
   }
 
   @Test
@@ -62,12 +63,10 @@ public class TestCompositeDateFormat {
   @Test
   public void testFormat() {
     final DateFormat dateFormat = new CompositeDateFormat();
-    Assert.assertEquals("2013-03-08T02:26:05.234+0000", dateFormat.format(date));
+    assertThat(dateFormat.format(date)).isEqualTo("2013-03-08T02:26:05.234+0000");
   }
 
   private static void assertWithinASecond(final Date expected, final Date actual) {
-    final double delta = expected.getTime() - actual.getTime();
-    final String msg = "expected=" + expected + " actual=" + actual + " delta=" + delta;
-    Assert.assertTrue(msg, Math.abs(delta) < 1000);
+    assertThat(expected.getTime()).isWithin(1000L).of(actual.getTime());
   }
 }

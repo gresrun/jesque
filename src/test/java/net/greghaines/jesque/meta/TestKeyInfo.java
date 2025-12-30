@@ -1,8 +1,8 @@
 package net.greghaines.jesque.meta;
 
-import java.util.Arrays;
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.List;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class TestKeyInfo {
@@ -21,9 +21,9 @@ public class TestKeyInfo {
   public void testConstructor() {
     final KeyType type = KeyType.HASH;
     final KeyInfo keyInfo = new KeyInfo("foo:bar:baz:qux", type);
-    Assert.assertEquals("foo", keyInfo.getNamespace());
-    Assert.assertEquals("bar:baz:qux", keyInfo.getName());
-    Assert.assertEquals(type, keyInfo.getType());
+    assertThat(keyInfo.getNamespace()).isEqualTo("foo");
+    assertThat(keyInfo.getName()).isEqualTo("bar:baz:qux");
+    assertThat(keyInfo.getType()).isEqualTo(type);
   }
 
   @Test
@@ -31,48 +31,48 @@ public class TestKeyInfo {
     final KeyInfo keyInfo = new KeyInfo();
     final String name = "foo";
     keyInfo.setName(name);
-    Assert.assertEquals(name, keyInfo.getName());
-    Assert.assertEquals(name, keyInfo.toString());
+    assertThat(keyInfo.getName()).isEqualTo(name);
+    assertThat(keyInfo.toString()).isEqualTo(name);
     final String namespace = "bar";
     keyInfo.setNamespace(namespace);
-    Assert.assertEquals(namespace, keyInfo.getNamespace());
+    assertThat(keyInfo.getNamespace()).isEqualTo(namespace);
     final KeyType type = KeyType.HASH;
     keyInfo.setType(type);
-    Assert.assertEquals(type, keyInfo.getType());
+    assertThat(keyInfo.getType()).isEqualTo(type);
     final Long size = 3l;
     keyInfo.setSize(size);
-    Assert.assertEquals(size, keyInfo.getSize());
-    final List<String> arrayValue = Arrays.asList("foo", "bar");
+    assertThat(keyInfo.getSize()).isEqualTo(size);
+    final List<String> arrayValue = List.of("foo", "bar");
     keyInfo.setArrayValue(arrayValue);
-    Assert.assertEquals(arrayValue, keyInfo.getArrayValue());
+    assertThat(keyInfo.getArrayValue()).isEqualTo(arrayValue);
   }
 
   @Test
   public void testCompareToEqualsHashCode() {
     final KeyInfo ki1 = new KeyInfo();
-    Assert.assertTrue(ki1.compareTo(null) > 0);
-    Assert.assertFalse(ki1.equals(null));
-    Assert.assertTrue(ki1.equals(ki1));
+    assertThat(ki1.compareTo(null)).isGreaterThan(0);
+    assertThat(ki1.equals(null)).isFalse();
+    assertThat(ki1).isEqualTo(ki1);
     final KeyInfo ki2 = new KeyInfo();
-    Assert.assertEquals(0, ki1.compareTo(ki2));
-    Assert.assertTrue(ki1.equals(ki2));
-    Assert.assertEquals(ki1.hashCode(), ki2.hashCode());
+    assertThat(ki1).isEquivalentAccordingToCompareTo(ki2);
+    assertThat(ki1).isEqualTo(ki2);
+    assertThat(ki1.hashCode()).isEqualTo(ki2.hashCode());
     ki1.setName("foo");
-    Assert.assertTrue(ki1.compareTo(ki2) > 0);
-    Assert.assertFalse(ki1.equals(ki2));
+    assertThat(ki1).isGreaterThan(ki2);
+    assertThat(ki1).isNotEqualTo(ki2);
     ki1.setName(null);
     ki2.setName("foo");
-    Assert.assertTrue(ki1.compareTo(ki2) < 0);
-    Assert.assertFalse(ki1.equals(ki2));
+    assertThat(ki1).isLessThan(ki2);
+    assertThat(ki1).isNotEqualTo(ki2);
     ki1.setName("foo");
-    Assert.assertEquals(0, ki1.compareTo(ki2));
-    Assert.assertTrue(ki1.equals(ki2));
-    Assert.assertEquals(ki1.hashCode(), ki2.hashCode());
+    assertThat(ki1).isEquivalentAccordingToCompareTo(ki2);
+    assertThat(ki1).isEqualTo(ki2);
+    assertThat(ki1.hashCode()).isEqualTo(ki2.hashCode());
     ki1.setName("bar");
-    Assert.assertTrue(ki1.compareTo(ki2) < 0);
-    Assert.assertFalse(ki1.equals(ki2));
+    assertThat(ki1).isLessThan(ki2);
+    assertThat(ki1).isNotEqualTo(ki2);
     ki1.setName("qux");
-    Assert.assertTrue(ki1.compareTo(ki2) > 0);
-    Assert.assertFalse(ki1.equals(ki2));
+    assertThat(ki1).isGreaterThan(ki2);
+    assertThat(ki1).isNotEqualTo(ki2);
   }
 }

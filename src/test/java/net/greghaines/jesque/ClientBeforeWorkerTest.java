@@ -13,6 +13,7 @@
  */
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
@@ -25,7 +26,6 @@ import java.util.Map;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
@@ -52,7 +52,7 @@ public class ClientBeforeWorkerTest {
         new Job("TestAction", new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
     TestUtils.enqueueJobs(testQueue, Arrays.asList(job), config);
     try (Jedis jedis = createJedis(config)) { // Assert that we enqueued the job
-      Assert.assertEquals(1L, jedis.llen(createKey(config.getNamespace(), QUEUE, testQueue)));
+      assertThat(jedis.llen(createKey(config.getNamespace(), QUEUE, testQueue))).isEqualTo(1L);
     }
 
     // Create and start worker
@@ -71,9 +71,9 @@ public class ClientBeforeWorkerTest {
 
     // Assert that the job was run by the worker
     try (Jedis jedis = createJedis(config)) {
-      Assert.assertEquals("1", jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
-      Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-      Assert.assertEquals(0L, jedis.llen(createKey(config.getNamespace(), QUEUE, testQueue)));
+      assertThat(jedis.get(createKey(config.getNamespace(), STAT, PROCESSED))).isEqualTo("1");
+      assertThat(jedis.get(createKey(config.getNamespace(), STAT, FAILED))).isNull();
+      assertThat(jedis.llen(createKey(config.getNamespace(), QUEUE, testQueue))).isEqualTo(0L);
     }
   }
 }

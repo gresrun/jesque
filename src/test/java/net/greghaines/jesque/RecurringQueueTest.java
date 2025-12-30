@@ -1,5 +1,6 @@
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
@@ -13,7 +14,6 @@ import net.greghaines.jesque.utils.JesqueUtils;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
@@ -46,11 +46,11 @@ public class RecurringQueueTest {
         recurringFrequency);
 
     try (Jedis jedis = createJedis(config)) { // Assert that we enqueued the job
-      Assert.assertEquals(1L, jedis.zcount(queueKey, "-inf", "+inf"));
+      assertThat(jedis.zcount(queueKey, "-inf", "+inf")).isEqualTo(1L);
       List<String> jobSet = jedis.zrangeByScore(queueKey, "-inf", "+inf", 0, 1);
 
       String jobString = jobSet.iterator().next();
-      Assert.assertEquals(String.valueOf(recurringFrequency), jedis.hget(hashKey, jobString));
+      assertThat(jedis.hget(hashKey, jobString)).isEqualTo(String.valueOf(recurringFrequency));
     }
 
     // Create and mark the start worker
@@ -81,13 +81,13 @@ public class RecurringQueueTest {
       // allowing for off by one error
       Long oneOrZero = Math.abs(times - processedTimes);
 
-      Assert.assertTrue(oneOrZero == 0 || oneOrZero == 1);
-      Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-      Assert.assertEquals(
-          0L,
-          jedis.zcount(
-              createKey(config.getNamespace(), QUEUE, recurringTestQueue), "-inf", "+inf"));
-      Assert.assertEquals(0L, jedis.hlen(hashKey));
+      assertThat(oneOrZero == 0 || oneOrZero == 1).isTrue();
+      assertThat(jedis.get(createKey(config.getNamespace(), STAT, FAILED))).isNull();
+      assertThat(
+              jedis.zcount(
+                  createKey(config.getNamespace(), QUEUE, recurringTestQueue), "-inf", "+inf"))
+          .isEqualTo(0L);
+      assertThat(jedis.hlen(hashKey)).isEqualTo(0L);
     }
   }
 

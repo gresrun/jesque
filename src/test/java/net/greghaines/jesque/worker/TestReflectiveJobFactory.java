@@ -1,9 +1,10 @@
 package net.greghaines.jesque.worker;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.concurrent.Callable;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.utils.JesqueUtils;
-import org.junit.Assert;
 import org.junit.Test;
 
 /** Tests ReflectiveJobFactory. */
@@ -13,11 +14,9 @@ public class TestReflectiveJobFactory {
   public void testMaterializeJob() throws Exception {
     final ReflectiveJobFactory jobFactory = new ReflectiveJobFactory();
     final Object action = jobFactory.materializeJob(new Job(TestRunnableJob.class.getName()));
-    Assert.assertNotNull(action);
-    Assert.assertEquals(TestRunnableJob.class, action.getClass());
+    assertThat(action).isInstanceOf(TestRunnableJob.class);
     final Object action2 = jobFactory.materializeJob(new Job(TestCallableJob.class.getName()));
-    Assert.assertNotNull(action2);
-    Assert.assertEquals(TestCallableJob.class, action2.getClass());
+    assertThat(action2).isInstanceOf(TestCallableJob.class);
   }
 
   @Test(expected = ClassCastException.class)

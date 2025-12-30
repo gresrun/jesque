@@ -1,9 +1,10 @@
 package net.greghaines.jesque.utils;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.junit.Assert;
 import org.junit.Test;
 
 /** Tests ReflectionUtils. */
@@ -21,98 +22,94 @@ public class TestReflectionUtils {
 
   @Test
   public void testForName_Primitive() throws ClassNotFoundException {
-    Assert.assertSame(int.class, ReflectionUtils.forName("int"));
+    assertThat(ReflectionUtils.forName("int")).isSameInstanceAs(int.class);
   }
 
   @Test
   public void testForName_PrimitiveArray() throws ClassNotFoundException {
-    Assert.assertSame(int[].class, ReflectionUtils.forName("[I"));
+    assertThat(ReflectionUtils.forName("[I")).isSameInstanceAs(int[].class);
   }
 
   @Test
   public void testForName_Common() throws ClassNotFoundException {
-    Assert.assertSame(String.class, ReflectionUtils.forName(String.class.getName()));
+    assertThat(ReflectionUtils.forName(String.class.getName())).isSameInstanceAs(String.class);
   }
 
   @Test
   public void testForName_Standard() throws ClassNotFoundException {
-    Assert.assertSame(Map.class, ReflectionUtils.forName(Map.class.getName()));
+    assertThat(ReflectionUtils.forName(Map.class.getName())).isSameInstanceAs(Map.class);
   }
 
   @Test
   public void testForName_Inner() throws ClassNotFoundException {
-    Assert.assertSame(Entry.class, ReflectionUtils.forName(Entry.class.getName()));
+    assertThat(ReflectionUtils.forName(Entry.class.getName())).isSameInstanceAs(Entry.class);
   }
 
   @Test
   public void testForName_InnerDot() throws ClassNotFoundException {
-    Assert.assertSame(Entry.class, ReflectionUtils.forName("java.util.Map.Entry"));
+    assertThat(ReflectionUtils.forName("java.util.Map.Entry")).isSameInstanceAs(Entry.class);
   }
 
   @Test
   public void testForName_Array() throws ClassNotFoundException {
-    Assert.assertSame(Map[].class, ReflectionUtils.forName("[Ljava.util.Map;"));
+    assertThat(ReflectionUtils.forName("[Ljava.util.Map;")).isSameInstanceAs(Map[].class);
   }
 
   @Test
   public void testForName_ArraySuffix() throws ClassNotFoundException {
-    Assert.assertSame(String[].class, ReflectionUtils.forName("java.lang.String[]"));
+    assertThat(ReflectionUtils.forName("java.lang.String[]")).isSameInstanceAs(String[].class);
   }
 
   @Test
   public void testForName_DoubleArray() throws ClassNotFoundException {
-    Assert.assertSame(String[][].class, ReflectionUtils.forName("[[Ljava.lang.String;"));
+    assertThat(ReflectionUtils.forName("[[Ljava.lang.String;")).isSameInstanceAs(String[][].class);
   }
 
   @Test
   public void testForName_DoubleArraySuffix() throws ClassNotFoundException {
-    Assert.assertSame(String[][].class, ReflectionUtils.forName("java.lang.String[][]"));
+    assertThat(ReflectionUtils.forName("java.lang.String[][]")).isSameInstanceAs(String[][].class);
   }
 
   @Test
   public void testInvokeSetters_NullInstance() throws ReflectiveOperationException {
-    Assert.assertNull(ReflectionUtils.invokeSetters(null, null));
+    assertThat((Object) ReflectionUtils.invokeSetters(null, null)).isNull();
   }
 
   @Test
   public void testInvokeSetters_NullVars() throws ReflectiveOperationException {
     final Object obj = new Object();
-    Assert.assertSame(obj, ReflectionUtils.invokeSetters(obj, null));
+    assertThat(ReflectionUtils.invokeSetters(obj, null)).isSameInstanceAs(obj);
   }
 
   @Test
   public void testInvokeSetters_EmptyVars() throws ReflectiveOperationException {
     final Object obj = new Object();
-    Assert.assertSame(obj, ReflectionUtils.invokeSetters(obj, new HashMap<String, Object>()));
+    assertThat(ReflectionUtils.invokeSetters(obj, new HashMap<String, Object>()))
+        .isSameInstanceAs(obj);
   }
 
   @Test(expected = NoSuchMethodException.class)
   public void testInvokeSetters_MissingSetter() throws ReflectiveOperationException {
-    final Map<String, Object> vars = new HashMap<String, Object>();
-    vars.put("bogusVal", new Object());
+    final Map<String, Object> vars = Map.of("bogusVal", new Object());
     ReflectionUtils.invokeSetters(new SetterObj(), vars);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testInvokeSetters_BadType() throws ReflectiveOperationException {
-    final Map<String, Object> vars = new HashMap<String, Object>();
-    vars.put("intVal", new Object());
+    final Map<String, Object> vars = Map.of("intVal", new Object());
     ReflectionUtils.invokeSetters(new SetterObj(), vars);
   }
 
   @Test
   public void testInvokeSetters_Success() throws ReflectiveOperationException {
-    final Map<String, Object> vars = new HashMap<String, Object>();
-    vars.put("intVal", 1);
-    vars.put("floatVal", 2.3f);
-    vars.put("stringVal", "foobar");
-    vars.put("objVal", new Object());
+    final Map<String, Object> vars =
+        Map.of("intVal", 1, "floatVal", 2.3f, "stringVal", "foobar", "objVal", new Object());
     final SetterObj obj = ReflectionUtils.invokeSetters(new SetterObj(), vars);
-    Assert.assertNotNull(obj);
-    Assert.assertEquals(vars.get("intVal"), obj.getIntVal());
-    Assert.assertEquals(vars.get("floatVal"), obj.getFloatVal());
-    Assert.assertEquals(vars.get("stringVal"), obj.getStringVal());
-    Assert.assertEquals(vars.get("objVal"), obj.getObjVal());
+    assertThat(obj).isNotNull();
+    assertThat(obj.getIntVal()).isEqualTo(((Integer) vars.get("intVal")).intValue());
+    assertThat(obj.getFloatVal()).isEqualTo(((Float) vars.get("floatVal")).floatValue());
+    assertThat(obj.getStringVal()).isEqualTo((String) vars.get("stringVal"));
+    assertThat(obj.getObjVal()).isEqualTo(vars.get("objVal"));
   }
 
   @Test
@@ -121,7 +118,7 @@ public class TestReflectionUtils {
           AmbiguousConstructorException,
           ReflectiveOperationException {
     final SetterObj obj = ReflectionUtils.createObject(SetterObj.class, null, null);
-    Assert.assertNotNull(obj);
+    assertThat(obj).isNotNull();
   }
 
   @Test
@@ -129,17 +126,14 @@ public class TestReflectionUtils {
       throws NoSuchConstructorException,
           AmbiguousConstructorException,
           ReflectiveOperationException {
-    final Map<String, Object> vars = new HashMap<String, Object>();
-    vars.put("intVal", 1);
-    vars.put("floatVal", 2.3f);
-    vars.put("stringVal", "foobar");
-    vars.put("objVal", new Object());
+    final Map<String, Object> vars =
+        Map.of("intVal", 1, "floatVal", 2.3f, "stringVal", "foobar", "objVal", new Object());
     final SetterObj obj = ReflectionUtils.createObject(SetterObj.class, null, vars);
-    Assert.assertNotNull(obj);
-    Assert.assertEquals(vars.get("intVal"), obj.getIntVal());
-    Assert.assertEquals(vars.get("floatVal"), obj.getFloatVal());
-    Assert.assertEquals(vars.get("stringVal"), obj.getStringVal());
-    Assert.assertEquals(vars.get("objVal"), obj.getObjVal());
+    assertThat(obj).isNotNull();
+    assertThat(obj.getIntVal()).isEqualTo(((Integer) vars.get("intVal")).intValue());
+    assertThat(obj.getFloatVal()).isEqualTo(((Float) vars.get("floatVal")).floatValue());
+    assertThat(obj.getStringVal()).isEqualTo((String) vars.get("stringVal"));
+    assertThat(obj.getObjVal()).isEqualTo(vars.get("objVal"));
   }
 
   @Test
@@ -149,11 +143,11 @@ public class TestReflectionUtils {
           ReflectiveOperationException {
     final Object[] args = {1, 2.3f, "foobar", new Object()};
     final SetterObj obj = ReflectionUtils.createObject(SetterObj.class, args, null);
-    Assert.assertNotNull(obj);
-    Assert.assertEquals(args[0], obj.getIntVal());
-    Assert.assertEquals(args[1], obj.getFloatVal());
-    Assert.assertEquals(args[2], obj.getStringVal());
-    Assert.assertEquals(args[3], obj.getObjVal());
+    assertThat(obj).isNotNull();
+    assertThat(obj.getIntVal()).isEqualTo(((Integer) args[0]).intValue());
+    assertThat(obj.getFloatVal()).isEqualTo(((Float) args[1]).floatValue());
+    assertThat(obj.getStringVal()).isEqualTo((String) args[2]);
+    assertThat(obj.getObjVal()).isEqualTo(args[3]);
   }
 
   @Test
@@ -161,17 +155,14 @@ public class TestReflectionUtils {
       throws NoSuchConstructorException,
           AmbiguousConstructorException,
           ReflectiveOperationException {
-    final Map<String, Object> vars = new HashMap<String, Object>();
-    vars.put("intVal", 1);
-    vars.put("floatVal", 2.3f);
-    vars.put("stringVal", "foobar");
-    vars.put("objVal", new Object());
+    final Map<String, Object> vars =
+        Map.of("intVal", 1, "floatVal", 2.3f, "stringVal", "foobar", "objVal", new Object());
     final SetterObj obj = ReflectionUtils.createObject(SetterObj.class, new Object[0], vars);
-    Assert.assertNotNull(obj);
-    Assert.assertEquals(vars.get("intVal"), obj.getIntVal());
-    Assert.assertEquals(vars.get("floatVal"), obj.getFloatVal());
-    Assert.assertEquals(vars.get("stringVal"), obj.getStringVal());
-    Assert.assertEquals(vars.get("objVal"), obj.getObjVal());
+    assertThat(obj).isNotNull();
+    assertThat(obj.getIntVal()).isEqualTo(((Integer) vars.get("intVal")).intValue());
+    assertThat(obj.getFloatVal()).isEqualTo(((Float) vars.get("floatVal")).floatValue());
+    assertThat(obj.getStringVal()).isEqualTo((String) vars.get("stringVal"));
+    assertThat(obj.getObjVal()).isEqualTo(vars.get("objVal"));
   }
 
   public static class SetterObj implements Runnable {

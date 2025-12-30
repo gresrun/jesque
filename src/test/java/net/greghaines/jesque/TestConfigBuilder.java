@@ -1,9 +1,10 @@
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.HostAndPort;
 
@@ -12,12 +13,12 @@ public class TestConfigBuilder {
   @Test
   public void testGetDefaultConfig() {
     final Config config = Config.getDefaultConfig();
-    Assert.assertNotNull(config);
-    Assert.assertEquals(Config.Builder.DEFAULT_HOST, config.getHostAndPort().getHost());
-    Assert.assertEquals(Config.Builder.DEFAULT_NAMESPACE, config.getNamespace());
-    Assert.assertEquals(Config.Builder.DEFAULT_PORT, config.getHostAndPort().getPort());
-    Assert.assertNull(config.getSentinels());
-    Assert.assertNull(config.getMasterName());
+    assertThat(config).isNotNull();
+    assertThat(config.getHostAndPort().getHost()).isEqualTo(Config.Builder.DEFAULT_HOST);
+    assertThat(config.getNamespace()).isEqualTo(Config.Builder.DEFAULT_NAMESPACE);
+    assertThat(config.getHostAndPort().getPort()).isEqualTo(Config.Builder.DEFAULT_PORT);
+    assertThat(config.getSentinels()).isNull();
+    assertThat(config.getMasterName()).isNull();
   }
 
   @Test
@@ -31,16 +32,15 @@ public class TestConfigBuilder {
             .withTimeout(10000)
             .build();
     final Config copy = orig.toBuilder().build();
-    Assert.assertEquals(orig.getHostAndPort(), copy.getHostAndPort());
-    Assert.assertEquals(orig.getMasterName(), copy.getMasterName());
-    Assert.assertEquals(orig.getSentinels(), copy.getSentinels());
-    Assert.assertEquals(orig.getNamespace(), copy.getNamespace());
-    Assert.assertEquals(
-        orig.getJedisClientConfig().getConnectionTimeoutMillis(),
-        copy.getJedisClientConfig().getConnectionTimeoutMillis());
-    Assert.assertEquals(
-        orig.getJedisClientConfig().getPassword(), copy.getJedisClientConfig().getPassword());
-    Assert.assertEquals(orig.toString(), copy.toString());
+    assertThat(copy.getHostAndPort()).isEqualTo(orig.getHostAndPort());
+    assertThat(copy.getMasterName()).isEqualTo(orig.getMasterName());
+    assertThat(copy.getSentinels()).isEqualTo(orig.getSentinels());
+    assertThat(copy.getNamespace()).isEqualTo(orig.getNamespace());
+    assertThat(copy.getJedisClientConfig().getConnectionTimeoutMillis())
+        .isEqualTo(orig.getJedisClientConfig().getConnectionTimeoutMillis());
+    assertThat(copy.getJedisClientConfig().getPassword())
+        .isEqualTo(orig.getJedisClientConfig().getPassword());
+    assertThat(copy.toString()).isEqualTo(orig.toString());
   }
 
   @Test
@@ -48,11 +48,11 @@ public class TestConfigBuilder {
     final String myHost = "foobar";
     final int myPort = 1234;
     final Config config = Config.newBuilder().withHostAndPort(myHost, myPort).build();
-    Assert.assertNotNull(config);
-    Assert.assertEquals(myHost, config.getHostAndPort().getHost());
-    Assert.assertEquals(myPort, config.getHostAndPort().getPort());
-    Assert.assertNull(config.getSentinels());
-    Assert.assertNull(config.getMasterName());
+    assertThat(config).isNotNull();
+    assertThat(config.getHostAndPort().getHost()).isEqualTo(myHost);
+    assertThat(config.getHostAndPort().getPort()).isEqualTo(myPort);
+    assertThat(config.getSentinels()).isNull();
+    assertThat(config.getMasterName()).isNull();
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -79,8 +79,8 @@ public class TestConfigBuilder {
   public void testWithTimeout() {
     final int myTimeout = 77777;
     final Config config = Config.newBuilder().withTimeout(myTimeout).build();
-    Assert.assertNotNull(config);
-    Assert.assertEquals(myTimeout, config.getJedisClientConfig().getConnectionTimeoutMillis());
+    assertThat(config).isNotNull();
+    assertThat(config.getJedisClientConfig().getConnectionTimeoutMillis()).isEqualTo(myTimeout);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -92,8 +92,8 @@ public class TestConfigBuilder {
   public void testWithDatabase() {
     final int myDB = 2;
     final Config config = Config.newBuilder().withDatabase(myDB).build();
-    Assert.assertNotNull(config);
-    Assert.assertEquals(myDB, config.getJedisClientConfig().getDatabase());
+    assertThat(config).isNotNull();
+    assertThat(config.getJedisClientConfig().getDatabase()).isEqualTo(myDB);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -105,16 +105,16 @@ public class TestConfigBuilder {
   public void testWithPassword() {
     final String myPassword = "s3r3t5!";
     final Config config = Config.newBuilder().withPassword(myPassword).build();
-    Assert.assertNotNull(config);
-    Assert.assertEquals(myPassword, config.getJedisClientConfig().getPassword());
+    assertThat(config).isNotNull();
+    assertThat(config.getJedisClientConfig().getPassword()).isEqualTo(myPassword);
   }
 
   @Test
   public void testWithNamespace() {
     final String myNamespace = "foo";
     final Config config = Config.newBuilder().withNamespace(myNamespace).build();
-    Assert.assertNotNull(config);
-    Assert.assertEquals(myNamespace, config.getNamespace());
+    assertThat(config).isNotNull();
+    assertThat(config.getNamespace()).isEqualTo(myNamespace);
   }
 
   @Test
@@ -124,10 +124,10 @@ public class TestConfigBuilder {
         new HashSet<>(Arrays.asList(new HostAndPort("a", 123), new HostAndPort("b", 456)));
     final Config config =
         Config.newBuilder().withMasterNameAndSentinels(myMasterName, mySentinels).build();
-    Assert.assertNotNull(config);
-    Assert.assertNull(config.getHostAndPort());
-    Assert.assertEquals(mySentinels, config.getSentinels());
-    Assert.assertEquals(myMasterName, config.getMasterName());
+    assertThat(config).isNotNull();
+    assertThat(config.getHostAndPort()).isNull();
+    assertThat(config.getSentinels()).isEqualTo(mySentinels);
+    assertThat(config.getMasterName()).isEqualTo(myMasterName);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -139,6 +139,6 @@ public class TestConfigBuilder {
   public void testWithNamespace_Empty() {
     final String myNamespace = "";
     final Config config = Config.newBuilder().withNamespace(myNamespace).build();
-    Assert.assertEquals(myNamespace, config.getNamespace());
+    assertThat(config.getNamespace()).isEqualTo(myNamespace);
   }
 }

@@ -1,5 +1,6 @@
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
@@ -13,7 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
@@ -47,9 +47,9 @@ public class RemoveDelayedQueueTest {
     TestUtils.removeDelayEnqueueJobs(delayTestQueue, jobsToRemove, config);
 
     try (Jedis jedis = createJedis(config)) { // Assert that we removed jobs are not queued
-      Assert.assertEquals(
-          5L,
-          jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
+      assertThat(
+              jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"))
+          .isEqualTo(5L);
     }
 
     // Create and start worker
@@ -72,12 +72,12 @@ public class RemoveDelayedQueueTest {
 
     // Assert that the job was run by the worker
     try (Jedis jedis = createJedis(config)) {
-      Assert.assertEquals(
-          String.valueOf(5), jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
-      Assert.assertNull(jedis.get(createKey(config.getNamespace(), STAT, FAILED)));
-      Assert.assertEquals(
-          0L,
-          jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"));
+      assertThat(jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)))
+          .isEqualTo(String.valueOf(5));
+      assertThat(jedis.get(createKey(config.getNamespace(), STAT, FAILED))).isNull();
+      assertThat(
+              jedis.zcount(createKey(config.getNamespace(), QUEUE, delayTestQueue), "-inf", "+inf"))
+          .isEqualTo(0L);
     }
   }
 }

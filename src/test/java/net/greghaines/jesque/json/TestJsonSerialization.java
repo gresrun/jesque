@@ -13,6 +13,8 @@
  */
 package net.greghaines.jesque.json;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
@@ -21,7 +23,6 @@ import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.WorkerStatus;
 import net.greghaines.jesque.utils.JesqueUtils;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -100,6 +101,6 @@ public class TestJsonSerialization {
   private static <T> void assertSerializeRoundTrip(final T obj) throws IOException {
     final String json = ObjectMapperFactory.get().writeValueAsString(obj);
     final T obj2 = (T) ObjectMapperFactory.get().readValue(json, obj.getClass());
-    Assert.assertEquals(obj, obj2);
+    assertThat(obj2).isEqualTo(obj);
   }
 }

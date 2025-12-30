@@ -1,7 +1,8 @@
 package net.greghaines.jesque.meta;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.Locale;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class TestKeyType {
@@ -9,15 +10,15 @@ public class TestKeyType {
   @Test
   public void testToString() {
     for (final KeyType keyType : KeyType.values()) {
-      Assert.assertEquals(keyType.name().toLowerCase(Locale.US), keyType.toString());
+      assertThat(keyType.toString()).isEqualTo(keyType.name().toLowerCase(Locale.US));
     }
   }
 
   @Test
   public void testGetKeyTypeByValue() {
     for (final KeyType keyType : KeyType.values()) {
-      Assert.assertEquals(
-          keyType, KeyType.getKeyTypeByValue(keyType.name().toLowerCase(Locale.US)));
+      assertThat(KeyType.getKeyTypeByValue(keyType.name().toLowerCase(Locale.US)))
+          .isEqualTo(keyType);
     }
   }
 }

@@ -1,5 +1,6 @@
 package net.greghaines.jesque.meta.dao.impl;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.Config.Builder.DEFAULT_NAMESPACE;
 import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 import static net.greghaines.jesque.utils.ResqueConstants.STARTED;
@@ -8,11 +9,9 @@ import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Arrays;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.meta.WorkerInfo;
 import net.greghaines.jesque.utils.CompositeDateFormat;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,7 +48,7 @@ public class TestWorkerInfoDAORedisImpl {
     final long workerCount = 12;
     when(this.jedisPool.scard(WORKERS_KEY)).thenReturn(workerCount);
     final long count = this.workerInfoDAO.getWorkerCount();
-    Assert.assertEquals(workerCount, count);
+    assertThat(count).isEqualTo(workerCount);
   }
 
   @Test
@@ -68,7 +67,7 @@ public class TestWorkerInfoDAORedisImpl {
 
   @Test
   public void testIsWorkerInState_NullState() throws IOException {
-    Assert.assertTrue(this.workerInfoDAO.isWorkerInState("foo", null, this.jedisPool));
+    assertThat(this.workerInfoDAO.isWorkerInState("foo", null, this.jedisPool)).isTrue();
   }
 
   @Test
@@ -76,8 +75,9 @@ public class TestWorkerInfoDAORedisImpl {
     final String workerName = "foo";
     final String statusPayload = null;
     when(this.jedisPool.get("resque:worker:" + workerName)).thenReturn(statusPayload);
-    Assert.assertTrue(
-        this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.IDLE, this.jedisPool));
+    assertThat(
+            this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.IDLE, this.jedisPool))
+        .isTrue();
   }
 
   @Test
@@ -85,8 +85,9 @@ public class TestWorkerInfoDAORedisImpl {
     final String workerName = "foo";
     final String statusPayload = null;
     when(this.jedisPool.get("resque:worker:" + workerName)).thenReturn(statusPayload);
-    Assert.assertTrue(
-        this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.PAUSED, this.jedisPool));
+    assertThat(
+            this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.PAUSED, this.jedisPool))
+        .isTrue();
   }
 
   @Test
@@ -94,8 +95,9 @@ public class TestWorkerInfoDAORedisImpl {
     final String workerName = "foo";
     final String statusPayload = "{\"paused\":false}";
     when(this.jedisPool.get("resque:worker:" + workerName)).thenReturn(statusPayload);
-    Assert.assertFalse(
-        this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.PAUSED, this.jedisPool));
+    assertThat(
+            this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.PAUSED, this.jedisPool))
+        .isFalse();
   }
 
   @Test
@@ -103,8 +105,10 @@ public class TestWorkerInfoDAORedisImpl {
     final String workerName = "foo";
     final String statusPayload = null;
     when(this.jedisPool.get("resque:worker:" + workerName)).thenReturn(statusPayload);
-    Assert.assertFalse(
-        this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.WORKING, this.jedisPool));
+    assertThat(
+            this.workerInfoDAO.isWorkerInState(
+                workerName, WorkerInfo.State.WORKING, this.jedisPool))
+        .isFalse();
   }
 
   @Test
@@ -112,8 +116,10 @@ public class TestWorkerInfoDAORedisImpl {
     final String workerName = "foo";
     final String statusPayload = "{\"paused\":false}";
     when(this.jedisPool.get("resque:worker:" + workerName)).thenReturn(statusPayload);
-    Assert.assertTrue(
-        this.workerInfoDAO.isWorkerInState(workerName, WorkerInfo.State.WORKING, this.jedisPool));
+    assertThat(
+            this.workerInfoDAO.isWorkerInState(
+                workerName, WorkerInfo.State.WORKING, this.jedisPool))
+        .isTrue();
   }
 
   @Test(expected = ParseException.class)
@@ -134,16 +140,16 @@ public class TestWorkerInfoDAORedisImpl {
     when(this.jedisPool.get("resque:stat:failed:" + workerName)).thenReturn(failedStr);
     when(this.jedisPool.get("resque:stat:processed:" + workerName)).thenReturn(processedStr);
     final WorkerInfo workerInfo = this.workerInfoDAO.createWorker(workerName, this.jedisPool);
-    Assert.assertEquals(workerName, workerInfo.getName());
-    Assert.assertEquals("123", workerInfo.getPid());
-    Assert.assertNotNull(workerInfo.getQueues());
-    Assert.assertEquals(3, workerInfo.getQueues().size());
-    Assert.assertTrue(workerInfo.getQueues().containsAll(Arrays.asList("bar", "baz", "qux")));
-    Assert.assertEquals(WorkerInfo.State.IDLE, workerInfo.getState());
-    Assert.assertNull(workerInfo.getStatus());
-    Assert.assertEquals(new CompositeDateFormat().parse(startedStr), workerInfo.getStarted());
-    Assert.assertEquals((Long) 2L, workerInfo.getFailed());
-    Assert.assertEquals((Long) 6L, workerInfo.getProcessed());
+    assertThat(workerInfo.getName()).isEqualTo(workerName);
+    assertThat(workerInfo.getPid()).isEqualTo("123");
+    assertThat(workerInfo.getQueues()).isNotNull();
+    assertThat(workerInfo.getQueues()).hasSize(3);
+    assertThat(workerInfo.getQueues()).containsExactly("bar", "baz", "qux");
+    assertThat(workerInfo.getState()).isEqualTo(WorkerInfo.State.IDLE);
+    assertThat(workerInfo.getStatus()).isNull();
+    assertThat(workerInfo.getStarted()).isEqualTo(new CompositeDateFormat().parse(startedStr));
+    assertThat(workerInfo.getFailed()).isEqualTo(2L);
+    assertThat(workerInfo.getProcessed()).isEqualTo(6L);
   }
 
   @Test
@@ -159,17 +165,17 @@ public class TestWorkerInfoDAORedisImpl {
     when(this.jedisPool.get("resque:stat:failed:" + workerName)).thenReturn(failedStr);
     when(this.jedisPool.get("resque:stat:processed:" + workerName)).thenReturn(processedStr);
     final WorkerInfo workerInfo = this.workerInfoDAO.createWorker(workerName, this.jedisPool);
-    Assert.assertEquals(workerName, workerInfo.getName());
-    Assert.assertEquals("123", workerInfo.getPid());
-    Assert.assertNotNull(workerInfo.getQueues());
-    Assert.assertEquals(3, workerInfo.getQueues().size());
-    Assert.assertTrue(workerInfo.getQueues().containsAll(Arrays.asList("bar", "baz", "qux")));
-    Assert.assertEquals(WorkerInfo.State.PAUSED, workerInfo.getState());
-    Assert.assertNotNull(workerInfo.getStatus());
-    Assert.assertTrue(workerInfo.getStatus().isPaused());
-    Assert.assertNull(workerInfo.getStarted());
-    Assert.assertEquals((Long) 0L, workerInfo.getFailed());
-    Assert.assertEquals((Long) 0L, workerInfo.getProcessed());
+    assertThat(workerInfo.getName()).isEqualTo(workerName);
+    assertThat(workerInfo.getPid()).isEqualTo("123");
+    assertThat(workerInfo.getQueues()).isNotNull();
+    assertThat(workerInfo.getQueues()).hasSize(3);
+    assertThat(workerInfo.getQueues()).containsExactly("bar", "baz", "qux");
+    assertThat(workerInfo.getState()).isEqualTo(WorkerInfo.State.PAUSED);
+    assertThat(workerInfo.getStatus()).isNotNull();
+    assertThat(workerInfo.getStatus().isPaused()).isTrue();
+    assertThat(workerInfo.getStarted()).isNull();
+    assertThat(workerInfo.getFailed()).isEqualTo(0L);
+    assertThat(workerInfo.getProcessed()).isEqualTo(0L);
   }
 
   @Test
@@ -185,16 +191,16 @@ public class TestWorkerInfoDAORedisImpl {
     when(this.jedisPool.get("resque:stat:failed:" + workerName)).thenReturn(failedStr);
     when(this.jedisPool.get("resque:stat:processed:" + workerName)).thenReturn(processedStr);
     final WorkerInfo workerInfo = this.workerInfoDAO.createWorker(workerName, this.jedisPool);
-    Assert.assertEquals(workerName, workerInfo.getName());
-    Assert.assertEquals("123", workerInfo.getPid());
-    Assert.assertNotNull(workerInfo.getQueues());
-    Assert.assertEquals(3, workerInfo.getQueues().size());
-    Assert.assertTrue(workerInfo.getQueues().containsAll(Arrays.asList("bar", "baz", "qux")));
-    Assert.assertEquals(WorkerInfo.State.WORKING, workerInfo.getState());
-    Assert.assertNotNull(workerInfo.getStatus());
-    Assert.assertFalse(workerInfo.getStatus().isPaused());
-    Assert.assertNull(workerInfo.getStarted());
-    Assert.assertEquals((Long) 0L, workerInfo.getFailed());
-    Assert.assertEquals((Long) 0L, workerInfo.getProcessed());
+    assertThat(workerInfo.getName()).isEqualTo(workerName);
+    assertThat(workerInfo.getPid()).isEqualTo("123");
+    assertThat(workerInfo.getQueues()).isNotNull();
+    assertThat(workerInfo.getQueues()).hasSize(3);
+    assertThat(workerInfo.getQueues()).containsExactly("bar", "baz", "qux");
+    assertThat(workerInfo.getState()).isEqualTo(WorkerInfo.State.WORKING);
+    assertThat(workerInfo.getStatus()).isNotNull();
+    assertThat(workerInfo.getStatus().isPaused()).isFalse();
+    assertThat(workerInfo.getStarted()).isNull();
+    assertThat(workerInfo.getFailed()).isEqualTo(0L);
+    assertThat(workerInfo.getProcessed()).isEqualTo(0L);
   }
 }

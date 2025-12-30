@@ -1,5 +1,6 @@
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
@@ -12,7 +13,6 @@ import net.greghaines.jesque.utils.ResqueConstants;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
@@ -57,24 +57,14 @@ public class DurabilityTest {
     Thread.sleep(1000);
 
     final Jedis jedis = TestUtils.createJedis(config);
-    Assert.assertEquals(
-        "In-flight list should have length one when running the job",
-        1L,
-        jedis.llen(inFlightKey(worker, queue)));
-    Assert.assertEquals(
-        "Object on the in-flight list should be the first job",
-        ObjectMapperFactory.get().writeValueAsString(sleepJob),
-        jedis.lindex(inFlightKey(worker, queue), 0));
+    assertThat(jedis.llen(inFlightKey(worker, queue))).isEqualTo(1L);
+    assertThat(jedis.lindex(inFlightKey(worker, queue), 0))
+        .isEqualTo(ObjectMapperFactory.get().writeValueAsString(sleepJob));
 
     TestUtils.stopWorker(worker, workerThread, false);
 
-    Assert.assertTrue(
-        "The job should not be requeued after succesful processing",
-        jedis.llen(createKey(config.getNamespace(), QUEUE, queue)) == 0L);
-    Assert.assertEquals(
-        "In-flight list should be empty when finishing a job",
-        0L,
-        jedis.llen(inFlightKey(worker, queue)));
+    assertThat(jedis.llen(createKey(config.getNamespace(), QUEUE, queue))).isEqualTo(0L);
+    assertThat(jedis.llen(inFlightKey(worker, queue))).isEqualTo(0L);
   }
 
   @Test
@@ -93,12 +83,8 @@ public class DurabilityTest {
     TestUtils.stopWorker(worker, workerThread, true);
 
     final Jedis jedis = TestUtils.createJedis(config);
-    Assert.assertTrue(
-        "Job should not be requeued",
-        jedis.llen(createKey(config.getNamespace(), QUEUE, queue)) == 0L);
-    Assert.assertTrue(
-        "In-flight list should be empty when finishing a job",
-        jedis.llen(inFlightKey(worker, queue)) == 0L);
+    assertThat(jedis.llen(createKey(config.getNamespace(), QUEUE, queue))).isEqualTo(0L);
+    assertThat(jedis.llen(inFlightKey(worker, queue))).isEqualTo(0L);
   }
 
   @Test
@@ -120,15 +106,10 @@ public class DurabilityTest {
     TestUtils.stopWorker(worker, workerThread, true);
 
     final Jedis jedis = TestUtils.createJedis(config);
-    Assert.assertTrue(
-        "Job should be requeued", jedis.llen(createKey(config.getNamespace(), QUEUE, queue)) == 1L);
-    Assert.assertEquals(
-        "Incorrect job was requeued",
-        ObjectMapperFactory.get().writeValueAsString(sleepWithExceptionJob),
-        jedis.lindex(createKey(config.getNamespace(), QUEUE, queue), 0));
-    Assert.assertTrue(
-        "In-flight list should be empty when finishing a job",
-        jedis.llen(inFlightKey(worker, queue)) == 0L);
+    assertThat(jedis.llen(createKey(config.getNamespace(), QUEUE, queue))).isEqualTo(1L);
+    assertThat(jedis.lindex(createKey(config.getNamespace(), QUEUE, queue), 0))
+        .isEqualTo(ObjectMapperFactory.get().writeValueAsString(sleepWithExceptionJob));
+    assertThat(jedis.llen(inFlightKey(worker, queue))).isEqualTo(0L);
   }
 
   @Test
@@ -154,10 +135,7 @@ public class DurabilityTest {
 
     TestUtils.stopWorker(worker, workerThread, false);
 
-    Assert.assertEquals(
-        "In-flight list should have length zero if the worker failed during JSON deserialization",
-        0L,
-        jedis.llen(inFlightKey(worker, queue)));
+    assertThat(jedis.llen(inFlightKey(worker, queue))).isEqualTo(0L);
   }
 
   private static String inFlightKey(final Worker worker, final String queue) {

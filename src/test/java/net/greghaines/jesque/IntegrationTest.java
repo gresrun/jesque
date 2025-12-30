@@ -13,6 +13,7 @@
  */
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
@@ -36,7 +37,6 @@ import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
 import net.greghaines.jesque.worker.WorkerImpl;
 import net.greghaines.jesque.worker.WorkerListener;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -136,25 +136,18 @@ public class IntegrationTest {
   public void acquireLockSuccess() {
     LOG.info("Running acquireLockSuccess()...");
     final Client client = new ClientImpl(CONFIG);
-    Assert.assertTrue(
-        "Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
-    Assert.assertTrue(
-        "Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
-    Assert.assertTrue(
-        "Failed to acquire the expected lock.", client.acquireLock("systemLockA", "me", 10));
+    assertThat(client.acquireLock("systemLockA", "me", 10)).isTrue();
+    assertThat(client.acquireLock("systemLockA", "me", 10)).isTrue();
+    assertThat(client.acquireLock("systemLockA", "me", 10)).isTrue();
   }
 
   @Test
   public void acquireLockFail() {
     LOG.info("Running acquireLockFail()...");
     final Client client = new ClientImpl(CONFIG);
-    Assert.assertTrue(
-        "Failed to acquire the expected lock.", client.acquireLock("systemLockA", "pete", 10000));
-    Assert.assertFalse(
-        "Acquired lock that should have been in use.",
-        client.acquireLock("systemLockA", "george", 10));
-    Assert.assertTrue(
-        "Failed to acquire the expected lock.", client.acquireLock("systemLockA", "pete", 10000));
+    assertThat(client.acquireLock("systemLockA", "pete", 10000)).isTrue();
+    assertThat(client.acquireLock("systemLockA", "george", 10)).isFalse();
+    assertThat(client.acquireLock("systemLockA", "pete", 10000)).isTrue();
   }
 
   @Ignore
@@ -185,9 +178,9 @@ public class IntegrationTest {
         JOB_FAILURE);
 
     try (Jedis jedis = createJedis(CONFIG)) {
-      Assert.assertTrue(didFailWithUnpermittedJob.get());
-      Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
-      Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
+      assertThat(didFailWithUnpermittedJob.get()).isTrue();
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED))).isEqualTo("1");
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED))).isNull();
     }
   }
 
@@ -204,8 +197,8 @@ public class IntegrationTest {
         events);
 
     try (Jedis jedis = createJedis(CONFIG)) {
-      Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
-      Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED))).isEqualTo("1");
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED))).isNull();
     }
   }
 
@@ -219,8 +212,8 @@ public class IntegrationTest {
         events);
 
     try (Jedis jedis = createJedis(CONFIG)) {
-      Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
-      Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED))).isEqualTo("1");
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED))).isNull();
     }
   }
 
@@ -247,8 +240,8 @@ public class IntegrationTest {
         events);
 
     try (Jedis jedis = createJedis(CONFIG)) {
-      Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
-      Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED))).isEqualTo("2");
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED))).isEqualTo("2");
     }
   }
 
@@ -275,8 +268,8 @@ public class IntegrationTest {
         events);
 
     try (Jedis jedis = createJedis(CONFIG)) {
-      Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
-      Assert.assertEquals("2", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED))).isEqualTo("2");
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED))).isEqualTo("2");
     }
   }
 

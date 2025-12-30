@@ -1,11 +1,11 @@
 package net.greghaines.jesque.utils;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.utils.JesqueUtils.createBacktrace;
 import static net.greghaines.jesque.utils.JesqueUtils.recreateThrowable;
 
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.json.ObjectMapperFactory;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class TestExceptionSerialization {
@@ -142,7 +142,7 @@ public class TestExceptionSerialization {
         }
         """;
     final JobFailure jobFailure = ObjectMapperFactory.get().readValue(payload, JobFailure.class);
-    Assert.assertNull(jobFailure.getThrowable());
+    assertThat(jobFailure.getThrowable()).isNull();
   }
 
   private static void serialize(final Throwable t) throws Exception {
@@ -150,12 +150,12 @@ public class TestExceptionSerialization {
   }
 
   private static void assertEquals(final Throwable t, final Throwable newT) {
-    Assert.assertEquals((t == null), (newT == null));
+    assertThat(newT == null).isEqualTo(t == null);
     if (t != null) {
-      Assert.assertEquals(t.getClass(), newT.getClass());
-      Assert.assertEquals(t.getMessage(), newT.getMessage());
-      Assert.assertEquals((t.getCause() == null), (newT.getCause() == null));
-      Assert.assertEquals(createBacktrace(t), createBacktrace(newT));
+      assertThat(newT.getClass()).isEqualTo(t.getClass());
+      assertThat(newT.getMessage()).isEqualTo(t.getMessage());
+      assertThat(newT.getCause() == null).isEqualTo(t.getCause() == null);
+      assertThat(createBacktrace(newT)).isEqualTo(createBacktrace(t));
       if (t.getCause() != null) {
         assertEquals(t.getCause(), newT.getCause());
       }

@@ -13,8 +13,9 @@
  */
 package net.greghaines.jesque.worker;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import net.greghaines.jesque.utils.ResqueConstants;
-import org.junit.Assert;
 import org.junit.Test;
 
 /** TestDefaultFailQueueStrategy tests DefaultFailQueueStrategy. */
@@ -23,8 +24,7 @@ public class TestDefaultFailQueueStrategy {
   @Test
   public void testDefaultFailQueueStrategy() {
     final String namespace = "test";
-    Assert.assertEquals(
-        namespace + ":" + ResqueConstants.FAILED,
-        new DefaultFailQueueStrategy(namespace).getFailQueueKey(null, null, null));
+    assertThat(new DefaultFailQueueStrategy(namespace).getFailQueueKey(null, null, null))
+        .isEqualTo(namespace + ":" + ResqueConstants.FAILED);
   }
 }

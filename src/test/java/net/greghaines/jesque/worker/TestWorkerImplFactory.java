@@ -1,12 +1,13 @@
 package net.greghaines.jesque.worker;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.TestAction;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -25,9 +26,8 @@ public class TestWorkerImplFactory {
     final WorkerImplFactory factory =
         new WorkerImplFactory(Config.getDefaultConfig(), queues, jobFactory);
     final WorkerImpl worker = factory.call();
-    Assert.assertNotNull(worker);
-    Assert.assertEquals(queues.size(), worker.getQueues().size());
-    Assert.assertTrue(queues.containsAll(worker.getQueues()));
-    Assert.assertEquals(jobFactory, worker.getJobFactory());
+    assertThat(worker).isNotNull();
+    assertThat(worker.getQueues()).containsExactlyElementsIn(queues);
+    assertThat(worker.getJobFactory()).isEqualTo(jobFactory);
   }
 }

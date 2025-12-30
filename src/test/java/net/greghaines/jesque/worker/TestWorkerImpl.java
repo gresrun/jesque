@@ -1,5 +1,6 @@
 package net.greghaines.jesque.worker;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
 import static org.mockito.Mockito.*;
 
@@ -7,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import net.greghaines.jesque.Config;
-import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
 
@@ -45,9 +45,9 @@ public class TestWorkerImpl {
   @Test
   public void testSetThreadNameChangingEnabled() {
     WorkerImpl.setThreadNameChangingEnabled(true);
-    Assert.assertTrue(WorkerImpl.isThreadNameChangingEnabled());
+    assertThat(WorkerImpl.isThreadNameChangingEnabled()).isTrue();
     WorkerImpl.setThreadNameChangingEnabled(false);
-    Assert.assertFalse(WorkerImpl.isThreadNameChangingEnabled());
+    assertThat(WorkerImpl.isThreadNameChangingEnabled()).isFalse();
   }
 
   @Test(expected = IllegalArgumentException.class)

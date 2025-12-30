@@ -1,5 +1,6 @@
 package net.greghaines.jesque.worker;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
@@ -10,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,9 +55,9 @@ public class TestWorkerPool {
     when(this.workers.get(0).getName()).thenReturn("Worker1");
     when(this.workers.get(1).getName()).thenReturn("Worker2");
     final String name = this.pool.getName();
-    Assert.assertNotNull(name);
-    Assert.assertTrue(name.contains("Worker1"));
-    Assert.assertTrue(name.contains("Worker2"));
+    assertThat(name).isNotNull();
+    assertThat(name).contains("Worker1");
+    assertThat(name).contains("Worker2");
   }
 
   @Test
@@ -115,13 +115,13 @@ public class TestWorkerPool {
   @Test
   public void testIsShutdown() {
     when(this.workers.get(0).isShutdown()).thenReturn(true);
-    Assert.assertTrue(this.pool.isShutdown());
+    assertThat(this.pool.isShutdown()).isTrue();
   }
 
   @Test
   public void testIsPaused() {
     when(this.workers.get(0).isPaused()).thenReturn(true);
-    Assert.assertTrue(this.pool.isPaused());
+    assertThat(this.pool.isPaused()).isTrue();
   }
 
   @Test
@@ -136,17 +136,17 @@ public class TestWorkerPool {
   public void testIsProcessingJob() {
     when(this.workers.get(0).isProcessingJob()).thenReturn(false);
     when(this.workers.get(1).isProcessingJob()).thenReturn(true);
-    Assert.assertTrue(this.pool.isProcessingJob());
+    assertThat(this.pool.isProcessingJob()).isTrue();
     when(this.workers.get(0).isProcessingJob()).thenReturn(false);
     when(this.workers.get(1).isProcessingJob()).thenReturn(false);
-    Assert.assertFalse(this.pool.isProcessingJob());
+    assertThat(this.pool.isProcessingJob()).isFalse();
   }
 
   @Test
   public void testGetQueues() {
     final Collection<String> queues = Arrays.asList("queue1", "queue2");
     when(this.workers.get(0).getQueues()).thenReturn(queues);
-    Assert.assertEquals(queues, this.pool.getQueues());
+    assertThat(this.pool.getQueues()).isEqualTo(queues);
   }
 
   @Test
@@ -186,14 +186,14 @@ public class TestWorkerPool {
     final Map<String, Class<?>> jobTypes = new LinkedHashMap<String, Class<?>>();
     final MapBasedJobFactory jobFactory = new MapBasedJobFactory(jobTypes);
     when(this.workers.get(0).getJobFactory()).thenReturn(jobFactory);
-    Assert.assertEquals(jobFactory, this.pool.getJobFactory());
+    assertThat(this.pool.getJobFactory()).isEqualTo(jobFactory);
   }
 
   @Test
   public void testGetExceptionHandler() {
     final ExceptionHandler exceptionHandler = new DefaultExceptionHandler();
     when(this.workers.get(0).getExceptionHandler()).thenReturn(exceptionHandler);
-    Assert.assertEquals(exceptionHandler, this.pool.getExceptionHandler());
+    assertThat(this.pool.getExceptionHandler()).isEqualTo(exceptionHandler);
   }
 
   @Test
@@ -208,14 +208,14 @@ public class TestWorkerPool {
   public void testWorkerCounts() {
     when(this.workers.get(0).isProcessingJob()).thenReturn(false, false, false, false, true, true);
     when(this.workers.get(1).isProcessingJob()).thenReturn(false, false, true, true, true, true);
-    Assert.assertEquals(NUM_WORKERS, this.pool.getWorkerCount());
-    Assert.assertEquals(0, this.pool.getActiveWorkerCount());
-    Assert.assertEquals(NUM_WORKERS, this.pool.getIdleWorkerCount());
-    Assert.assertEquals(NUM_WORKERS, this.pool.getWorkerCount());
-    Assert.assertEquals(1, this.pool.getActiveWorkerCount());
-    Assert.assertEquals(1, this.pool.getIdleWorkerCount());
-    Assert.assertEquals(NUM_WORKERS, this.pool.getWorkerCount());
-    Assert.assertEquals(NUM_WORKERS, this.pool.getActiveWorkerCount());
-    Assert.assertEquals(0, this.pool.getIdleWorkerCount());
+    assertThat(this.pool.getWorkerCount()).isEqualTo(NUM_WORKERS);
+    assertThat(this.pool.getActiveWorkerCount()).isEqualTo(0);
+    assertThat(this.pool.getIdleWorkerCount()).isEqualTo(NUM_WORKERS);
+    assertThat(this.pool.getWorkerCount()).isEqualTo(NUM_WORKERS);
+    assertThat(this.pool.getActiveWorkerCount()).isEqualTo(1);
+    assertThat(this.pool.getIdleWorkerCount()).isEqualTo(1);
+    assertThat(this.pool.getWorkerCount()).isEqualTo(NUM_WORKERS);
+    assertThat(this.pool.getActiveWorkerCount()).isEqualTo(NUM_WORKERS);
+    assertThat(this.pool.getIdleWorkerCount()).isEqualTo(0);
   }
 }

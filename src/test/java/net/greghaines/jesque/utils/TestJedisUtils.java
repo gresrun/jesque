@@ -1,10 +1,10 @@
 package net.greghaines.jesque.utils;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.TestUtils.createJedis;
 
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.TestUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
@@ -22,87 +22,87 @@ public class TestJedisUtils {
   @Test
   public void testEnsureJedisConnection_Success() {
     final Jedis jedis = createJedis(CONFIG);
-    Assert.assertTrue(JedisUtils.ensureJedisConnection(jedis));
-    Assert.assertTrue(JedisUtils.testJedisConnection(jedis));
+    assertThat(JedisUtils.ensureJedisConnection(jedis)).isTrue();
+    assertThat(JedisUtils.testJedisConnection(jedis)).isTrue();
   }
 
   @Test
   public void testEnsureJedisConnection_Fail() {
     final Jedis jedis = createJedis(CONFIG);
     jedis.disconnect();
-    Assert.assertFalse(JedisUtils.ensureJedisConnection(jedis));
-    Assert.assertTrue(JedisUtils.testJedisConnection(jedis));
+    assertThat(JedisUtils.ensureJedisConnection(jedis)).isFalse();
+    assertThat(JedisUtils.testJedisConnection(jedis)).isTrue();
   }
 
   @Test
   public void testTestJedisConnection_Success() {
-    Assert.assertTrue(JedisUtils.testJedisConnection(createJedis(CONFIG)));
+    assertThat(JedisUtils.testJedisConnection(createJedis(CONFIG))).isTrue();
   }
 
   @Test
   public void testTestJedisConnection_Fail() {
     final Jedis jedis = createJedis(CONFIG);
     jedis.disconnect();
-    Assert.assertFalse(JedisUtils.testJedisConnection(jedis));
+    assertThat(JedisUtils.testJedisConnection(jedis)).isFalse();
   }
 
   @Test
   public void testReconnect_Success() {
-    Assert.assertTrue(JedisUtils.reconnect(createJedis(CONFIG), 1, 1));
+    assertThat(JedisUtils.reconnect(createJedis(CONFIG), 1, 1)).isTrue();
   }
 
   @Test
   public void testIsRegularQueue_Success() {
     final Jedis jedis = createJedis(CONFIG);
     jedis.lpush(TEST_KEY, "bar");
-    Assert.assertTrue(JedisUtils.isRegularQueue(jedis, TEST_KEY));
+    assertThat(JedisUtils.isRegularQueue(jedis, TEST_KEY)).isTrue();
   }
 
   @Test
   public void testIsRegularQueue_Failure() {
-    Assert.assertFalse(JedisUtils.isRegularQueue(createJedis(CONFIG), TEST_KEY));
+    assertThat(JedisUtils.isRegularQueue(createJedis(CONFIG), TEST_KEY)).isFalse();
   }
 
   @Test
   public void testIsDelayedQueue_Success() {
     final Jedis jedis = createJedis(CONFIG);
     jedis.zadd(TEST_KEY, 1.0, "bar");
-    Assert.assertTrue(JedisUtils.isDelayedQueue(jedis, TEST_KEY));
+    assertThat(JedisUtils.isDelayedQueue(jedis, TEST_KEY)).isTrue();
   }
 
   @Test
   public void testIsDelayedQueue_Failure() {
-    Assert.assertFalse(JedisUtils.isDelayedQueue(createJedis(CONFIG), TEST_KEY));
+    assertThat(JedisUtils.isDelayedQueue(createJedis(CONFIG), TEST_KEY)).isFalse();
   }
 
   @Test
   public void testIsKeyUsed_Success() {
     final Jedis jedis = createJedis(CONFIG);
     jedis.set(TEST_KEY, "bar");
-    Assert.assertTrue(JedisUtils.isKeyUsed(jedis, TEST_KEY));
+    assertThat(JedisUtils.isKeyUsed(jedis, TEST_KEY)).isTrue();
   }
 
   @Test
   public void testIsKeyUsed_Failure() {
-    Assert.assertFalse(JedisUtils.isKeyUsed(createJedis(CONFIG), "foo"));
+    assertThat(JedisUtils.isKeyUsed(createJedis(CONFIG), "foo")).isFalse();
   }
 
   @Test
   public void testCanUseAsDelayedQueue_Success_ZSet() {
     final Jedis jedis = createJedis(CONFIG);
     jedis.zadd(TEST_KEY, 1.0, "bar");
-    Assert.assertTrue(JedisUtils.canUseAsDelayedQueue(jedis, TEST_KEY));
+    assertThat(JedisUtils.canUseAsDelayedQueue(jedis, TEST_KEY)).isTrue();
   }
 
   @Test
   public void testCanUseAsDelayedQueue_Success_None() {
-    Assert.assertTrue(JedisUtils.canUseAsDelayedQueue(createJedis(CONFIG), TEST_KEY));
+    assertThat(JedisUtils.canUseAsDelayedQueue(createJedis(CONFIG), TEST_KEY)).isTrue();
   }
 
   @Test
   public void testCanUseAsDelayedQueue_Failure() {
     final Jedis jedis = createJedis(CONFIG);
     jedis.set(TEST_KEY, "bar");
-    Assert.assertFalse(JedisUtils.canUseAsDelayedQueue(jedis, TEST_KEY));
+    assertThat(JedisUtils.canUseAsDelayedQueue(jedis, TEST_KEY)).isFalse();
   }
 }

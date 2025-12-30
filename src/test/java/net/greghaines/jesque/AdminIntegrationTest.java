@@ -1,5 +1,6 @@
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.Config.Builder.DEFAULT_NAMESPACE;
 
 import java.util.Map;
@@ -14,7 +15,6 @@ import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
 import net.greghaines.jesque.worker.WorkerPool;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -61,7 +61,7 @@ public class AdminIntegrationTest {
     final Thread adminThread = new Thread(admin);
     adminThread.start();
 
-    Assert.assertFalse(workerPool.isPaused());
+    assertThat(workerPool.isPaused()).isFalse();
 
     try {
       // TODO: Do client stuff here
@@ -91,7 +91,7 @@ public class AdminIntegrationTest {
     final Thread adminThread = new Thread(admin);
     adminThread.start();
 
-    Assert.assertFalse(worker.isPaused());
+    assertThat(worker.isPaused()).isFalse();
 
     try {
       final AdminClient adminClient = new AdminClientImpl(config);
@@ -101,15 +101,15 @@ public class AdminIntegrationTest {
           Thread.sleep(2000L);
         } catch (InterruptedException ie) {
         }
-        Assert.assertTrue(worker.isPaused());
+        assertThat(worker.isPaused()).isTrue();
 
-        Assert.assertFalse(worker.isShutdown());
+        assertThat(worker.isShutdown()).isFalse();
         adminClient.shutdownWorkers(true);
         try {
           Thread.sleep(1000L);
         } catch (InterruptedException ie) {
         }
-        Assert.assertTrue(worker.isShutdown());
+        assertThat(worker.isShutdown()).isTrue();
       } finally {
         adminClient.end();
       }

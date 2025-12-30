@@ -14,6 +14,7 @@
 package net.greghaines.jesque.worker;
 
 /** ExceptionHandler allows for customized handling of exceptions received by a {@link Worker}. */
+@FunctionalInterface
 public interface ExceptionHandler {
 
   /**

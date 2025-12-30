@@ -21,6 +21,7 @@ import net.greghaines.jesque.Job;
  * @author Greg Haines
  * @see WorkerEvent
  */
+@FunctionalInterface
 public interface WorkerListener {
 
   /**

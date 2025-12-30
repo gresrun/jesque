@@ -13,6 +13,8 @@
  */
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.List;
 import java.util.Map;
 import net.greghaines.jesque.client.Client;
@@ -20,7 +22,6 @@ import net.greghaines.jesque.client.ClientImpl;
 import net.greghaines.jesque.worker.JobExecutor;
 import net.greghaines.jesque.worker.JobFactory;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
-import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -127,9 +128,9 @@ public final class TestUtils {
   }
 
   public static void assertFullyEquals(final Object obj1, final Object obj2) {
-    Assert.assertEquals(obj1, obj2);
-    Assert.assertEquals(obj1.hashCode(), obj2.hashCode());
-    Assert.assertEquals(obj1.toString(), obj2.toString());
+    assertThat(obj1).isEqualTo(obj2);
+    assertThat(obj1.hashCode()).isEqualTo(obj2.hashCode());
+    assertThat(obj1.toString()).isEqualTo(obj2.toString());
   }
 
   public static JobFactory createTestActionJobFactory() {

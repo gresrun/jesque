@@ -1,9 +1,9 @@
 package net.greghaines.jesque.utils;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.lang.reflect.Constructor;
-import java.util.HashSet;
 import java.util.Set;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class TestAmbiguousConstructorException {
@@ -11,18 +11,18 @@ public class TestAmbiguousConstructorException {
   @Test
   public void testStringConstructor() {
     final AmbiguousConstructorException ace = new AmbiguousConstructorException("foo");
-    Assert.assertNull(ace.getType());
-    Assert.assertNull(ace.getArgs());
+    assertThat(ace.getType()).isNull();
+    assertThat(ace.getArgs()).isNull();
   }
 
   @Test
   public void testClassArgsOptionsConstructor() {
-    final Set<Constructor<?>> options = new HashSet<Constructor<?>>();
+    final Set<Constructor<?>> options = Set.of();
     final AmbiguousConstructorException ace =
         new AmbiguousConstructorException(
             TestAmbiguousConstructorException.class, new Object[] {"foo", "bar"}, options);
-    Assert.assertEquals(TestAmbiguousConstructorException.class, ace.getType());
-    Assert.assertArrayEquals(new Object[] {"foo", "bar"}, ace.getArgs());
-    Assert.assertEquals(options, ace.getOptions());
+    assertThat(ace.getType()).isEqualTo(TestAmbiguousConstructorException.class);
+    assertThat(ace.getArgs()).isEqualTo(new Object[] {"foo", "bar"});
+    assertThat(ace.getOptions()).isEqualTo(options);
   }
 }

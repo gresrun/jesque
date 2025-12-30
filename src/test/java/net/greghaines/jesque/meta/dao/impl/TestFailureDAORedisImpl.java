@@ -1,5 +1,6 @@
 package net.greghaines.jesque.meta.dao.impl;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.Config.Builder.DEFAULT_NAMESPACE;
 import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
@@ -17,7 +18,6 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.Job;
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.json.ObjectMapperFactory;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,7 +56,7 @@ public class TestFailureDAORedisImpl {
     final String failCount = "12";
     when(this.jedisPool.get(FAILED_STAT_KEY)).thenReturn(failCount);
     final long count = this.failureDAO.getCount();
-    Assert.assertEquals(Long.parseLong(failCount), count);
+    assertThat(count).isEqualTo(Long.parseLong(failCount));
   }
 
   @Test
@@ -64,7 +64,7 @@ public class TestFailureDAORedisImpl {
     final long failQueueJobCount = 12;
     when(this.jedisPool.llen(FAILED_KEY)).thenReturn(failQueueJobCount);
     final long count = this.failureDAO.getFailQueueJobCount();
-    Assert.assertEquals(failQueueJobCount, count);
+    assertThat(count).isEqualTo(failQueueJobCount);
   }
 
   @Test
@@ -91,9 +91,7 @@ public class TestFailureDAORedisImpl {
     origJsons.add(UUID.randomUUID().toString());
     when(this.jedisPool.lrange(FAILED_KEY, offset, offset + count - 1)).thenReturn(origJsons);
     final List<JobFailure> fails = this.failureDAO.getFailures(offset, count);
-    Assert.assertNotNull(fails);
-    Assert.assertEquals(origFailures.size(), fails.size());
-    Assert.assertTrue(fails.containsAll(origFailures));
+    assertThat(fails).containsExactlyElementsIn(origFailures);
   }
 
   @Test
@@ -160,7 +158,6 @@ public class TestFailureDAORedisImpl {
     when(this.jedisPool.sadd(QUEUES_KEY, queue)).thenReturn(1L);
     when(this.jedisPool.rpush("resque:queue:" + queue, jobJson)).thenReturn(1L);
     final Date requeuedAt = this.failureDAO.requeue(index);
-    Assert.assertNotNull(requeuedAt);
-    Assert.assertTrue(System.currentTimeMillis() >= requeuedAt.getTime());
+    assertThat(requeuedAt).isAtMost(new Date());
   }
 }

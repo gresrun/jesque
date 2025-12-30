@@ -1,9 +1,10 @@
 package net.greghaines.jesque.utils;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.Collections;
 import java.util.HashSet;
 import net.greghaines.jesque.Config;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import redis.clients.jedis.HostAndPort;
@@ -15,7 +16,7 @@ public class TestPoolUtils {
 
   @Test
   public void testGetDefaultPoolConfig() {
-    Assert.assertNotNull(PoolUtils.getDefaultPoolConfig());
+    assertThat(PoolUtils.getDefaultPoolConfig()).isNotNull();
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -27,8 +28,7 @@ public class TestPoolUtils {
   public void testCreateJedisPool() {
     final Config config = Config.getDefaultConfig();
     final UnifiedJedis pool = PoolUtils.createJedisPool(config);
-    Assert.assertNotNull(pool);
-    Assert.assertTrue(pool instanceof RedisClient);
+    assertThat(pool).isInstanceOf(RedisClient.class);
   }
 
   /**
@@ -49,8 +49,7 @@ public class TestPoolUtils {
                 new HashSet<>(Collections.singletonList(new HostAndPort("localhost", 26379))))
             .build();
     final UnifiedJedis pool = PoolUtils.createJedisPool(config);
-    Assert.assertNotNull(pool);
-    Assert.assertTrue(pool instanceof RedisSentinelClient);
+    assertThat(pool).isInstanceOf(RedisSentinelClient.class);
   }
 
   @Test(expected = IllegalArgumentException.class)

@@ -1,6 +1,7 @@
 package net.greghaines.jesque.utils;
 
-import org.junit.Assert;
+import static com.google.common.truth.Truth.assertThat;
+
 import org.junit.Test;
 
 public class TestNoSuchConstructorException {
@@ -8,15 +9,15 @@ public class TestNoSuchConstructorException {
   @Test
   public void testStringConstructor() {
     final NoSuchConstructorException nsce = new NoSuchConstructorException("foo");
-    Assert.assertNull(nsce.getType());
-    Assert.assertNull(nsce.getArgs());
+    assertThat(nsce.getType()).isNull();
+    assertThat(nsce.getArgs()).isNull();
   }
 
   @Test
   public void testClassArgsConstructor() {
     final NoSuchConstructorException nsce =
         new NoSuchConstructorException(TestNoSuchConstructorException.class, "foo", "bar");
-    Assert.assertEquals(TestNoSuchConstructorException.class, nsce.getType());
-    Assert.assertArrayEquals(new String[] {"foo", "bar"}, nsce.getArgs());
+    assertThat(nsce.getType()).isEqualTo(TestNoSuchConstructorException.class);
+    assertThat(nsce.getArgs()).isEqualTo(new String[] {"foo", "bar"});
   }
 }

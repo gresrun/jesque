@@ -1,5 +1,6 @@
 package net.greghaines.jesque.admin;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
 
 import java.util.HashSet;
@@ -9,10 +10,8 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.admin.commands.PauseCommand;
 import net.greghaines.jesque.admin.commands.ShutdownCommand;
 import net.greghaines.jesque.worker.ExceptionHandler;
-import net.greghaines.jesque.worker.JobExecutor;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.RecoveryStrategy;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class TestAdminImpl {
@@ -94,29 +93,21 @@ public class TestAdminImpl {
   public void testSetExceptionHandler() {
     final AdminImpl admin = new AdminImpl(CONFIG);
     final ExceptionHandler handler =
-        new ExceptionHandler() {
-
-          /** {@inheritDoc} */
-          @Override
-          public RecoveryStrategy onException(
-              final JobExecutor jobExecutor, final Exception exception, final String curQueue) {
-            return RecoveryStrategy.TERMINATE;
-          }
-        };
+        (jobExecutor, exception, curQueue) -> RecoveryStrategy.TERMINATE;
     admin.setExceptionHandler(handler);
-    Assert.assertSame(handler, admin.getExceptionHandler());
+    assertThat(admin.getExceptionHandler()).isSameInstanceAs(handler);
   }
 
   @Test
   public void testBasics() {
     final AdminImpl admin = new AdminImpl(CONFIG);
-    Assert.assertFalse(admin.isProcessingJob());
-    Assert.assertFalse(admin.isShutdown());
-    Assert.assertNotNull(admin.getJobFactory());
-    Assert.assertNotNull(admin.getChannels());
-    Assert.assertEquals(1, admin.getChannels().size());
-    Assert.assertNotNull(admin.getExceptionHandler());
-    Assert.assertTrue(admin.getReconnectAttempts() > 0);
-    Assert.assertNull(admin.getWorker());
+    assertThat(admin.isProcessingJob()).isFalse();
+    assertThat(admin.isShutdown()).isFalse();
+    assertThat(admin.getJobFactory()).isNotNull();
+    assertThat(admin.getChannels()).isNotNull();
+    assertThat(admin.getChannels()).hasSize(1);
+    assertThat(admin.getExceptionHandler()).isNotNull();
+    assertThat(admin.getReconnectAttempts()).isGreaterThan(0);
+    assertThat(admin.getWorker()).isNull();
   }
 }

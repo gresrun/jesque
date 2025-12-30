@@ -1,5 +1,6 @@
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
@@ -12,7 +13,6 @@ import java.util.Map;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerImpl;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -59,8 +59,8 @@ public class Issue46 {
       TestUtils.stopWorker(worker, workerThread);
     }
     try (Jedis jedis = createJedis(CONFIG)) {
-      Assert.assertEquals("1", jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED)));
-      Assert.assertNull(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED)));
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, PROCESSED))).isEqualTo("1");
+      assertThat(jedis.get(createKey(CONFIG.getNamespace(), STAT, FAILED))).isNull();
     }
   }
 

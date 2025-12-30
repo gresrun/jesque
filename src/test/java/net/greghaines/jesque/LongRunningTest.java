@@ -1,5 +1,7 @@
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -8,7 +10,6 @@ import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
 import net.greghaines.jesque.worker.WorkerImpl;
 import net.greghaines.jesque.worker.WorkerListener;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -79,7 +80,7 @@ public class LongRunningTest {
     worker2.end(false);
     workerThread2.join();
 
-    Assert.assertTrue("Success callback should have been called", successRef.get());
+    assertThat(successRef.get()).isTrue();
     changeRedisTimeout(0);
   }
 

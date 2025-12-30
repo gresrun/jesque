@@ -1,7 +1,8 @@
 package net.greghaines.jesque;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import java.util.Date;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class TestWorkerStatus {
@@ -9,10 +10,10 @@ public class TestWorkerStatus {
   @Test
   public void testConstructor_NoArg() {
     final WorkerStatus status = new WorkerStatus();
-    Assert.assertNull(status.getRunAt());
-    Assert.assertNull(status.getQueue());
-    Assert.assertNull(status.getPayload());
-    Assert.assertFalse(status.isPaused());
+    assertThat(status.getRunAt()).isNull();
+    assertThat(status.getQueue()).isNull();
+    assertThat(status.getPayload()).isNull();
+    assertThat(status.isPaused()).isFalse();
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -25,54 +26,54 @@ public class TestWorkerStatus {
     final WorkerStatus protoStatus = new WorkerStatus();
     final Date runAt = new Date();
     protoStatus.setRunAt(runAt);
-    Assert.assertEquals(runAt, protoStatus.getRunAt());
+    assertThat(protoStatus.getRunAt()).isEqualTo(runAt);
     final String queue = "queue1";
     protoStatus.setQueue(queue);
-    Assert.assertEquals(queue, protoStatus.getQueue());
+    assertThat(protoStatus.getQueue()).isEqualTo(queue);
     final Job payload = new Job("clazz", 1, 2.0);
     protoStatus.setPayload(payload);
-    Assert.assertEquals(payload, protoStatus.getPayload());
+    assertThat(protoStatus.getPayload()).isEqualTo(payload);
     final boolean paused = true;
     protoStatus.setPaused(paused);
-    Assert.assertEquals(paused, protoStatus.isPaused());
+    assertThat(protoStatus.isPaused()).isEqualTo(paused);
     final WorkerStatus status = new WorkerStatus(protoStatus);
     TestUtils.assertFullyEquals(protoStatus, status);
-    Assert.assertEquals(runAt, status.getRunAt());
-    Assert.assertEquals(payload, status.getPayload());
-    Assert.assertEquals(queue, status.getQueue());
-    Assert.assertEquals(paused, status.isPaused());
+    assertThat(status.getRunAt()).isEqualTo(runAt);
+    assertThat(status.getPayload()).isEqualTo(payload);
+    assertThat(status.getQueue()).isEqualTo(queue);
+    assertThat(status.isPaused()).isEqualTo(paused);
   }
 
   @Test
   public void testEquals() {
     final WorkerStatus status1 = new WorkerStatus();
     TestUtils.assertFullyEquals(status1, status1);
-    Assert.assertFalse(status1.equals(null));
-    Assert.assertFalse(status1.equals(new Object()));
+    assertThat(status1.equals(null)).isFalse();
+    assertThat(status1).isNotEqualTo(new Object());
     final WorkerStatus status2 = new WorkerStatus();
     TestUtils.assertFullyEquals(status1, status2);
     status2.setPaused(true);
-    Assert.assertFalse(status1.equals(status2));
+    assertThat(status1).isNotEqualTo(status2);
     status1.setPaused(true);
     TestUtils.assertFullyEquals(status1, status2);
     status2.setQueue("queue1");
-    Assert.assertFalse(status1.equals(status2));
+    assertThat(status1).isNotEqualTo(status2);
     status1.setQueue("queue2");
-    Assert.assertFalse(status1.equals(status2));
+    assertThat(status1).isNotEqualTo(status2);
     status1.setQueue("queue1");
     TestUtils.assertFullyEquals(status1, status2);
     final Date runAt1 = new Date(2L);
     status2.setRunAt(runAt1);
-    Assert.assertFalse(status1.equals(status2));
+    assertThat(status1).isNotEqualTo(status2);
     status1.setRunAt(new Date(3L));
-    Assert.assertFalse(status1.equals(status2));
+    assertThat(status1).isNotEqualTo(status2);
     status1.setRunAt(runAt1);
     TestUtils.assertFullyEquals(status1, status2);
     final Job payload1 = new Job();
     status2.setPayload(payload1);
-    Assert.assertFalse(status1.equals(status2));
+    assertThat(status1).isNotEqualTo(status2);
     status1.setPayload(new Job("foo"));
-    Assert.assertFalse(status1.equals(status2));
+    assertThat(status1).isNotEqualTo(status2);
     status1.setPayload(payload1);
     TestUtils.assertFullyEquals(status1, status2);
   }
