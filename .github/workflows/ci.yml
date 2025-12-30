@@ -26,7 +26,7 @@ jobs:
         cache: maven
 
     - name: Start Redis Server
-      uses: supercharge/redis-github-action@1.8.1
+      uses: supercharge/redis-github-action@v2
 
     - name: Run Tests
       run: mvn clean test jacoco:report -Dgithub=true
