@@ -1,9 +1,8 @@
 package net.greghaines.jesque.admin.commands;
 
+import static org.mockito.Mockito.*;
+
 import net.greghaines.jesque.worker.Worker;
-import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.jmock.integration.junit4.JUnit4Mockery;
 import org.junit.Test;
 
 /**
@@ -22,17 +21,11 @@ public class TestShutdownCommand {
   @Test
   public void testRun() {
     final boolean shutdown = true;
-    final Mockery mockCtx = new JUnit4Mockery();
-    final Worker worker = mockCtx.mock(Worker.class);
-    mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(worker).end(shutdown);
-          }
-        });
+    final Worker worker = mock(Worker.class);
+    doNothing().when(worker).end(shutdown);
     final ShutdownCommand shutdownCmd = new ShutdownCommand(shutdown);
     shutdownCmd.setWorker(worker);
     shutdownCmd.run();
-    mockCtx.assertIsSatisfied();
+    verify(worker).end(shutdown);
   }
 }

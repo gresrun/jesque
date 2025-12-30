@@ -1,10 +1,9 @@
 package net.greghaines.jesque.worker;
 
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
-import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.jmock.integration.junit4.JUnit4Mockery;
 import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.exceptions.JedisConnectionException;
@@ -33,36 +32,22 @@ public class TestDefaultExceptionHandler {
 
   @Test
   public void testOnException_Interrupted() {
-    final Mockery mockCtx = new JUnit4Mockery();
-    final JobExecutor jobEx = mockCtx.mock(JobExecutor.class);
-    mockCtx.checking(
-        new Expectations() {
-          {
-            allowing(jobEx).isShutdown();
-            will(returnValue(false));
-          }
-        });
+    final JobExecutor jobEx = mock(JobExecutor.class);
+    when(jobEx.isShutdown()).thenReturn(false);
     Assert.assertEquals(
         RecoveryStrategy.PROCEED,
         new DefaultExceptionHandler().onException(jobEx, new InterruptedException("foo"), null));
-    mockCtx.assertIsSatisfied();
+    verify(jobEx).isShutdown();
   }
 
   @Test
   public void testOnException_InterruptedShutdown() {
-    final Mockery mockCtx = new JUnit4Mockery();
-    final JobExecutor jobEx = mockCtx.mock(JobExecutor.class);
-    mockCtx.checking(
-        new Expectations() {
-          {
-            allowing(jobEx).isShutdown();
-            will(returnValue(true));
-          }
-        });
+    final JobExecutor jobEx = mock(JobExecutor.class);
+    when(jobEx.isShutdown()).thenReturn(true);
     Assert.assertEquals(
         RecoveryStrategy.TERMINATE,
         new DefaultExceptionHandler().onException(jobEx, new InterruptedException("foo"), null));
-    mockCtx.assertIsSatisfied();
+    verify(jobEx).isShutdown();
   }
 
   @Test

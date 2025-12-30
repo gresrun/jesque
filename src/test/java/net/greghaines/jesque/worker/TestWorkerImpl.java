@@ -1,15 +1,12 @@
 package net.greghaines.jesque.worker;
 
 import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
+import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import net.greghaines.jesque.Config;
-import org.jmock.Mockery;
-import org.jmock.imposters.ByteBuddyClassImposteriser;
-import org.jmock.integration.junit4.JUnit4Mockery;
-import org.jmock.internal.InvocationExpectation;
 import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
@@ -40,8 +37,9 @@ public class TestWorkerImpl {
 
   @Test(expected = IllegalArgumentException.class)
   public void testConstructor_NullNextQueueStrategy() {
+    final Jedis jedis = mock(Jedis.class);
     new WorkerImpl(
-        CONFIG, Collections.<String>emptyList(), createTestActionJobFactory(), getJedis(), null);
+        CONFIG, Collections.<String>emptyList(), createTestActionJobFactory(), jedis, null);
   }
 
   @Test
@@ -77,18 +75,10 @@ public class TestWorkerImpl {
     final MapBasedJobFactory jobFactory =
         new MapBasedJobFactory(Collections.<String, Class<?>>emptyMap());
     for (NextQueueStrategy nextQueueStrategy : NextQueueStrategy.values()) {
+      final Jedis jedis = mock(Jedis.class);
       final WorkerImpl worker =
-          new WorkerImpl(
-              CONFIG, new ArrayList<String>(), jobFactory, getJedis(), nextQueueStrategy);
+          new WorkerImpl(CONFIG, new ArrayList<String>(), jobFactory, jedis, nextQueueStrategy);
       worker.pop(worker.getNextQueue());
     }
-  }
-
-  private Jedis getJedis() {
-    final Mockery mockCtx = new JUnit4Mockery();
-    mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
-    final Jedis jedis = mockCtx.mock(Jedis.class);
-    mockCtx.addExpectation(new InvocationExpectation());
-    return jedis;
   }
 }

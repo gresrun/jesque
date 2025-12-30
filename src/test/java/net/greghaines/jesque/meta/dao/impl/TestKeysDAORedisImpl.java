@@ -1,5 +1,7 @@
 package net.greghaines.jesque.meta.dao.impl;
 
+import static org.mockito.Mockito.*;
+
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -9,35 +11,23 @@ import net.greghaines.jesque.Config;
 import net.greghaines.jesque.meta.KeyInfo;
 import net.greghaines.jesque.meta.KeyType;
 import net.greghaines.jesque.meta.dao.impl.KeysDAORedisImpl.KeyDAOWork;
-import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.jmock.imposters.ByteBuddyClassImposteriser;
-import org.jmock.integration.junit4.JUnit4Mockery;
-import org.jmock.lib.concurrent.Synchroniser;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import redis.clients.jedis.UnifiedJedis;
 
+@RunWith(MockitoJUnitRunner.StrictStubs.class)
 public class TestKeysDAORedisImpl {
 
-  private Mockery mockCtx;
-  private UnifiedJedis jedisPool;
+  @Mock private UnifiedJedis jedisPool;
   private KeysDAORedisImpl keysDAO;
 
   @Before
   public void setUp() {
-    this.mockCtx = new JUnit4Mockery();
-    this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
-    this.mockCtx.setThreadingPolicy(new Synchroniser());
-    this.jedisPool = this.mockCtx.mock(UnifiedJedis.class);
     this.keysDAO = new KeysDAORedisImpl(Config.getDefaultConfig(), this.jedisPool);
-  }
-
-  @After
-  public void tearDown() {
-    this.mockCtx.assertIsSatisfied();
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -54,13 +44,7 @@ public class TestKeysDAORedisImpl {
   @Test
   public void testGetRedisInfo() {
     final String infoString = "foo:bar\r\n# CPU\r\nbaz\r\nqux";
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).info();
-            will(returnValue(infoString));
-          }
-        });
+    when(this.jedisPool.info()).thenReturn(infoString);
     final Map<String, String> redisInfo = this.keysDAO.getRedisInfo();
     Assert.assertNotNull(redisInfo);
     Assert.assertEquals(3, redisInfo.size());
@@ -77,20 +61,12 @@ public class TestKeysDAORedisImpl {
     final Set<String> keys = new LinkedHashSet<String>(Arrays.asList("resque:bar", "resque:qux"));
     final List<String> keyNames = Arrays.asList("bar", "qux");
     final List<String> values = Arrays.asList("bazqux", "abc123456");
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).keys("resque:*");
-            will(returnValue(keys));
-            int i = 0;
-            for (final String key : keys) {
-              oneOf(jedisPool).type(key);
-              will(returnValue(KeyType.STRING.toString()));
-              oneOf(jedisPool).strlen(key);
-              will(returnValue((long) values.get(i++).length()));
-            }
-          }
-        });
+    when(this.jedisPool.keys("resque:*")).thenReturn(keys);
+    int idx = 0;
+    for (final String key : keys) {
+      when(this.jedisPool.type(key)).thenReturn(KeyType.STRING.toString());
+      when(this.jedisPool.strlen(key)).thenReturn((long) values.get(idx++).length());
+    }
     final List<KeyInfo> keyInfos = this.keysDAO.getKeyInfos();
     Assert.assertNotNull(keyInfos);
     Assert.assertEquals(2, keyInfos.size());
@@ -110,15 +86,8 @@ public class TestKeysDAORedisImpl {
     final String key = "foo:bar";
     final String value = "bazqux";
     final long size = value.length();
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.STRING.toString()));
-            oneOf(jedisPool).strlen(key);
-            will(returnValue(size));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.STRING.toString());
+    when(this.jedisPool.strlen(key)).thenReturn(size);
     final KeyInfo keyInfo = this.keysDAO.getKeyInfo(key);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -133,17 +102,9 @@ public class TestKeysDAORedisImpl {
     final String key = "foo:bar";
     final String value = "bazqux";
     final long size = value.length();
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.STRING.toString()));
-            oneOf(jedisPool).strlen(key);
-            will(returnValue(size));
-            oneOf(jedisPool).get(key);
-            will(returnValue(value));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.STRING.toString());
+    when(this.jedisPool.strlen(key)).thenReturn(size);
+    when(this.jedisPool.get(key)).thenReturn(value);
     final KeyInfo keyInfo = this.keysDAO.getKeyInfo(key, 0, 1);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -161,15 +122,8 @@ public class TestKeysDAORedisImpl {
     final String value = "bazqux";
     final long size = value.length();
     final KeyDAOWork work = new KeyDAOWork(key);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.STRING.toString()));
-            oneOf(jedisPool).strlen(key);
-            will(returnValue(size));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.STRING.toString());
+    when(this.jedisPool.strlen(key)).thenReturn(size);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -185,17 +139,9 @@ public class TestKeysDAORedisImpl {
     final String value = "bazqux";
     final long size = value.length();
     final KeyDAOWork work = new KeyDAOWork(key, 0, 1);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.STRING.toString()));
-            oneOf(jedisPool).strlen(key);
-            will(returnValue(size));
-            oneOf(jedisPool).get(key);
-            will(returnValue(value));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.STRING.toString());
+    when(this.jedisPool.strlen(key)).thenReturn(size);
+    when(this.jedisPool.get(key)).thenReturn(value);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -212,15 +158,8 @@ public class TestKeysDAORedisImpl {
     final String key = "foo:bar";
     final long size = 8;
     final KeyDAOWork work = new KeyDAOWork(key);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.ZSET.toString()));
-            oneOf(jedisPool).zcard(key);
-            will(returnValue(size));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.ZSET.toString());
+    when(this.jedisPool.zcard(key)).thenReturn(size);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -238,17 +177,9 @@ public class TestKeysDAORedisImpl {
     final int offset = 1;
     final int count = value.size();
     final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.ZSET.toString()));
-            oneOf(jedisPool).zcard(key);
-            will(returnValue(size));
-            oneOf(jedisPool).zrange(key, offset, offset + count);
-            will(returnValue(value));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.ZSET.toString());
+    when(this.jedisPool.zcard(key)).thenReturn(size);
+    when(this.jedisPool.zrange(key, offset, offset + count)).thenReturn(value);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -265,15 +196,8 @@ public class TestKeysDAORedisImpl {
     final String key = "foo:bar";
     final long size = 8;
     final KeyDAOWork work = new KeyDAOWork(key);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.SET.toString()));
-            oneOf(jedisPool).scard(key);
-            will(returnValue(size));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.SET.toString());
+    when(this.jedisPool.scard(key)).thenReturn(size);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -291,17 +215,9 @@ public class TestKeysDAORedisImpl {
     final int offset = 0;
     final int count = 1;
     final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.SET.toString()));
-            oneOf(jedisPool).scard(key);
-            will(returnValue(size));
-            oneOf(jedisPool).smembers(key);
-            will(returnValue(value));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.SET.toString());
+    when(this.jedisPool.scard(key)).thenReturn(size);
+    when(this.jedisPool.smembers(key)).thenReturn(value);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -321,17 +237,9 @@ public class TestKeysDAORedisImpl {
     final int offset = value.size() + 1;
     final int count = value.size();
     final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.SET.toString()));
-            oneOf(jedisPool).scard(key);
-            will(returnValue(size));
-            oneOf(jedisPool).smembers(key);
-            will(returnValue(value));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.SET.toString());
+    when(this.jedisPool.scard(key)).thenReturn(size);
+    when(this.jedisPool.smembers(key)).thenReturn(value);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -350,17 +258,9 @@ public class TestKeysDAORedisImpl {
     final int offset = value.size() - 1;
     final int count = value.size();
     final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.SET.toString()));
-            oneOf(jedisPool).scard(key);
-            will(returnValue(size));
-            oneOf(jedisPool).smembers(key);
-            will(returnValue(value));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.SET.toString());
+    when(this.jedisPool.scard(key)).thenReturn(size);
+    when(this.jedisPool.smembers(key)).thenReturn(value);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -377,15 +277,8 @@ public class TestKeysDAORedisImpl {
     final String key = "foo:bar";
     final long size = 8;
     final KeyDAOWork work = new KeyDAOWork(key);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.HASH.toString()));
-            oneOf(jedisPool).hlen(key);
-            will(returnValue(size));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.HASH.toString());
+    when(this.jedisPool.hlen(key)).thenReturn(size);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -404,19 +297,10 @@ public class TestKeysDAORedisImpl {
     final int offset = 0;
     final int count = 1;
     final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.HASH.toString()));
-            oneOf(jedisPool).hlen(key);
-            will(returnValue(size));
-            oneOf(jedisPool).hkeys(key);
-            will(returnValue(valueKeys));
-            oneOf(jedisPool).hmget(key, "foo");
-            will(returnValue(valueValues));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.HASH.toString());
+    when(this.jedisPool.hlen(key)).thenReturn(size);
+    when(this.jedisPool.hkeys(key)).thenReturn(valueKeys);
+    when(this.jedisPool.hmget(key, "foo")).thenReturn(valueValues);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -436,17 +320,9 @@ public class TestKeysDAORedisImpl {
     final int offset = valueKeys.size() + 1;
     final int count = valueKeys.size();
     final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.HASH.toString()));
-            oneOf(jedisPool).hlen(key);
-            will(returnValue(size));
-            oneOf(jedisPool).hkeys(key);
-            will(returnValue(valueKeys));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.HASH.toString());
+    when(this.jedisPool.hlen(key)).thenReturn(size);
+    when(this.jedisPool.hkeys(key)).thenReturn(valueKeys);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -466,19 +342,10 @@ public class TestKeysDAORedisImpl {
     final int offset = valueKeys.size() - 1;
     final int count = valueKeys.size();
     final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.HASH.toString()));
-            oneOf(jedisPool).hlen(key);
-            will(returnValue(size));
-            oneOf(jedisPool).hkeys(key);
-            will(returnValue(valueKeys));
-            oneOf(jedisPool).hmget(key, "baz");
-            will(returnValue(valueValues));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.HASH.toString());
+    when(this.jedisPool.hlen(key)).thenReturn(size);
+    when(this.jedisPool.hkeys(key)).thenReturn(valueKeys);
+    when(this.jedisPool.hmget(key, "baz")).thenReturn(valueValues);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -495,15 +362,8 @@ public class TestKeysDAORedisImpl {
     final String key = "foo:bar";
     final long size = 8;
     final KeyDAOWork work = new KeyDAOWork(key);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.LIST.toString()));
-            oneOf(jedisPool).llen(key);
-            will(returnValue(size));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.LIST.toString());
+    when(this.jedisPool.llen(key)).thenReturn(size);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -521,17 +381,9 @@ public class TestKeysDAORedisImpl {
     final int offset = 1;
     final int count = value.size();
     final KeyDAOWork work = new KeyDAOWork(key, offset, count);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.LIST.toString()));
-            oneOf(jedisPool).llen(key);
-            will(returnValue(size));
-            oneOf(jedisPool).lrange(key, offset, offset + count);
-            will(returnValue(value));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.LIST.toString());
+    when(this.jedisPool.llen(key)).thenReturn(size);
+    when(this.jedisPool.lrange(key, offset, offset + count)).thenReturn(value);
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNotNull(keyInfo);
     Assert.assertEquals("foo", keyInfo.getNamespace());
@@ -547,13 +399,7 @@ public class TestKeysDAORedisImpl {
   public void testDoWork_Unkonwn() throws Exception {
     final String key = "foo:bar";
     final KeyDAOWork work = new KeyDAOWork(key);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue("?"));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn("?");
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNull(keyInfo);
   }
@@ -562,13 +408,7 @@ public class TestKeysDAORedisImpl {
   public void testDoWork_None() throws Exception {
     final String key = "foo:bar";
     final KeyDAOWork work = new KeyDAOWork(key);
-    this.mockCtx.checking(
-        new Expectations() {
-          {
-            oneOf(jedisPool).type(key);
-            will(returnValue(KeyType.NONE.toString()));
-          }
-        });
+    when(this.jedisPool.type(key)).thenReturn(KeyType.NONE.toString());
     final KeyInfo keyInfo = work.doWork(this.jedisPool);
     Assert.assertNull(keyInfo);
   }

@@ -12,29 +12,19 @@ import net.greghaines.jesque.worker.ExceptionHandler;
 import net.greghaines.jesque.worker.JobExecutor;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import net.greghaines.jesque.worker.RecoveryStrategy;
-import org.jmock.Mockery;
-import org.jmock.imposters.ByteBuddyClassImposteriser;
-import org.jmock.integration.junit4.JUnit4Mockery;
-import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import redis.clients.jedis.UnifiedJedis;
 
+@RunWith(MockitoJUnitRunner.StrictStubs.class)
 public class TestAdminPoolImpl {
 
   private static final Config CONFIG = Config.getDefaultConfig();
 
-  private Mockery mockCtx;
-  private UnifiedJedis jedisPool;
-
-  @Before
-  public void setUp() {
-    this.mockCtx = new JUnit4Mockery();
-    this.mockCtx.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
-    this.mockCtx.setThreadingPolicy(new Synchroniser());
-    this.jedisPool = this.mockCtx.mock(UnifiedJedis.class);
-  }
+  @Mock private UnifiedJedis jedisPool;
 
   @Test(expected = IllegalArgumentException.class)
   public void testConstructor_TwoArg_NullConfig() {
