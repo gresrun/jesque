@@ -1,5 +1,6 @@
 package net.greghaines.jesque.admin.commands;
 
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import net.greghaines.jesque.worker.Worker;
@@ -12,10 +13,14 @@ import org.junit.Test;
  */
 public class TestShutdownCommand {
 
-  @Test(expected = IllegalStateException.class)
+  @Test
   public void testRun_NoWorker() {
     final ShutdownCommand shutdownCmd = new ShutdownCommand(false);
-    shutdownCmd.run();
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          shutdownCmd.run();
+        });
   }
 
   @Test

@@ -1,6 +1,7 @@
 package net.greghaines.jesque;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -55,24 +56,40 @@ public class TestConfigBuilder {
     assertThat(config.getMasterName()).isNull();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testWithHost_Null() {
-    Config.newBuilder().withHostAndPort(null, 1234);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          Config.newBuilder().withHostAndPort(null, 1234);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testWithHost_Empty() {
-    Config.newBuilder().withHostAndPort("", 1234);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          Config.newBuilder().withHostAndPort("", 1234);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testWithPort_Low() {
-    Config.newBuilder().withHostAndPort("localhost", 0);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          Config.newBuilder().withHostAndPort("localhost", 0);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testWithPort_High() {
-    Config.newBuilder().withHostAndPort("localhost", Integer.MAX_VALUE);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          Config.newBuilder().withHostAndPort("localhost", Integer.MAX_VALUE);
+        });
   }
 
   @Test
@@ -83,9 +100,13 @@ public class TestConfigBuilder {
     assertThat(config.getJedisClientConfig().getConnectionTimeoutMillis()).isEqualTo(myTimeout);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testWithTimeout_Negative() {
-    Config.newBuilder().withTimeout(-1);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          Config.newBuilder().withTimeout(-1);
+        });
   }
 
   @Test
@@ -96,9 +117,13 @@ public class TestConfigBuilder {
     assertThat(config.getJedisClientConfig().getDatabase()).isEqualTo(myDB);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testWithDatabase_Negative() {
-    Config.newBuilder().withDatabase(-1);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          Config.newBuilder().withDatabase(-1);
+        });
   }
 
   @Test
@@ -130,9 +155,13 @@ public class TestConfigBuilder {
     assertThat(config.getMasterName()).isEqualTo(myMasterName);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testWithNamespace_Null() {
-    Config.newBuilder().withNamespace(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          Config.newBuilder().withNamespace(null);
+        });
   }
 
   @Test

@@ -1,6 +1,7 @@
 package net.greghaines.jesque.worker;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.util.concurrent.Callable;
 import net.greghaines.jesque.Job;
@@ -19,9 +20,13 @@ public class TestReflectiveJobFactory {
     assertThat(action2).isInstanceOf(TestCallableJob.class);
   }
 
-  @Test(expected = ClassCastException.class)
+  @Test
   public void testMaterializeJob_NotRunnable() throws Exception {
-    JesqueUtils.materializeJob(new Job(TestBadJob.class.getName()));
+    assertThrows(
+        ClassCastException.class,
+        () -> {
+          JesqueUtils.materializeJob(new Job(TestBadJob.class.getName()));
+        });
   }
 
   public static class TestRunnableJob implements Runnable {

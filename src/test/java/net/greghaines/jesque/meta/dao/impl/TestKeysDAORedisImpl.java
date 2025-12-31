@@ -1,6 +1,7 @@
 package net.greghaines.jesque.meta.dao.impl;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
@@ -30,15 +31,23 @@ public class TestKeysDAORedisImpl {
     this.keysDAO = new KeysDAORedisImpl(Config.getDefaultConfig(), this.jedisPool);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullConfig() {
-    new KeysDAORedisImpl(null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new KeysDAORedisImpl(null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullPool() {
     final Config config = Config.getDefaultConfig();
-    new KeysDAORedisImpl(config, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new KeysDAORedisImpl(config, null);
+        });
   }
 
   @Test
@@ -51,7 +60,7 @@ public class TestKeysDAORedisImpl {
 
   @Test
   public void testGetKeyInfos() throws Exception {
-    final Set<String> keys = Set.of("resque:bar", "resque:qux");
+    final Set<String> keys = new LinkedHashSet<>(List.of("resque:bar", "resque:qux"));
     final List<String> keyNames = List.of("bar", "qux");
     final List<String> values = List.of("bazqux", "abc123456");
     when(this.jedisPool.keys("resque:*")).thenReturn(keys);

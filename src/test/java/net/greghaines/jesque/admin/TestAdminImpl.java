@@ -2,6 +2,7 @@ package net.greghaines.jesque.admin;
 
 import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
+import static org.junit.Assert.assertThrows;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -18,75 +19,123 @@ public class TestAdminImpl {
 
   private static final Config CONFIG = Config.getDefaultConfig();
 
-  @Test(expected = NullPointerException.class)
+  @Test
   public void testConstructor_OneArg_NullConfig() {
-    new AdminImpl(null);
+    assertThrows(
+        NullPointerException.class,
+        () -> {
+          new AdminImpl(null);
+        });
   }
 
-  @Test(expected = NullPointerException.class)
+  @Test
   public void testConstructor_ThreeArg_NullConfig() {
-    new AdminImpl(null, null, null);
+    assertThrows(
+        NullPointerException.class,
+        () -> {
+          new AdminImpl(null, null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_ThreeArg_NullChannels() {
-    new AdminImpl(CONFIG, null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(CONFIG, null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_ThreeArg_NullJobFactory() {
-    new AdminImpl(CONFIG, Set.of(ADMIN_CHANNEL), null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(CONFIG, Set.of(ADMIN_CHANNEL), null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_FourArg_NullConfig() {
-    new AdminImpl(null, null, null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(null, null, null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_FourArg_NullChannels() {
-    new AdminImpl(CONFIG, null, null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(CONFIG, null, null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_FourArg_NullJobFactory() {
-    new AdminImpl(CONFIG, Set.of(ADMIN_CHANNEL), null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(CONFIG, Set.of(ADMIN_CHANNEL), null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_FourArg_NullJedis() {
-    new AdminImpl(
-        CONFIG,
-        Set.of(ADMIN_CHANNEL),
-        new MapBasedJobFactory(
-            Map.of(
-                PauseCommand.class.getSimpleName(),
-                PauseCommand.class,
-                ShutdownCommand.class.getSimpleName(),
-                ShutdownCommand.class)),
-        null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(
+              CONFIG,
+              Set.of(ADMIN_CHANNEL),
+              new MapBasedJobFactory(
+                  Map.of(
+                      PauseCommand.class.getSimpleName(),
+                      PauseCommand.class,
+                      ShutdownCommand.class.getSimpleName(),
+                      ShutdownCommand.class)),
+              null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSetChannels_Null() {
-    new AdminImpl(CONFIG).setChannels(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(CONFIG).setChannels(null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSetChannels_NullChannel() {
     final Set<String> channels = new HashSet<>();
     channels.add(null);
-    new AdminImpl(CONFIG).setChannels(channels);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(CONFIG).setChannels(channels);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSetChannels_EmptyChannel() {
-    new AdminImpl(CONFIG).setChannels(Set.of(""));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(CONFIG).setChannels(Set.of(""));
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSetExceptionHandler_Null() {
-    new AdminImpl(CONFIG).setExceptionHandler(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(CONFIG).setExceptionHandler(null);
+        });
   }
 
   @Test

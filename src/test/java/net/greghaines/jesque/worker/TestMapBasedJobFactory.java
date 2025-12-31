@@ -1,6 +1,7 @@
 package net.greghaines.jesque.worker;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,29 +12,45 @@ import org.junit.Test;
 /** Tests MapBasedJobFactory. */
 public class TestMapBasedJobFactory {
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_Null() {
-    new MapBasedJobFactory(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new MapBasedJobFactory(null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullName() throws Exception {
     final Map<String, Class<?>> jobTypes = new HashMap<String, Class<?>>();
     jobTypes.put(null, TestCallableJob.class);
-    new MapBasedJobFactory(jobTypes);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new MapBasedJobFactory(jobTypes);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullType() throws Exception {
     final Map<String, Class<?>> jobTypes = new HashMap<String, Class<?>>();
     jobTypes.put("TestCallableJob", null);
-    new MapBasedJobFactory(jobTypes);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new MapBasedJobFactory(jobTypes);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NotRunnable() throws Exception {
     final Map<String, Class<?>> jobTypes = Map.of("TestBadJob", TestBadJob.class);
-    new MapBasedJobFactory(jobTypes);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new MapBasedJobFactory(jobTypes);
+        });
   }
 
   @Test
@@ -65,16 +82,24 @@ public class TestMapBasedJobFactory {
     assertThat(jobFactory.getJobTypes()).isEqualTo(jobTypes);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testAddJobType_NullName() {
     final MapBasedJobFactory jobFactory = new MapBasedJobFactory(Map.of());
-    jobFactory.addJobType(null, TestCallableJob.class);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          jobFactory.addJobType(null, TestCallableJob.class);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testAddJobType_NullType() {
     final MapBasedJobFactory jobFactory = new MapBasedJobFactory(Map.of());
-    jobFactory.addJobType("TestCallableJob", null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          jobFactory.addJobType("TestCallableJob", null);
+        });
   }
 
   @Test
@@ -89,13 +114,17 @@ public class TestMapBasedJobFactory {
     assertThat(jobFactory.getJobTypes()).isEqualTo(jobTypes);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testRemoveJobName_Null() {
     final Map<String, Class<?>> jobTypes =
         Map.of("TestRunnableJob", TestRunnableJob.class, "TestCallableJob", TestCallableJob.class);
     final MapBasedJobFactory jobFactory = new MapBasedJobFactory(jobTypes);
     assertThat(jobFactory.getJobTypes()).isEqualTo(jobTypes);
-    jobFactory.removeJobName(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          jobFactory.removeJobName(null);
+        });
   }
 
   @Test
@@ -110,13 +139,17 @@ public class TestMapBasedJobFactory {
     assertThat(jobFactory.getJobTypes()).isEqualTo(jobTypes);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testRemoveJobType_Null() {
     final Map<String, Class<?>> jobTypes =
         Map.of("TestRunnableJob", TestRunnableJob.class, "TestCallableJob", TestCallableJob.class);
     final MapBasedJobFactory jobFactory = new MapBasedJobFactory(jobTypes);
     assertThat(jobFactory.getJobTypes()).isEqualTo(jobTypes);
-    jobFactory.removeJobType(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          jobFactory.removeJobType(null);
+        });
   }
 
   @Test
@@ -130,10 +163,14 @@ public class TestMapBasedJobFactory {
     assertThat(action2).isInstanceOf(TestCallableJob.class);
   }
 
-  @Test(expected = UnpermittedJobException.class)
+  @Test
   public void testMaterializeJob_Types_NotPermitted() throws Exception {
     final MapBasedJobFactory jobFactory = new MapBasedJobFactory(Map.of());
-    jobFactory.materializeJob(new Job("TestRunnableJob"));
+    assertThrows(
+        UnpermittedJobException.class,
+        () -> {
+          jobFactory.materializeJob(new Job("TestRunnableJob"));
+        });
   }
 
   public static class TestRunnableJob implements Runnable {

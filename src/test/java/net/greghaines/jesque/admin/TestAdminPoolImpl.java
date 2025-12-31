@@ -2,6 +2,7 @@ package net.greghaines.jesque.admin;
 
 import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.utils.ResqueConstants.ADMIN_CHANNEL;
+import static org.junit.Assert.assertThrows;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -25,65 +26,105 @@ public class TestAdminPoolImpl {
 
   @Mock private UnifiedJedis jedisPool;
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_TwoArg_NullConfig() {
-    new AdminPoolImpl(null, this.jedisPool);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminPoolImpl(null, this.jedisPool);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_TwoArg_NullPool() {
-    new AdminPoolImpl(CONFIG, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminPoolImpl(CONFIG, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_FourArg_NullConfig() {
-    new AdminPoolImpl(null, null, null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminPoolImpl(null, null, null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_FourArg_NullChannels() {
-    new AdminPoolImpl(CONFIG, null, null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminPoolImpl(CONFIG, null, null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_FourArg_NullJobFactory() {
-    new AdminPoolImpl(CONFIG, Set.of(ADMIN_CHANNEL), null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminPoolImpl(CONFIG, Set.of(ADMIN_CHANNEL), null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_FourArg_NullPool() {
-    new AdminImpl(
-        CONFIG,
-        Set.of(ADMIN_CHANNEL),
-        new MapBasedJobFactory(
-            Map.of(
-                PauseCommand.class.getSimpleName(),
-                PauseCommand.class,
-                ShutdownCommand.class.getSimpleName(),
-                ShutdownCommand.class)),
-        null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminImpl(
+              CONFIG,
+              Set.of(ADMIN_CHANNEL),
+              new MapBasedJobFactory(
+                  Map.of(
+                      PauseCommand.class.getSimpleName(),
+                      PauseCommand.class,
+                      ShutdownCommand.class.getSimpleName(),
+                      ShutdownCommand.class)),
+              null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSetChannels_Null() {
-    new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSetChannels_NullChannel() {
     final Set<String> channels = new HashSet<>();
     channels.add(null);
-    new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(channels);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(channels);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSetChannels_EmptyChannel() {
-    new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(Set.of(""));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminPoolImpl(CONFIG, this.jedisPool).setChannels(Set.of(""));
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSetExceptionHandler_Null() {
-    new AdminPoolImpl(CONFIG, this.jedisPool).setExceptionHandler(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminPoolImpl(CONFIG, this.jedisPool).setExceptionHandler(null);
+        });
   }
 
   @Test

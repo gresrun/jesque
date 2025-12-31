@@ -1,6 +1,7 @@
 package net.greghaines.jesque.utils;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,14 +11,22 @@ import org.junit.Test;
 /** Tests ReflectionUtils. */
 public class TestReflectionUtils {
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testForName_Null() throws ClassNotFoundException {
-    ReflectionUtils.forName(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          ReflectionUtils.forName(null);
+        });
   }
 
-  @Test(expected = ClassNotFoundException.class)
+  @Test
   public void testForName_NotFound() throws ClassNotFoundException {
-    ReflectionUtils.forName("123Bogus");
+    assertThrows(
+        ClassNotFoundException.class,
+        () -> {
+          ReflectionUtils.forName("123Bogus");
+        });
   }
 
   @Test
@@ -88,16 +97,24 @@ public class TestReflectionUtils {
         .isSameInstanceAs(obj);
   }
 
-  @Test(expected = NoSuchMethodException.class)
+  @Test
   public void testInvokeSetters_MissingSetter() throws ReflectiveOperationException {
     final Map<String, Object> vars = Map.of("bogusVal", new Object());
-    ReflectionUtils.invokeSetters(new SetterObj(), vars);
+    assertThrows(
+        NoSuchMethodException.class,
+        () -> {
+          ReflectionUtils.invokeSetters(new SetterObj(), vars);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testInvokeSetters_BadType() throws ReflectiveOperationException {
     final Map<String, Object> vars = Map.of("intVal", new Object());
-    ReflectionUtils.invokeSetters(new SetterObj(), vars);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          ReflectionUtils.invokeSetters(new SetterObj(), vars);
+        });
   }
 
   @Test

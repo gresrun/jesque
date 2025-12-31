@@ -1,5 +1,6 @@
 package net.greghaines.jesque.admin;
 
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import net.greghaines.jesque.Config;
@@ -23,14 +24,22 @@ public class TestAdminClientPoolImpl {
     this.adminClient = new AdminClientPoolImpl(CONFIG, this.jedisPool);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullConfig() {
-    new AdminClientPoolImpl(null, this.jedisPool);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminClientPoolImpl(null, this.jedisPool);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullPool() {
-    new AdminClientPoolImpl(CONFIG, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AdminClientPoolImpl(CONFIG, null);
+        });
   }
 
   @Test

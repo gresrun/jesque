@@ -6,6 +6,7 @@ import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 import static net.greghaines.jesque.utils.ResqueConstants.FAILED;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 import static net.greghaines.jesque.utils.ResqueConstants.STAT;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -40,15 +41,23 @@ public class TestFailureDAORedisImpl {
     this.failureDAO = new FailureDAORedisImpl(Config.getDefaultConfig(), this.jedisPool);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullConfig() {
-    new FailureDAORedisImpl(null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new FailureDAORedisImpl(null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullPool() {
     final Config config = Config.getDefaultConfig();
-    new FailureDAORedisImpl(config, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new FailureDAORedisImpl(config, null);
+        });
   }
 
   @Test
@@ -116,24 +125,40 @@ public class TestFailureDAORedisImpl {
     verify(this.jedisPool).rpush("resque:queue:" + queue, jobJson);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testEnqueue_NullQueue() throws IOException {
-    this.failureDAO.enqueue(this.jedisPool, null, new Job("foo"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          this.failureDAO.enqueue(this.jedisPool, null, new Job("foo"));
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testEnqueue_EmptyQueue() throws IOException {
-    this.failureDAO.enqueue(this.jedisPool, "", new Job("foo"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          this.failureDAO.enqueue(this.jedisPool, "", new Job("foo"));
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testEnqueue_NullJob() throws IOException {
-    this.failureDAO.enqueue(this.jedisPool, "foo", null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          this.failureDAO.enqueue(this.jedisPool, "foo", null);
+        });
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test
   public void testEnqueue_InvalidJob() throws IOException {
-    this.failureDAO.enqueue(this.jedisPool, "foo", new Job());
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          this.failureDAO.enqueue(this.jedisPool, "foo", new Job());
+        });
   }
 
   @Test

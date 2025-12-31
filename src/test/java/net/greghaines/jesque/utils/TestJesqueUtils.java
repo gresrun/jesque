@@ -1,6 +1,7 @@
 package net.greghaines.jesque.utils;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -42,9 +43,13 @@ public class TestJesqueUtils {
     assertThat(action2).isInstanceOf(TestCallableJob.class);
   }
 
-  @Test(expected = ClassCastException.class)
+  @Test
   public void testMaterializeJob_NotRunnable() throws Exception {
-    JesqueUtils.materializeJob(new Job(TestBadJob.class.getName()));
+    assertThrows(
+        ClassCastException.class,
+        () -> {
+          JesqueUtils.materializeJob(new Job(TestBadJob.class.getName()));
+        });
   }
 
   @Test
@@ -57,16 +62,24 @@ public class TestJesqueUtils {
     assertThat(action2).isInstanceOf(TestCallableJob.class);
   }
 
-  @Test(expected = UnpermittedJobException.class)
+  @Test
   public void testMaterializeJob_Types_NotPermitted() throws Exception {
     final Map<String, Class<?>> jobTypes = Map.of();
-    JesqueUtils.materializeJob(new Job("TestRunnableJob"), jobTypes);
+    assertThrows(
+        UnpermittedJobException.class,
+        () -> {
+          JesqueUtils.materializeJob(new Job("TestRunnableJob"), jobTypes);
+        });
   }
 
-  @Test(expected = ClassCastException.class)
+  @Test
   public void testMaterializeJob_Types_NotRunnable() throws Exception {
     final Map<String, Class<?>> jobTypes = Map.of("TestBadJob", TestBadJob.class);
-    JesqueUtils.materializeJob(new Job("TestBadJob"), jobTypes);
+    assertThrows(
+        ClassCastException.class,
+        () -> {
+          JesqueUtils.materializeJob(new Job("TestBadJob"), jobTypes);
+        });
   }
 
   @Test
@@ -83,11 +96,14 @@ public class TestJesqueUtils {
     assertThat(stes).hasLength(4);
   }
 
-  @Test(expected = ParseException.class)
+  @Test
   public void testRecreateStackTrace_BadFormat() throws ParseException {
     final List<String> bTrace = new ArrayList<String>(Arrays.asList("\tat net.greghaines"));
-    final StackTraceElement[] stes = JesqueUtils.recreateStackTrace(bTrace);
-    assertThat(stes).isEmpty();
+    assertThrows(
+        ParseException.class,
+        () -> {
+          JesqueUtils.recreateStackTrace(bTrace);
+        });
   }
 
   @Test

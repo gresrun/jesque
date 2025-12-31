@@ -1,6 +1,7 @@
 package net.greghaines.jesque;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -23,9 +24,13 @@ public class TestJobFailure {
     assertThat(job.getRetriedAt()).isNull();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_Clone_Null() {
-    new JobFailure(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new JobFailure(null);
+        });
   }
 
   @Test

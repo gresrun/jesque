@@ -4,6 +4,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.Config.Builder.DEFAULT_NAMESPACE;
 import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -39,15 +40,23 @@ public class TestQueueInfoDAORedisImpl {
     this.qInfoDAO = new QueueInfoDAORedisImpl(Config.getDefaultConfig(), this.jedisPool);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullConfig() {
-    new QueueInfoDAORedisImpl(null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new QueueInfoDAORedisImpl(null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullPool() {
     final Config config = Config.getDefaultConfig();
-    new QueueInfoDAORedisImpl(config, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new QueueInfoDAORedisImpl(config, null);
+        });
   }
 
   @Test

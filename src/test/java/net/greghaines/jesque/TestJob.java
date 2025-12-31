@@ -1,6 +1,7 @@
 package net.greghaines.jesque;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -8,34 +9,58 @@ import org.junit.Test;
 
 public class TestJob {
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_VarArgs_NullName() {
-    new Job(null, 1, 2.0);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new Job(null, 1, 2.0);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_VarArgs_EmptyName() {
-    new Job("", 1, 2.0);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new Job("", 1, 2.0);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NamedArgs_NullName() {
-    new Job(null, Map.of("foo", "bar"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new Job(null, Map.of("foo", "bar"));
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NamedArgs_EmptyName() {
-    new Job("", Map.of("foo", "bar"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new Job("", Map.of("foo", "bar"));
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_AllArgs_NullName() {
-    new Job(null, new Object[] {true, 1}, Map.of("foo", "bar"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new Job(null, new Object[] {true, 1}, Map.of("foo", "bar"));
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_AllArgs_EmptyName() {
-    new Job("", new Object[] {true, 1}, Map.of("foo", "bar"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new Job("", new Object[] {true, 1}, Map.of("foo", "bar"));
+        });
   }
 
   @Test
@@ -127,9 +152,13 @@ public class TestJob {
     TestUtils.assertFullyEquals(protoJob2, job2);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_Clone_Null() {
-    new Job((Job) null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new Job((Job) null);
+        });
   }
 
   @Test

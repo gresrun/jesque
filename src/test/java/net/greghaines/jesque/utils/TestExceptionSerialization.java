@@ -3,6 +3,7 @@ package net.greghaines.jesque.utils;
 import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.utils.JesqueUtils.createBacktrace;
 import static net.greghaines.jesque.utils.JesqueUtils.recreateThrowable;
+import static org.junit.Assert.assertThrows;
 
 import net.greghaines.jesque.JobFailure;
 import net.greghaines.jesque.json.ObjectMapperFactory;
@@ -101,26 +102,34 @@ public class TestExceptionSerialization {
     }
   }
 
-  @Test(expected = NoSuchConstructorException.class)
+  @Test
   public void simpleNonRegularException() throws Exception {
-    try {
-      throw new NonRegularException(0.0);
-    } catch (Throwable t) {
-      serialize(t);
-    }
+    assertThrows(
+        NoSuchConstructorException.class,
+        () -> {
+          try {
+            throw new NonRegularException(0.0);
+          } catch (Throwable t) {
+            serialize(t);
+          }
+        });
   }
 
-  @Test(expected = NoSuchConstructorException.class)
+  @Test
   public void nestedNonRegularException() throws Exception {
-    try {
-      try {
-        throw new NonRegularException(0.0);
-      } catch (Throwable t) {
-        throw new RuntimeException(t);
-      }
-    } catch (Throwable t2) {
-      serialize(t2);
-    }
+    assertThrows(
+        NoSuchConstructorException.class,
+        () -> {
+          try {
+            try {
+              throw new NonRegularException(0.0);
+            } catch (Throwable t) {
+              throw new RuntimeException(t);
+            }
+          } catch (Throwable t2) {
+            serialize(t2);
+          }
+        });
   }
 
   @Test

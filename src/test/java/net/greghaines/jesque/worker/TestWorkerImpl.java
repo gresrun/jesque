@@ -2,6 +2,7 @@ package net.greghaines.jesque.worker;
 
 import static com.google.common.truth.Truth.assertThat;
 import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import java.util.ArrayList;
@@ -15,31 +16,52 @@ public class TestWorkerImpl {
 
   private static final Config CONFIG = Config.getDefaultConfig();
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullConfig() {
-    new WorkerImpl(null, null, null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new WorkerImpl(null, null, null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullQueues() {
-    new WorkerImpl(CONFIG, null, null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new WorkerImpl(CONFIG, null, null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullJobFactory() {
-    new WorkerImpl(CONFIG, Collections.<String>emptyList(), null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new WorkerImpl(CONFIG, Collections.<String>emptyList(), null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullJedis() {
-    new WorkerImpl(CONFIG, Collections.<String>emptyList(), createTestActionJobFactory(), null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new WorkerImpl(
+              CONFIG, Collections.<String>emptyList(), createTestActionJobFactory(), null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullNextQueueStrategy() {
     final Jedis jedis = mock(Jedis.class);
-    new WorkerImpl(
-        CONFIG, Collections.<String>emptyList(), createTestActionJobFactory(), jedis, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new WorkerImpl(
+              CONFIG, Collections.<String>emptyList(), createTestActionJobFactory(), jedis, null);
+        });
   }
 
   @Test
@@ -50,19 +72,31 @@ public class TestWorkerImpl {
     assertThat(WorkerImpl.isThreadNameChangingEnabled()).isFalse();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testCheckQueues_Null() {
-    WorkerImpl.checkQueues(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          WorkerImpl.checkQueues(null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testCheckQueues_NullQueue() {
-    WorkerImpl.checkQueues(Arrays.asList("foo", null));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          WorkerImpl.checkQueues(Arrays.asList("foo", null));
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testCheckQueues_EmptyQueue() {
-    WorkerImpl.checkQueues(Arrays.asList("foo", ""));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          WorkerImpl.checkQueues(Arrays.asList("foo", ""));
+        });
   }
 
   @Test

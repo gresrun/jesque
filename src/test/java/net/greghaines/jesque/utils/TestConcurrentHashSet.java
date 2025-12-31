@@ -1,6 +1,7 @@
 package net.greghaines.jesque.utils;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -87,9 +88,13 @@ public class TestConcurrentHashSet {
     assertThat(set).isEmpty();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testCollectionConstructor_Null() {
-    new ConcurrentHashSet<String>(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new ConcurrentHashSet<String>(null);
+        });
   }
 
   @Test

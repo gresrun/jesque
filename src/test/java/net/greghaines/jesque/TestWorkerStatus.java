@@ -1,6 +1,7 @@
 package net.greghaines.jesque;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.util.Date;
 import org.junit.Test;
@@ -16,9 +17,13 @@ public class TestWorkerStatus {
     assertThat(status.isPaused()).isFalse();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_Clone_Null() {
-    new WorkerStatus(null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new WorkerStatus(null);
+        });
   }
 
   @Test

@@ -1,20 +1,29 @@
 package net.greghaines.jesque.meta;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import java.util.List;
 import org.junit.Test;
 
 public class TestKeyInfo {
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullKey() {
-    new KeyInfo(null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new KeyInfo(null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_BadKey() {
-    new KeyInfo("foo", null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new KeyInfo("foo", null);
+        });
   }
 
   @Test

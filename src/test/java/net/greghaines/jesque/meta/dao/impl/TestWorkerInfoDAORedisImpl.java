@@ -5,6 +5,7 @@ import static net.greghaines.jesque.Config.Builder.DEFAULT_NAMESPACE;
 import static net.greghaines.jesque.utils.ResqueConstants.COLON;
 import static net.greghaines.jesque.utils.ResqueConstants.STARTED;
 import static net.greghaines.jesque.utils.ResqueConstants.WORKERS;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -32,15 +33,23 @@ public class TestWorkerInfoDAORedisImpl {
     this.workerInfoDAO = new WorkerInfoDAORedisImpl(Config.getDefaultConfig(), this.jedisPool);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullConfig() {
-    new WorkerInfoDAORedisImpl(null, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new WorkerInfoDAORedisImpl(null, null);
+        });
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConstructor_NullPool() {
     final Config config = Config.getDefaultConfig();
-    new WorkerInfoDAORedisImpl(config, null);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new WorkerInfoDAORedisImpl(config, null);
+        });
   }
 
   @Test
@@ -122,9 +131,13 @@ public class TestWorkerInfoDAORedisImpl {
         .isTrue();
   }
 
-  @Test(expected = ParseException.class)
+  @Test
   public void testCreateWorker_MalformedName() throws ParseException, IOException {
-    this.workerInfoDAO.createWorker("foo", this.jedisPool);
+    assertThrows(
+        ParseException.class,
+        () -> {
+          this.workerInfoDAO.createWorker("foo", this.jedisPool);
+        });
   }
 
   @Test
