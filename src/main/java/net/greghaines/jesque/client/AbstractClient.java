@@ -16,6 +16,8 @@ package net.greghaines.jesque.client;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -118,15 +120,16 @@ public abstract class AbstractClient implements Client {
 
   /** {@inheritDoc} */
   @Override
-  public boolean acquireLock(final String lockName, final String lockHolder, final int timeout) {
+  public boolean acquireLock(
+      final String lockName, final String lockHolder, final Duration timeout) {
     if ((lockName == null) || "".equals(lockName)) {
       throw new IllegalArgumentException("lockName must not be null or empty: " + lockName);
     }
     if ((lockHolder == null) || "".equals(lockHolder)) {
       throw new IllegalArgumentException("lockHolder must not be null or empty: " + lockHolder);
     }
-    if (timeout < 1) {
-      throw new IllegalArgumentException("timeout must be a positive number");
+    if (timeout.toSeconds() < 1) {
+      throw new IllegalArgumentException("timeout must be a at least one second: " + timeout);
     }
     try {
       return doAcquireLock(lockName, lockHolder, timeout);
@@ -168,13 +171,13 @@ public abstract class AbstractClient implements Client {
    * Actually acquire the lock based upon the client acquisition model.
    *
    * @param lockName the name of the lock to acquire
-   * @param timeout number of seconds until the lock will expire
+   * @param timeout how long until the lock will expire, truncated to seconds
    * @param lockHolder a unique string identifying the caller
    * @return true, if the lock was acquired, false otherwise
    * @throws Exception in case something goes wrong
    */
   protected abstract boolean doAcquireLock(
-      final String lockName, final String lockHolder, final int timeout) throws Exception;
+      final String lockName, final String lockHolder, final Duration timeout) throws Exception;
 
   /**
    * Helper method that encapsulates the minimum logic for adding a job to a queue.
@@ -233,7 +236,7 @@ public abstract class AbstractClient implements Client {
    * @param namespace the Resque namespace
    * @param lockName all calls to this method will contend for a unique lock with the name of
    *     lockName
-   * @param timeout seconds until the lock will expire
+   * @param timeout how long until the lock will expire
    * @param lockHolder a unique string used to tell if you are the current holder of a lock for both
    *     acquisition, and extension
    * @return Whether or not the lock was acquired.
@@ -243,12 +246,13 @@ public abstract class AbstractClient implements Client {
       final String namespace,
       final String lockName,
       final String lockHolder,
-      final int timeout) {
+      final Duration timeout) {
     final String key = JesqueUtils.createKey(namespace, lockName);
+    final long timeoutSeconds = timeout.toSeconds();
     // If lock already exists, extend it
     String existingLockHolder = jedis.get(key);
     if ((existingLockHolder != null) && existingLockHolder.equals(lockHolder)) {
-      if (jedis.expire(key, timeout) == 1) {
+      if (jedis.expire(key, timeoutSeconds) == 1) {
         existingLockHolder = jedis.get(key);
         if ((existingLockHolder != null) && existingLockHolder.equals(lockHolder)) {
           return true;
@@ -267,7 +271,7 @@ public abstract class AbstractClient implements Client {
         existingLockHolder = jedis.get(key);
         // If it is our lock mark the time to live
         if ((existingLockHolder != null) && existingLockHolder.equals(lockHolder)) {
-          if (jedis.expire(key, timeout) == 1) {
+          if (jedis.expire(key, timeoutSeconds) == 1) {
             existingLockHolder = jedis.get(key);
             if ((existingLockHolder != null) && existingLockHolder.equals(lockHolder)) {
               return true;
@@ -284,7 +288,7 @@ public abstract class AbstractClient implements Client {
     // creating the key
     if (jedis.setnx(key, lockHolder) == 1) {
       // Created the lock, now set the expiration
-      if (jedis.expire(key, timeout) == 1) { // Set the timeout
+      if (jedis.expire(key, timeoutSeconds) == 1) { // Set the timeout
         existingLockHolder = jedis.get(key);
         if ((existingLockHolder != null) && existingLockHolder.equals(lockHolder)) {
           return true;
@@ -303,22 +307,23 @@ public abstract class AbstractClient implements Client {
       final String namespace,
       final String queue,
       final String jobJson,
-      final long future) {
+      final Instant future) {
     final String key = JesqueUtils.createKey(namespace, QUEUE, queue);
     // Add task only if this queue is either delayed or unused
     if (JedisUtils.canUseAsDelayedQueue(jedis, key)) {
-      jedis.zadd(key, future, jobJson);
+      jedis.zadd(key, future.toEpochMilli(), jobJson);
       jedis.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
     } else {
       throw new IllegalArgumentException(queue + " cannot be used as a delayed queue");
     }
   }
 
-  protected abstract void doDelayedEnqueue(String queue, String msg, long future) throws Exception;
+  protected abstract void doDelayedEnqueue(String queue, String msg, Instant future)
+      throws Exception;
 
   /** {@inheritDoc} */
   @Override
-  public void delayedEnqueue(final String queue, final Job job, final long future) {
+  public void delayedEnqueue(final String queue, final Job job, final Instant future) {
     validateArguments(queue, job, future);
     try {
       doDelayedEnqueue(queue, ObjectMapperFactory.get().writeValueAsString(job), future);
@@ -361,15 +366,15 @@ public abstract class AbstractClient implements Client {
       final String namespace,
       final String queue,
       final String jobJson,
-      final long future,
-      final long frequency) {
+      final Instant future,
+      final Duration frequency) {
     final String queueKey = JesqueUtils.createKey(namespace, QUEUE, queue);
     final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
     if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
       AbstractTransaction transaction = makeTransaction.get(); // jedis.multi();
-      transaction.zadd(queueKey, future, jobJson);
-      transaction.hset(hashKey, jobJson, String.valueOf(frequency));
+      transaction.zadd(queueKey, future.toEpochMilli(), jobJson);
+      transaction.hset(hashKey, jobJson, Long.toString(frequency.toMillis()));
       if (transaction.exec() == null) {
         throw new RuntimeException("cannot add " + jobJson + " to recurring queue " + queue);
       }
@@ -378,12 +383,12 @@ public abstract class AbstractClient implements Client {
     }
   }
 
-  protected abstract void doRecurringEnqueue(String queue, String msg, long future, long frequency)
-      throws Exception;
+  protected abstract void doRecurringEnqueue(
+      String queue, String msg, Instant future, Duration frequency) throws Exception;
 
   /** {@inheritDoc} */
   @Override
-  public void recurringEnqueue(String queue, Job job, long future, long frequency) {
+  public void recurringEnqueue(String queue, Job job, Instant future, Duration frequency) {
     validateArguments(queue, job, future, frequency);
     try {
       doRecurringEnqueue(
@@ -450,26 +455,26 @@ public abstract class AbstractClient implements Client {
     }
   }
 
-  private static void validateArguments(final String queue, final Job job, final long future) {
+  private static void validateArguments(final String queue, final Job job, final Instant future) {
     validateArguments(queue, job);
     validateFuture(future);
   }
 
-  private static void validateFuture(long future) {
-    if (System.currentTimeMillis() > future) {
-      throw new IllegalArgumentException("future must be after current time");
+  private static void validateFuture(Instant future) {
+    if (System.currentTimeMillis() > future.toEpochMilli()) {
+      throw new IllegalArgumentException("future must be after current time: " + future);
     }
   }
 
   private static void validateArguments(
-      final String queue, final Job job, final long future, final long frequency) {
+      final String queue, final Job job, final Instant future, final Duration frequency) {
     validateArguments(queue, job, future);
     validateFrequency(frequency);
   }
 
-  private static void validateFrequency(long frequency) {
-    if (frequency < 1) {
-      throw new IllegalArgumentException("frequency must be greater than one second");
+  private static void validateFrequency(Duration frequency) {
+    if (frequency.toSeconds() < 1) {
+      throw new IllegalArgumentException("frequency must be greater than one second: " + frequency);
     }
   }
 }

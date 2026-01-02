@@ -25,6 +25,7 @@ import static net.greghaines.jesque.worker.WorkerEvent.JOB_SUCCESS;
 import static net.greghaines.jesque.worker.WorkerEvent.WORKER_ERROR;
 import static net.greghaines.jesque.worker.WorkerEvent.WORKER_POLL;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -135,19 +136,20 @@ public class IntegrationTest {
   @Test
   public void acquireLockSuccess() {
     LOG.info("Running acquireLockSuccess()...");
+    final Duration timeout = Duration.ofSeconds(10);
     final Client client = new ClientImpl(CONFIG);
-    assertThat(client.acquireLock("systemLockA", "me", 10)).isTrue();
-    assertThat(client.acquireLock("systemLockA", "me", 10)).isTrue();
-    assertThat(client.acquireLock("systemLockA", "me", 10)).isTrue();
+    assertThat(client.acquireLock("systemLockA", "me", timeout)).isTrue();
+    assertThat(client.acquireLock("systemLockA", "me", timeout)).isTrue();
+    assertThat(client.acquireLock("systemLockA", "me", timeout)).isTrue();
   }
 
   @Test
   public void acquireLockFail() {
     LOG.info("Running acquireLockFail()...");
     final Client client = new ClientImpl(CONFIG);
-    assertThat(client.acquireLock("systemLockA", "pete", 10000)).isTrue();
-    assertThat(client.acquireLock("systemLockA", "george", 10)).isFalse();
-    assertThat(client.acquireLock("systemLockA", "pete", 10000)).isTrue();
+    assertThat(client.acquireLock("systemLockA", "pete", Duration.ofDays(1))).isTrue();
+    assertThat(client.acquireLock("systemLockA", "george", Duration.ofSeconds(10))).isFalse();
+    assertThat(client.acquireLock("systemLockA", "pete", Duration.ofDays(1))).isTrue();
   }
 
   @Ignore

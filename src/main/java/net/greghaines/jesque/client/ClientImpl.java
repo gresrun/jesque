@@ -13,6 +13,8 @@
  */
 package net.greghaines.jesque.client;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -114,8 +116,8 @@ public class ClientImpl extends AbstractClient {
 
   /** {@inheritDoc} */
   @Override
-  protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout)
-      throws Exception {
+  protected boolean doAcquireLock(
+      final String lockName, final String lockHolder, final Duration timeout) throws Exception {
     ensureJedisConnection();
     return doAcquireLock(this.jedis, getNamespace(), lockName, lockHolder, timeout);
   }
@@ -132,7 +134,7 @@ public class ClientImpl extends AbstractClient {
 
   /** {@inheritDoc} */
   @Override
-  protected void doDelayedEnqueue(final String queue, final String msg, final long future)
+  protected void doDelayedEnqueue(final String queue, final String msg, final Instant future)
       throws Exception {
     ensureJedisConnection();
     doDelayedEnqueue(this.jedis, getNamespace(), queue, msg, future);
@@ -148,7 +150,7 @@ public class ClientImpl extends AbstractClient {
   /** {@inheritDoc} */
   @Override
   protected void doRecurringEnqueue(
-      final String queue, final String msg, final long future, final long frequency)
+      final String queue, final String msg, final Instant future, final Duration frequency)
       throws Exception {
     ensureJedisConnection();
     doRecurringEnqueue(

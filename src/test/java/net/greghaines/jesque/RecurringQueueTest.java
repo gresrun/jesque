@@ -1,11 +1,15 @@
 package net.greghaines.jesque;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static net.greghaines.jesque.TestUtils.createJedis;
 import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
 import static net.greghaines.jesque.utils.JesqueUtils.createKey;
 import static net.greghaines.jesque.utils.ResqueConstants.*;
 
+import com.google.common.collect.Range;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import net.greghaines.jesque.client.Client;
@@ -23,7 +27,7 @@ public class RecurringQueueTest {
 
   private static final Config config = Config.getDefaultConfig();
   private static final String recurringTestQueue = "fooRecurring";
-  private static final long recurringFrequency = 1000;
+  private static final Duration recurringFrequency = Duration.ofSeconds(1);
   private static final Client client = new ClientImpl(config);
   private static final String queueKey =
       createKey(config.getNamespace(), QUEUE, recurringTestQueue);
@@ -40,24 +44,22 @@ public class RecurringQueueTest {
     Job job =
         new Job("TestAction", new Object[] {1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
     client.recurringEnqueue(
-        recurringTestQueue,
-        job,
-        System.currentTimeMillis() + recurringFrequency,
-        recurringFrequency);
+        recurringTestQueue, job, Instant.now().plus(recurringFrequency), recurringFrequency);
 
     try (Jedis jedis = createJedis(config)) { // Assert that we enqueued the job
       assertThat(jedis.zcount(queueKey, "-inf", "+inf")).isEqualTo(1L);
       List<String> jobSet = jedis.zrangeByScore(queueKey, "-inf", "+inf", 0, 1);
 
       String jobString = jobSet.iterator().next();
-      assertThat(jedis.hget(hashKey, jobString)).isEqualTo(String.valueOf(recurringFrequency));
+      assertThat(jedis.hget(hashKey, jobString))
+          .isEqualTo(Long.toString(recurringFrequency.toMillis()));
     }
 
     // Create and mark the start worker
     final Worker worker =
         new WorkerImpl(config, Arrays.asList(recurringTestQueue), createTestActionJobFactory());
     final Thread workerThread = new Thread(worker);
-    Long startMillis = System.currentTimeMillis();
+    long startMillis = System.currentTimeMillis();
     workerThread.start();
 
     try { // let the worker run for some time,
@@ -68,20 +70,25 @@ public class RecurringQueueTest {
 
     // stop the recurring queue and mark it as ended
     client.removeRecurringEnqueue(recurringTestQueue, job);
-    Long endMillis = System.currentTimeMillis();
+    long endMillis = System.currentTimeMillis();
 
     // should have run (startMillis-endMillis/frequency)
-    Long times = ((endMillis - startMillis) / recurringFrequency);
+    long expectedTimes = ((endMillis - startMillis) / recurringFrequency.toMillis());
 
     // Assert that the job was run by the worker
     try (Jedis jedis = createJedis(config)) {
-      Long processedTimes =
+      long processedTimes =
           Long.valueOf(jedis.get(createKey(config.getNamespace(), STAT, PROCESSED)));
 
       // allowing for off by one error
-      Long oneOrZero = Math.abs(times - processedTimes);
-
-      assertThat(oneOrZero == 0 || oneOrZero == 1).isTrue();
+      assertWithMessage(
+              "Expected at most one difference between expectedTimes ("
+                  + expectedTimes
+                  + ") and ("
+                  + processedTimes
+                  + ")")
+          .that(expectedTimes - processedTimes)
+          .isIn(Range.closed(-1L, 1L));
       assertThat(jedis.get(createKey(config.getNamespace(), STAT, FAILED))).isNull();
       assertThat(
               jedis.zcount(

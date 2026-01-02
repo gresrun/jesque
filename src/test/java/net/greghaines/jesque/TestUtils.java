@@ -15,6 +15,7 @@ package net.greghaines.jesque;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import net.greghaines.jesque.client.Client;
@@ -107,8 +108,8 @@ public final class TestUtils {
     try {
       int i = 1;
       for (final Job job : jobs) {
-        final long value = System.currentTimeMillis() + (500 * i++);
-        client.delayedEnqueue(queue, job, value);
+        final Instant future = Instant.now().plusMillis(500 * i++);
+        client.delayedEnqueue(queue, job, future);
       }
     } finally {
       client.end();

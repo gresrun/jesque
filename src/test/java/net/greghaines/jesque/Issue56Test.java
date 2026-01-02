@@ -2,6 +2,7 @@ package net.greghaines.jesque;
 
 import static net.greghaines.jesque.TestUtils.createTestActionJobFactory;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import net.greghaines.jesque.client.Client;
@@ -46,7 +47,7 @@ public class Issue56Test {
   }
 
   public static void enqueue() {
-    final long future = System.currentTimeMillis() + 500;
+    final Instant future = Instant.now().plusMillis(500);
     final Job job = new Job(TestAction.class.getSimpleName());
     CLIENT.delayedEnqueue(QUEUE, job, future);
   }

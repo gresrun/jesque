@@ -13,6 +13,8 @@
  */
 package net.greghaines.jesque.client;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import net.greghaines.jesque.Config;
 import redis.clients.jedis.UnifiedJedis;
@@ -59,8 +61,8 @@ public class ClientPoolImpl extends AbstractClient {
 
   /** {@inheritDoc} */
   @Override
-  protected boolean doAcquireLock(final String lockName, final String lockHolder, final int timeout)
-      throws Exception {
+  protected boolean doAcquireLock(
+      final String lockName, final String lockHolder, final Duration timeout) throws Exception {
     return doAcquireLock(this.jedisPool, getNamespace(), lockName, lockHolder, timeout);
   }
 
@@ -72,7 +74,7 @@ public class ClientPoolImpl extends AbstractClient {
 
   /** {@inheritDoc} */
   @Override
-  protected void doDelayedEnqueue(final String queue, final String msg, final long future)
+  protected void doDelayedEnqueue(final String queue, final String msg, final Instant future)
       throws Exception {
     doDelayedEnqueue(this.jedisPool, getNamespace(), queue, msg, future);
   }
@@ -85,7 +87,7 @@ public class ClientPoolImpl extends AbstractClient {
 
   @Override
   protected void doRecurringEnqueue(
-      final String queue, final String msg, final long future, final long frequency)
+      final String queue, final String msg, final Instant future, final Duration frequency)
       throws Exception {
     doRecurringEnqueue(
         this.jedisPool, this.jedisPool::multi, getNamespace(), queue, msg, future, frequency);

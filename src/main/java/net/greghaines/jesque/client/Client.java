@@ -13,6 +13,8 @@
  */
 package net.greghaines.jesque.client;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import net.greghaines.jesque.Job;
 
@@ -62,22 +64,22 @@ public interface Client {
    * Acquire a non-blocking distributed lock. Calling this method again renews the lock.
    *
    * @param lockName the name of the lock to acquire
-   * @param timeout number of seconds until the lock will expire
+   * @param timeout how long until the lock will expire, truncated to seconds
    * @param lockHolder a unique string identifying the caller
    * @return true, if the lock was acquired, false otherwise
    */
-  boolean acquireLock(String lockName, String lockHolder, int timeout);
+  boolean acquireLock(String lockName, String lockHolder, Duration timeout);
 
   /**
    * Queues a job in a given queue to be run in the future.
    *
    * @param queue the queue to add the Job to
    * @param job the job to be enqueued
-   * @param future timestamp when the job will run
+   * @param future point in time when the job will run
    * @throws IllegalArgumentException if the queue is null or empty, if the job is null or if the
    *     timestamp is not in the future
    */
-  void delayedEnqueue(String queue, Job job, long future);
+  void delayedEnqueue(String queue, Job job, Instant future);
 
   /**
    * Removes a queued future job.
@@ -93,11 +95,11 @@ public interface Client {
    *
    * @param queue the queue to add the Job too
    * @param job the job to be enqueued
-   * @param future timestamp when the job will run
-   * @param frequency frequency in millis how often the job will run
+   * @param future point in time when the job will run
+   * @param frequency how often the job will run
    * @throws IllegalArgumentException if the queue is null or empty, if the job is null
    */
-  void recurringEnqueue(String queue, Job job, long future, long frequency);
+  void recurringEnqueue(String queue, Job job, Instant future, Duration frequency);
 
   /**
    * Removes a queued recurring job.
