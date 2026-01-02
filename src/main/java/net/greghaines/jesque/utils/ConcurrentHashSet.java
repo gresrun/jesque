@@ -17,7 +17,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * An implementation of ConcurrentSet that is backed by a ConcurrentHashMap.
@@ -33,14 +32,14 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E>, Serializable {
     NOTHING;
   }
 
-  private final ConcurrentMap<E, Nothing> delegate;
+  private final ConcurrentHashMap.KeySetView<E, Nothing> delegate;
 
   /**
    * Creates a new, empty set with a default initial capacity (16), load factor (0.75) and
    * concurrencyLevel (16).
    */
   public ConcurrentHashSet() {
-    this.delegate = new ConcurrentHashMap<E, Nothing>();
+    this.delegate = new ConcurrentHashMap<E, Nothing>().keySet(Nothing.NOTHING);
   }
 
   /**
@@ -51,7 +50,7 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E>, Serializable {
    *     accommodate this many elements.
    */
   public ConcurrentHashSet(final int initialCapacity) {
-    this.delegate = new ConcurrentHashMap<E, Nothing>(initialCapacity);
+    this.delegate = new ConcurrentHashMap<E, Nothing>(initialCapacity).keySet(Nothing.NOTHING);
   }
 
   /**
@@ -64,7 +63,8 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E>, Serializable {
    *     performed when the average number of elements per bin exceeds this threshold.
    */
   public ConcurrentHashSet(final int initialCapacity, final float loadFactor) {
-    this.delegate = new ConcurrentHashMap<E, Nothing>(initialCapacity, loadFactor);
+    this.delegate =
+        new ConcurrentHashMap<E, Nothing>(initialCapacity, loadFactor).keySet(Nothing.NOTHING);
   }
 
   /**
@@ -81,7 +81,8 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E>, Serializable {
   public ConcurrentHashSet(
       final int initialCapacity, final float loadFactor, final int concurrencyLevel) {
     this.delegate =
-        new ConcurrentHashMap<E, Nothing>(initialCapacity, loadFactor, concurrencyLevel);
+        new ConcurrentHashMap<E, Nothing>(initialCapacity, loadFactor, concurrencyLevel)
+            .keySet(Nothing.NOTHING);
   }
 
   /**
@@ -96,10 +97,9 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E>, Serializable {
       throw new IllegalArgumentException("collection must not be null");
     }
     this.delegate =
-        new ConcurrentHashMap<E, Nothing>(Math.max(16, Math.round(collection.size() * 1.5f)));
-    for (final E elem : collection) {
-      this.delegate.put(elem, Nothing.NOTHING);
-    }
+        new ConcurrentHashMap<E, Nothing>(Math.max(16, Math.round(collection.size() * 1.5f)))
+            .keySet(Nothing.NOTHING);
+    this.delegate.addAll(collection);
   }
 
   /** {@inheritDoc} */
@@ -117,65 +117,61 @@ public class ConcurrentHashSet<E> implements ConcurrentSet<E>, Serializable {
   /** {@inheritDoc} */
   @Override
   public boolean contains(final Object obj) {
-    return this.delegate.containsKey(obj);
+    return this.delegate.contains(obj);
   }
 
   /** {@inheritDoc} */
   @Override
   public Iterator<E> iterator() {
-    return this.delegate.keySet().iterator();
+    return this.delegate.iterator();
   }
 
   /** {@inheritDoc} */
   @Override
   public Object[] toArray() {
-    return this.delegate.keySet().toArray();
+    return this.delegate.toArray();
   }
 
   /** {@inheritDoc} */
   @Override
   public <T> T[] toArray(final T[] array) {
-    return this.delegate.keySet().toArray(array);
+    return this.delegate.toArray(array);
   }
 
   /** {@inheritDoc} */
   @Override
   public boolean add(final E elem) {
-    return (this.delegate.put(elem, Nothing.NOTHING) == null);
+    return this.delegate.add(elem);
   }
 
   /** {@inheritDoc} */
   @Override
   public boolean remove(final Object obj) {
-    return (this.delegate.remove(obj) != null);
+    return this.delegate.remove(obj);
   }
 
   /** {@inheritDoc} */
   @Override
   public boolean containsAll(final Collection<?> collection) {
-    return this.delegate.keySet().containsAll(collection);
+    return this.delegate.containsAll(collection);
   }
 
   /** {@inheritDoc} */
   @Override
   public boolean addAll(final Collection<? extends E> collection) {
-    boolean changed = false;
-    for (final E elem : collection) {
-      changed |= add(elem);
-    }
-    return changed;
+    return this.delegate.addAll(collection);
   }
 
   /** {@inheritDoc} */
   @Override
   public boolean retainAll(final Collection<?> collection) {
-    return this.delegate.keySet().retainAll(collection);
+    return this.delegate.retainAll(collection);
   }
 
   /** {@inheritDoc} */
   @Override
   public boolean removeAll(final Collection<?> collection) {
-    return this.delegate.keySet().removeAll(collection);
+    return this.delegate.removeAll(collection);
   }
 
   /** {@inheritDoc} */
