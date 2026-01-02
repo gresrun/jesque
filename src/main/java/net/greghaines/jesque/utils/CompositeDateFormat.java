@@ -19,7 +19,6 @@ import java.text.DecimalFormat;
 import java.text.FieldPosition;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -35,15 +34,8 @@ public class CompositeDateFormat extends DateFormat {
 
   private static final long serialVersionUID = -4079876635509458541L;
   private static final List<DateFormatFactory> DATE_FORMAT_FACTORIES =
-      Arrays.asList(
-          new DateFormatFactory() {
-
-            /** {@inheritDoc} */
-            @Override
-            public DateFormat create() {
-              return ResqueDateFormatThreadLocal.getInstance();
-            }
-          },
+      List.of(
+          ResqueDateFormatThreadLocal::getInstance,
           new PatternDateFormatFactory(ResqueConstants.DATE_FORMAT_RUBY_V1),
           new PatternDateFormatFactory(ResqueConstants.DATE_FORMAT_RUBY_V2),
           new PatternDateFormatFactory(ResqueConstants.DATE_FORMAT_RUBY_V3),
@@ -85,6 +77,7 @@ public class CompositeDateFormat extends DateFormat {
     return date;
   }
 
+  @FunctionalInterface
   private interface DateFormatFactory {
     DateFormat create();
   }

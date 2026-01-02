@@ -70,7 +70,7 @@ public final class PoolUtils {
     if (jesqueConfig.getMasterName() != null
         && !"".equals(jesqueConfig.getMasterName())
         && jesqueConfig.getSentinels() != null
-        && jesqueConfig.getSentinels().size() > 0) {
+        && !jesqueConfig.getSentinels().isEmpty()) {
       return RedisSentinelClient.builder()
           .masterName(jesqueConfig.getMasterName())
           .sentinels(jesqueConfig.getSentinels())

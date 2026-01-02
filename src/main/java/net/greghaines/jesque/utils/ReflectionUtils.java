@@ -50,28 +50,25 @@ public final class ReflectionUtils {
    * Map with primitive wrapper type as key and corresponding primitive type as value, for example:
    * Integer.class -> int.class.
    */
-  private static final Map<Class<?>, Class<?>> wrapperTypeToPrimitiveMap =
-      new HashMap<Class<?>, Class<?>>(8);
+  private static final Map<Class<?>, Class<?>> wrapperTypeToPrimitiveMap = new HashMap<>(8);
 
   /**
    * Map with primitive type as key and corresponding wrapper type as value, for example: int.class
    * -> Integer.class.
    */
-  private static final Map<Class<?>, Class<?>> primitiveTypeToWrapperMap =
-      new HashMap<Class<?>, Class<?>>(8);
+  private static final Map<Class<?>, Class<?>> primitiveTypeToWrapperMap = new HashMap<>(8);
 
   /**
    * Map with primitive type name as key and corresponding primitive type as value, for example:
    * "int" -> "int.class".
    */
-  private static final Map<String, Class<?>> primitiveTypeNameMap =
-      new HashMap<String, Class<?>>(16);
+  private static final Map<String, Class<?>> primitiveTypeNameMap = new HashMap<>(16);
 
   /**
    * Map with common "java.lang" class name as key and corresponding Class as value. Primarily for
    * efficient deserialization of remote invocations.
    */
-  private static final Map<String, Class<?>> commonClassCache = new HashMap<String, Class<?>>(32);
+  private static final Map<String, Class<?>> commonClassCache = new HashMap<>(32);
 
   static {
     wrapperTypeToPrimitiveMap.put(Boolean.class, boolean.class);

@@ -15,7 +15,6 @@ package net.greghaines.jesque.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import java.text.DateFormat;
 import net.greghaines.jesque.utils.CompositeDateFormat;
 
 /**
@@ -29,8 +28,7 @@ public final class ObjectMapperFactory {
 
   static {
     mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-    final DateFormat jsonDateFormat = new CompositeDateFormat();
-    mapper.setDateFormat(jsonDateFormat);
+    mapper.setDateFormat(new CompositeDateFormat());
   }
 
   /**

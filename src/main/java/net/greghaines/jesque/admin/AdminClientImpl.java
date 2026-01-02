@@ -80,15 +80,7 @@ public class AdminClientImpl extends AbstractAdminClient {
     this.checkConnectionBeforeUse = false;
     this.keepAliveService = Executors.newSingleThreadScheduledExecutor();
     this.keepAliveService.scheduleAtFixedRate(
-        new Runnable() {
-          /** {@inheritDoc} */
-          public void run() {
-            ensureJedisConnection();
-          }
-        },
-        initialDelay,
-        period,
-        timeUnit);
+        this::ensureJedisConnection, initialDelay, period, timeUnit);
   }
 
   /** {@inheritDoc} */

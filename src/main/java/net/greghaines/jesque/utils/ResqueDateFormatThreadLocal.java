@@ -26,8 +26,9 @@ import java.util.TimeZone;
  */
 public final class ResqueDateFormatThreadLocal extends ThreadLocal<DateFormat> {
 
-  private static volatile ResqueDateFormatThreadLocal instance = null;
-  private static final Object instanceLock = new Object();
+  private static class SingletonHelper {
+    private static final ResqueDateFormatThreadLocal INSTANCE = new ResqueDateFormatThreadLocal();
+  }
 
   /**
    * NOTE: DateFormats returned from this method are for use by the caller's thread only.
@@ -35,14 +36,7 @@ public final class ResqueDateFormatThreadLocal extends ThreadLocal<DateFormat> {
    * @return a configured DateFormat
    */
   public static DateFormat getInstance() {
-    if (instance == null) {
-      synchronized (instanceLock) {
-        if (instance == null) {
-          instance = new ResqueDateFormatThreadLocal();
-        }
-      }
-    }
-    return instance.get();
+    return SingletonHelper.INSTANCE.get();
   }
 
   private ResqueDateFormatThreadLocal() {

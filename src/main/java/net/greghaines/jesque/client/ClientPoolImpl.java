@@ -48,8 +48,7 @@ public class ClientPoolImpl extends AbstractClient {
 
   @Override
   protected void doBatchEnqueue(final String queue, final List<String> jobsJson) throws Exception {
-    doBatchEnqueue(
-        this.jedisPool, () -> this.jedisPool.pipelined(), getNamespace(), queue, jobsJson);
+    doBatchEnqueue(this.jedisPool, this.jedisPool::pipelined, getNamespace(), queue, jobsJson);
   }
 
   /** {@inheritDoc} */
@@ -89,18 +88,11 @@ public class ClientPoolImpl extends AbstractClient {
       final String queue, final String msg, final long future, final long frequency)
       throws Exception {
     doRecurringEnqueue(
-        this.jedisPool,
-        () -> this.jedisPool.multi(),
-        getNamespace(),
-        queue,
-        msg,
-        future,
-        frequency);
+        this.jedisPool, this.jedisPool::multi, getNamespace(), queue, msg, future, frequency);
   }
 
   @Override
   protected void doRemoveRecurringEnqueue(final String queue, final String msg) throws Exception {
-    doRemoveRecurringEnqueue(
-        this.jedisPool, () -> this.jedisPool.multi(), getNamespace(), queue, msg);
+    doRemoveRecurringEnqueue(this.jedisPool, this.jedisPool::multi, getNamespace(), queue, msg);
   }
 }

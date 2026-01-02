@@ -16,6 +16,7 @@ package net.greghaines.jesque.worker;
 import net.greghaines.jesque.Job;
 
 /** JobFactory materializes jobs. */
+@FunctionalInterface
 public interface JobFactory {
 
   /**

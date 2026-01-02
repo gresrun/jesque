@@ -147,33 +147,18 @@ public class KeysDAORedisImpl implements KeysDAO {
     }
 
     public KeyInfo doWork(final UnifiedJedis jedis) throws Exception {
-      final KeyInfo keyInfo;
       final KeyType type = KeyType.getKeyTypeByValue(jedis.type(this.key));
       if (type == null) {
-        keyInfo = null;
-      } else {
-        switch (type) {
-          case HASH:
-            keyInfo = handleHash(jedis);
-            break;
-          case LIST:
-            keyInfo = handleList(jedis);
-            break;
-          case SET:
-            keyInfo = handleSet(jedis);
-            break;
-          case STRING:
-            keyInfo = handleString(jedis);
-            break;
-          case ZSET:
-            keyInfo = handleZSet(jedis);
-            break;
-          default: // NONE
-            keyInfo = null;
-            break;
-        }
+        return null;
       }
-      return keyInfo;
+      return switch (type) {
+        case HASH -> handleHash(jedis);
+        case LIST -> handleList(jedis);
+        case SET -> handleSet(jedis);
+        case STRING -> handleString(jedis);
+        case ZSET -> handleZSet(jedis);
+        default -> null;
+      };
     }
 
     protected KeyInfo handleZSet(final UnifiedJedis jedis) {

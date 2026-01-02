@@ -25,8 +25,7 @@ import net.greghaines.jesque.utils.JesqueUtils;
 /** MapBasedJobFactory uses a map of job names and types to materialize jobs. */
 public class MapBasedJobFactory implements JobFactory {
 
-  private final ConcurrentMap<String, Class<?>> jobTypes =
-      new ConcurrentHashMap<String, Class<?>>();
+  private final ConcurrentMap<String, Class<?>> jobTypes = new ConcurrentHashMap<>();
 
   /**
    * Constructor.

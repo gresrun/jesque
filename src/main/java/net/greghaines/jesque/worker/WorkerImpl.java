@@ -108,10 +108,10 @@ public class WorkerImpl implements Worker {
   protected final Config config;
   protected final Jedis jedis;
   protected final String namespace;
-  protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<String>();
+  protected final BlockingDeque<String> queueNames = new LinkedBlockingDeque<>();
   private final String name;
   protected final WorkerListenerDelegate listenerDelegate = new WorkerListenerDelegate();
-  protected final AtomicReference<State> state = new AtomicReference<State>(NEW);
+  protected final AtomicReference<State> state = new AtomicReference<>(NEW);
   private final AtomicBoolean paused = new AtomicBoolean(false);
   private final AtomicBoolean processingJob = new AtomicBoolean(false);
   private final AtomicReference<String> popScriptHash = new AtomicReference<>(null);
@@ -120,9 +120,9 @@ public class WorkerImpl implements Worker {
   private final long workerId = WORKER_COUNTER.getAndIncrement();
   private final String threadNameBase =
       "Worker-" + this.workerId + " Jesque-" + VersionUtils.getVersion() + ": ";
-  private final AtomicReference<Thread> threadRef = new AtomicReference<Thread>(null);
+  private final AtomicReference<Thread> threadRef = new AtomicReference<>(null);
   private final AtomicReference<ExceptionHandler> exceptionHandlerRef =
-      new AtomicReference<ExceptionHandler>(new DefaultExceptionHandler());
+      new AtomicReference<>(new DefaultExceptionHandler());
   private final AtomicReference<FailQueueStrategy> failQueueStrategyRef;
   private final JobFactory jobFactory;
 
@@ -202,8 +202,7 @@ public class WorkerImpl implements Worker {
     this.jobFactory = jobFactory;
     this.namespace = config.getNamespace();
     this.jedis = jedis;
-    this.failQueueStrategyRef =
-        new AtomicReference<FailQueueStrategy>(new DefaultFailQueueStrategy(this.namespace));
+    this.failQueueStrategyRef = new AtomicReference<>(new DefaultFailQueueStrategy(this.namespace));
     authenticateAndSelectDB();
     setQueues(queues);
     this.name = createName();
@@ -464,24 +463,19 @@ public class WorkerImpl implements Worker {
   }
 
   protected String getNextQueue() throws InterruptedException {
-    final String nextQueue;
-    switch (this.nextQueueStrategy) {
-      case DRAIN_WHILE_MESSAGES_EXISTS:
+    return switch (this.nextQueueStrategy) {
+      case DRAIN_WHILE_MESSAGES_EXISTS -> {
         final String nextPollQueue =
             this.queueNames.poll(EMPTY_QUEUE_SLEEP_TIME, TimeUnit.MILLISECONDS);
         if (nextPollQueue != null) {
           // Rotate the queues
           this.queueNames.add(nextPollQueue);
         }
-        nextQueue = nextPollQueue;
-        break;
-      case RESET_TO_HIGHEST_PRIORITY:
-        nextQueue = JesqueUtils.join(",", this.queueNames);
-        break;
-      default:
-        throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
-    }
-    return nextQueue;
+        yield nextPollQueue;
+      }
+      case RESET_TO_HIGHEST_PRIORITY -> JesqueUtils.join(",", this.queueNames);
+      default -> throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
+    };
   }
 
   /**
@@ -494,23 +488,27 @@ public class WorkerImpl implements Worker {
     final String key = key(QUEUE, curQueue);
     final String now = Long.toString(System.currentTimeMillis());
     final String inflightKey = key(INFLIGHT, this.name, curQueue);
-    switch (nextQueueStrategy) {
-      case DRAIN_WHILE_MESSAGES_EXISTS:
-        return (String)
-            this.jedis.evalsha(
-                this.popScriptHash.get(),
-                3,
-                key,
-                inflightKey,
-                JesqueUtils.createRecurringHashKey(key),
-                now);
-      case RESET_TO_HIGHEST_PRIORITY:
-        return (String)
-            this.jedis.evalsha(
-                this.multiPriorityQueuesScriptHash.get(), 3, curQueue, inflightKey, namespace, now);
-      default:
-        throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
-    }
+    return switch (this.nextQueueStrategy) {
+      case DRAIN_WHILE_MESSAGES_EXISTS ->
+          (String)
+              this.jedis.evalsha(
+                  this.popScriptHash.get(),
+                  3,
+                  key,
+                  inflightKey,
+                  JesqueUtils.createRecurringHashKey(key),
+                  now);
+      case RESET_TO_HIGHEST_PRIORITY ->
+          (String)
+              this.jedis.evalsha(
+                  this.multiPriorityQueuesScriptHash.get(),
+                  3,
+                  curQueue,
+                  inflightKey,
+                  namespace,
+                  now);
+      default -> throw new RuntimeException("Unimplemented 'nextQueueStrategy'");
+    };
   }
 
   /**

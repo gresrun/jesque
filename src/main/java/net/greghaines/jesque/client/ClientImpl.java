@@ -81,11 +81,9 @@ public class ClientImpl extends AbstractClient {
     this.checkConnectionBeforeUse = false;
     this.keepAliveService = Executors.newSingleThreadScheduledExecutor();
     this.keepAliveService.scheduleAtFixedRate(
-        new Runnable() {
-          public void run() {
-            if (!JedisUtils.ensureJedisConnection(jedis)) {
-              authenticateAndSelectDB();
-            }
+        () -> {
+          if (!JedisUtils.ensureJedisConnection(jedis)) {
+            authenticateAndSelectDB();
           }
         },
         initialDelay,
@@ -154,14 +152,14 @@ public class ClientImpl extends AbstractClient {
       throws Exception {
     ensureJedisConnection();
     doRecurringEnqueue(
-        this.jedis, () -> this.jedis.multi(), getNamespace(), queue, msg, future, frequency);
+        this.jedis, this.jedis::multi, getNamespace(), queue, msg, future, frequency);
   }
 
   /** {@inheritDoc} */
   @Override
   protected void doRemoveRecurringEnqueue(final String queue, final String msg) throws Exception {
     ensureJedisConnection();
-    doRemoveRecurringEnqueue(this.jedis, () -> this.jedis.multi(), getNamespace(), queue, msg);
+    doRemoveRecurringEnqueue(this.jedis, this.jedis::multi, getNamespace(), queue, msg);
   }
 
   private void authenticateAndSelectDB() {

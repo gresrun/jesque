@@ -13,6 +13,7 @@
  */
 package net.greghaines.jesque.worker;
 
+import net.greghaines.jesque.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class LoggingWorkerListener implements WorkerListener {
       final WorkerEvent event,
       final Worker worker,
       final String queue,
-      final net.greghaines.jesque.Job job,
+      final Job job,
       final Object runner,
       final Object result,
       final Throwable t) {

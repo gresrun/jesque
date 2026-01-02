@@ -34,10 +34,9 @@ public class WorkerListenerDelegate implements WorkerEventEmitter {
 
   /** Constructor. */
   public WorkerListenerDelegate() {
-    final Map<WorkerEvent, ConcurrentSet<WorkerListener>> elp =
-        new EnumMap<WorkerEvent, ConcurrentSet<WorkerListener>>(WorkerEvent.class);
+    final Map<WorkerEvent, ConcurrentSet<WorkerListener>> elp = new EnumMap<>(WorkerEvent.class);
     for (final WorkerEvent event : WorkerEvent.values()) {
-      elp.put(event, new ConcurrentHashSet<WorkerListener>());
+      elp.put(event, new ConcurrentHashSet<>());
     }
     this.eventListenerMap = Collections.unmodifiableMap(elp);
   }
