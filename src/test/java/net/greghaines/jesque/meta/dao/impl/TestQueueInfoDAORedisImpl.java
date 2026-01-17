@@ -7,7 +7,6 @@ import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -140,7 +139,7 @@ public class TestQueueInfoDAORedisImpl {
   }
 
   @Test
-  public void testGetQueueInfo_List() throws JsonProcessingException {
+  public void testGetQueueInfo_List() {
     final String name = "queue1";
     final String queueKey = "resque:queue:" + name;
     final long jobOffset = 1;
@@ -162,7 +161,7 @@ public class TestQueueInfoDAORedisImpl {
   }
 
   @Test
-  public void testGetQueueInfo_ZSet() throws JsonProcessingException {
+  public void testGetQueueInfo_ZSet() {
     final String name = "queue1";
     final String queueKey = "resque:queue:" + name;
     final long jobOffset = 1;

@@ -15,10 +15,10 @@ package net.greghaines.jesque.worker;
 
 import static net.greghaines.jesque.worker.RecoveryStrategy.*;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.exceptions.JedisNoScriptException;
+import tools.jackson.core.JacksonException;
 
 /**
  * DefaultPoolExceptionHandler reconnects if there is a connection exception, proceeds if the
@@ -38,7 +38,7 @@ public class DefaultPoolExceptionHandler implements ExceptionHandler {
         || exception instanceof JedisNoScriptException
         || isLoadingDataset) {
       return RECONNECT;
-    } else if (exception instanceof JsonProcessingException
+    } else if (exception instanceof JacksonException
         || (exception instanceof InterruptedException && !jobExecutor.isShutdown())) {
       return PROCEED;
     } else {

@@ -9,7 +9,6 @@ import static net.greghaines.jesque.utils.ResqueConstants.STAT;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -83,7 +82,7 @@ public class TestFailureDAORedisImpl {
   }
 
   @Test
-  public void testGetFailures() throws JsonProcessingException {
+  public void testGetFailures() {
     final long offset = 4;
     final long count = 2;
     final List<JobFailure> origFailures = new ArrayList<JobFailure>(2);
@@ -104,7 +103,7 @@ public class TestFailureDAORedisImpl {
   }
 
   @Test
-  public void testRemove() throws JsonProcessingException {
+  public void testRemove() {
     final long index = 8;
     when(this.jedisPool.lset(eq(FAILED_KEY), eq(index), any(String.class))).thenReturn("OK");
     when(this.jedisPool.lrem(eq(FAILED_KEY), eq(1L), any(String.class))).thenReturn(1L);
@@ -162,7 +161,7 @@ public class TestFailureDAORedisImpl {
   }
 
   @Test
-  public void testRequeue() throws JsonProcessingException {
+  public void testRequeue() {
     final long index = 4;
     final long count = 1;
     final String queue = "queue1";

@@ -3,10 +3,10 @@ package net.greghaines.jesque.worker;
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonGenerator;
 import org.junit.Test;
 import redis.clients.jedis.exceptions.JedisConnectionException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.exc.StreamWriteException;
 
 /**
  * Tests DefaultExceptionHandler.
@@ -27,7 +27,7 @@ public class TestDefaultExceptionHandler {
   public void testOnException_JsonEx() {
     assertThat(
             new DefaultExceptionHandler()
-                .onException(null, new JsonGenerationException("foo", (JsonGenerator) null), null))
+                .onException(null, new StreamWriteException((JsonGenerator) null, "foo"), null))
         .isEqualTo(RecoveryStrategy.PROCEED);
   }
 

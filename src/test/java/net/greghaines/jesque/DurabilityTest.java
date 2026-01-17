@@ -5,7 +5,6 @@ import static net.greghaines.jesque.utils.JesqueUtils.createKey;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUE;
 import static net.greghaines.jesque.utils.ResqueConstants.QUEUES;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Arrays;
 import java.util.Map;
 import net.greghaines.jesque.json.ObjectMapperFactory;
@@ -42,7 +41,7 @@ public class DurabilityTest {
   }
 
   @Test
-  public void testNotInterrupted() throws InterruptedException, JsonProcessingException {
+  public void testNotInterrupted() throws InterruptedException {
     final String queue = "foo";
     TestUtils.enqueueJobs(queue, Arrays.asList(sleepJob), config);
 
@@ -88,7 +87,7 @@ public class DurabilityTest {
   }
 
   @Test
-  public void testInterrupted() throws JsonProcessingException {
+  public void testInterrupted() {
     final String queue = "bar";
     TestUtils.enqueueJobs(queue, Arrays.asList(sleepWithExceptionJob), config);
 

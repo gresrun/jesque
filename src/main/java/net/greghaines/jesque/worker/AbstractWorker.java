@@ -17,8 +17,6 @@ import static net.greghaines.jesque.utils.ResqueConstants.*;
 import static net.greghaines.jesque.worker.JobExecutor.State.*;
 import static net.greghaines.jesque.worker.WorkerEvent.*;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
@@ -46,6 +44,8 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.AbstractTransaction;
 import redis.clients.jedis.commands.JedisCommands;
 import redis.clients.jedis.exceptions.JedisException;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DatabindException;
 
 /** AbstractWorker extracts common behavior for the concrete worker implementations. */
 public abstract class AbstractWorker implements Worker {
@@ -444,7 +444,7 @@ public abstract class AbstractWorker implements Worker {
         if (!isShutdown()) {
           recoverFromException(curQueue, ie);
         }
-      } catch (JsonParseException | JsonMappingException e) {
+      } catch (StreamReadException | DatabindException e) {
         removeInFlight(curQueue, true);
         recoverFromException(curQueue, e);
       } catch (Exception e) {
