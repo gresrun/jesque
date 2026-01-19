@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.greghaines</groupId>
     <artifactId>jesque</artifactId>
-    <version>3.0.0</version>
+    <version>3.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Jesque</name>
     <description>An implementation of Resque in Java</description>
