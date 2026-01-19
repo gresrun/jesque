@@ -12,8 +12,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson.version>3.0.3</jackson.version>
-        <github.global.server>github-jesque</github.global.server>
         <mockito.version>5.21.0</mockito.version>
+        <github.global.server>github-jesque</github.global.server>
         <argLine/>
     </properties>
     <licenses>
@@ -39,9 +39,14 @@
         <notifiers />
     </ciManagement>
     <distributionManagement>
+        <repository>
+            <id>central</id>
+            <name>Maven Central Repository</name>
+            <url>https://central.sonatype.com/</url>
+        </repository>
         <snapshotRepository>
-            <name>Central Portal Snapshots</name>
-            <id>central-portal-snapshots</id>
+            <id>central-snapshot</id>
+            <name>Maven Central Portal Snapshots</name>
             <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         </snapshotRepository>
         <site>
@@ -108,8 +113,8 @@
                 <plugins>
                     <plugin>
                         <groupId>org.jacoco</groupId>
- 				        <artifactId>jacoco-maven-plugin</artifactId>
- 				        <version>0.8.14</version>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.14</version>
                         <executions>
                             <execution>
                                 <id>prepare-agent</id>
