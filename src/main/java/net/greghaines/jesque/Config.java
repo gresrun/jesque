@@ -35,12 +35,12 @@ public final class Config {
   private final String namespace;
   private final JedisClientConfig clientConfig;
 
-  private Config(final Builder Builder) {
-    this.hostAndPort = Builder.hostAndPort;
-    this.masterName = Builder.masterName;
-    this.sentinels = Builder.sentinels;
-    this.namespace = Builder.namespace;
-    this.clientConfig = Builder.clientBuilder.build();
+  private Config(final Builder builder) {
+    this.hostAndPort = builder.hostAndPort;
+    this.masterName = builder.masterName;
+    this.sentinels = builder.sentinels;
+    this.namespace = builder.namespace;
+    this.clientConfig = builder.clientBuilder.build();
   }
 
   /**
