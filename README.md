@@ -1,10 +1,10 @@
 # Jesque
 
-[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fgresrun%2Fjesque%2Fbadge%3Fref%3Dmaster&style=flat&label=build&logo=none)](https://actions-badge.atrox.dev/gresrun/jesque/goto?ref=master) [![Coverage Status](https://codecov.io/gh/gresrun/jesque/branch/master/graph/badge.svg?token=gbXcqIQTZD)](https://codecov.io/gh/gresrun/jesque) [![License Apache 2.0](http://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/gresrun/jesque/blob/master/LICENSE) [![Maven Central](https://img.shields.io/maven-central/v/net.greghaines/jesque.svg)](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22net.greghaines%22%20AND%20a%3A%22jesque%22)
+[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fgresrun%2Fjesque%2Fbadge%3Fref%3Dmaster&style=flat&label=build&logo=none)](https://actions-badge.atrox.dev/gresrun/jesque/goto?ref=master) [![Coverage Status](https://codecov.io/gh/gresrun/jesque/branch/master/graph/badge.svg?token=gbXcqIQTZD)](https://codecov.io/gh/gresrun/jesque) [![License Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/gresrun/jesque/blob/master/LICENSE) [![Maven Central](https://img.shields.io/maven-central/v/net.greghaines/jesque.svg)](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22net.greghaines%22%20AND%20a%3A%22jesque%22)
 
-Jesque is an implementation of [Resque](https://github.com/resque/resque) in [Java](http://www.oracle.com/technetwork/java/index.html). It is fully-interoperable with the [Ruby](http://www.ruby-lang.org/en/) and [Node.js](http://nodejs.org/) ([Coffee-Resque](https://github.com/technoweenie/coffee-resque)) implementations.
+Jesque is an implementation of [Resque](https://github.com/resque/resque) in [Java](https://www.java.com/). It is fully-interoperable with the [Ruby](https://www.ruby-lang.org/) and [Node.js](https://nodejs.org/) ([Coffee-Resque](https://github.com/technoweenie/coffee-resque)) implementations.
 
-Jesque is a [Maven](http://maven.apache.org/) project and depends on [Jedis](https://github.com/xetorthio/jedis) to connect to [Redis](http://redis.io/), [Jackson](https://github.com/FasterXML/jackson) to map to/from [JSON](http://json.org/) and [SLF4J](http://slf4j.org/) for logging.
+Jesque is a [Maven](http://maven.apache.org/) project and depends on [Jedis](https://github.com/redis/jedis) to connect to [Redis](https://redis.io/), [Jackson](https://github.com/FasterXML/jackson) to map to/from [JSON](https://json.org/) and [SLF4J](https://slf4j.org/) for logging.
 
 The project contains a client implementation as well as a worker implementation that supports listeners.
 
@@ -17,6 +17,7 @@ The project contains a client implementation as well as a worker implementation 
 Jesque requires Java 7+. Download the latest source at:
 
   https://github.com/gresrun/jesque
+
 Or, to use it in your Maven project, add it as a dependency:
 
 ```xml
@@ -35,14 +36,14 @@ final Config config = new ConfigBuilder().build();
 
 // Add a job to the queue
 final Job job = new Job("TestAction",
-  new Object[]{ 1, 2.3, true, "test", Arrays.asList("inner", 4.5)});
+  new Object[]{ 1, 2.3, true, "test", List.of("inner", 4.5)});
 final Client client = new ClientImpl(config);
 client.enqueue("foo", job);
 client.end();
 
 // Start a worker to run jobs from the queue
 final Worker worker = new WorkerImpl(config,
-  Arrays.asList("foo"), new MapBasedJobFactory(map(entry("TestAction", TestAction.class))));
+  List.of("foo"), new MapBasedJobFactory(Map.of("TestAction", TestAction.class)));
   
 final Thread workerThread = new Thread(worker);
 workerThread.start();
@@ -121,7 +122,7 @@ Use the resque-web application to see the status of your jobs and workers or, if
 
 ### Redis Configuration
 
-As mentioned Jesque depends on [Jedis](https://github.com/xetorthio/jedis) to connect to [Redis](http://redis.io/).
+As mentioned Jesque depends on [Jedis](https://github.com/redis/jedis) to connect to [Redis](https://redis.io/).
 
 You can configure Jesque to connect to Redis given a URL in a system property (as used in Heroku + RedisToGo) with the following snippet:
 
@@ -168,7 +169,7 @@ final Config config = configBuilder.build();
 
 ## Misc.
 
-If you are on Mac OS X, I highly recommend using the fantasic [Homebrew package manager](https://github.com/mxcl/homebrew). It makes installing and maintaining libraries, tools and applications a cinch. E.g.:
+If you are on Mac OS X, I highly recommend using the fantasic [Homebrew package manager](https://brew.sh). It makes installing and maintaining libraries, tools and applications a cinch. E.g.:
 
 ```bash
 brew install redis
