@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.greghaines</groupId>
     <artifactId>jesque</artifactId>
-    <version>3.0.1-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Jesque</name>
     <description>An implementation of Resque in Java</description>
@@ -14,7 +14,7 @@
         <jackson.version>3.0.3</jackson.version>
         <mockito.version>5.21.0</mockito.version>
         <github.global.server>github-jesque</github.global.server>
-        <argLine />
+        <argLine/>
     </properties>
     <licenses>
         <license>
@@ -27,7 +27,7 @@
         <connection>scm:git:git@github.com:gresrun/jesque.git</connection>
         <developerConnection>scm:git:git@github.com:gresrun/jesque.git</developerConnection>
         <url>git@github.com:gresrun/jesque.git</url>
-        <tag>jesque-3.0.0</tag>
+        <tag>HEAD</tag>
     </scm>
     <issueManagement>
         <system>GitHub</system>
