@@ -11,7 +11,7 @@
     <inceptionYear>2011</inceptionYear>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jackson.version>3.0.3</jackson.version>
+        <jackson.version>3.0.4</jackson.version>
         <mockito.version>5.21.0</mockito.version>
         <github.global.server>github-jesque</github.global.server>
         <argLine />
