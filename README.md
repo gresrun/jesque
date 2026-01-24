@@ -137,7 +137,7 @@ Use the resque-web application to see the status of your jobs and workers or, if
 
 As mentioned Jesque depends on [Jedis](https://github.com/redis/jedis) to connect to [Redis](https://redis.io/).
 
-You can configure Jesque to connect to Redis given a URL in a system property (as used in Heroku + RedisToGo) with the following snippet:
+You can configure Jesque to connect to Redis given a URL in a system property with the following snippet:
 
 ```java
 final Config.Builder configBuilder = Config.newBuilder();
