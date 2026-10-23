@@ -197,6 +197,7 @@ public abstract class AbstractClient implements Client {
    * Helper method that encapsulates the minimum logic for adding jobs to a queue.
    *
    * @param jedis the connection to Redis
+   * @param makePipeline creates the pipeline to send the commands with, which is closed afterwards
    * @param namespace the Resque namespace
    * @param queue the Resque queue name
    * @param jobJsons a list of jobs serialized as JSON
@@ -207,12 +208,13 @@ public abstract class AbstractClient implements Client {
       final String namespace,
       final String queue,
       final List<String> jobJsons) {
-    AbstractPipeline pipelined = makePipeline.get(); // jedis.pipelined();
-    pipelined.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
-    for (String jobJson : jobJsons) {
-      pipelined.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+    try (AbstractPipeline pipelined = makePipeline.get()) { // jedis.pipelined();
+      pipelined.sadd(JesqueUtils.createKey(namespace, QUEUES), queue);
+      for (String jobJson : jobJsons) {
+        pipelined.rpush(JesqueUtils.createKey(namespace, QUEUE, queue), jobJson);
+      }
+      pipelined.sync();
     }
-    pipelined.sync();
   }
 
   /**
