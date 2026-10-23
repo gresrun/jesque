@@ -15,17 +15,21 @@ package net.greghaines.jesque;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import net.greghaines.jesque.client.Client;
 import net.greghaines.jesque.client.ClientImpl;
+import net.greghaines.jesque.utils.PoolUtils;
 import net.greghaines.jesque.worker.JobExecutor;
 import net.greghaines.jesque.worker.JobFactory;
 import net.greghaines.jesque.worker.MapBasedJobFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.ConnectionPoolConfig;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.UnifiedJedis;
 
 /**
  * Test helpers.
@@ -63,6 +67,19 @@ public final class TestUtils {
     }
     jedis.select(config.getJedisClientConfig().getDatabase());
     return jedis;
+  }
+
+  /**
+   * @param config the location of the Redis server
+   * @param maxTotal the maximum number of connections the pool hands out at once
+   * @return a new pool that fails to hand out a connection after waiting for one second
+   */
+  public static UnifiedJedis createBoundedJedisPool(final Config config, final int maxTotal) {
+    final ConnectionPoolConfig poolConfig = new ConnectionPoolConfig();
+    poolConfig.setMaxTotal(maxTotal);
+    poolConfig.setBlockWhenExhausted(true);
+    poolConfig.setMaxWait(Duration.ofSeconds(1));
+    return PoolUtils.createJedisPool(config, poolConfig);
   }
 
   public static void enqueueJobs(final String queue, final List<Job> jobs, final Config config) {
