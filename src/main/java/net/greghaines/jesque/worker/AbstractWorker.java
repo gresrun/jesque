@@ -567,10 +567,11 @@ public abstract class AbstractWorker implements Worker {
       if (failQueueKey != null) {
         final int failQueueMaxItems = strategy.getFailQueueMaxItems(curQueue);
         if (failQueueMaxItems > 0) {
-          AbstractTransaction tx = createTransaction();
-          tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
-          tx.ltrim(failQueueKey, -failQueueMaxItems, -1);
-          tx.exec();
+          try (AbstractTransaction tx = createTransaction()) {
+            tx.rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
+            tx.ltrim(failQueueKey, -failQueueMaxItems, -1);
+            tx.exec();
+          }
         } else {
           getJedis().rpush(failQueueKey, failMsg(thrwbl, curQueue, job));
         }

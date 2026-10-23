@@ -374,11 +374,12 @@ public abstract class AbstractClient implements Client {
     final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
     if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
-      AbstractTransaction transaction = makeTransaction.get(); // jedis.multi();
-      transaction.zadd(queueKey, future.toEpochMilli(), jobJson);
-      transaction.hset(hashKey, jobJson, Long.toString(frequency.toMillis()));
-      if (transaction.exec() == null) {
-        throw new RuntimeException("cannot add " + jobJson + " to recurring queue " + queue);
+      try (AbstractTransaction transaction = makeTransaction.get()) { // jedis.multi();
+        transaction.zadd(queueKey, future.toEpochMilli(), jobJson);
+        transaction.hset(hashKey, jobJson, Long.toString(frequency.toMillis()));
+        if (transaction.exec() == null) {
+          throw new RuntimeException("cannot add " + jobJson + " to recurring queue " + queue);
+        }
       }
     } else {
       throw new IllegalArgumentException(queue + " cannot be used as a recurring queue");
@@ -412,11 +413,12 @@ public abstract class AbstractClient implements Client {
     final String hashKey = JesqueUtils.createRecurringHashKey(queueKey);
 
     if (JedisUtils.canUseAsRecurringQueue(jedis, queueKey, hashKey)) {
-      AbstractTransaction transaction = makeTransaction.get(); // jedis.multi();
-      transaction.hdel(hashKey, jobJson);
-      transaction.zrem(queueKey, jobJson);
-      if (transaction.exec() == null) {
-        throw new RuntimeException("cannot remove " + jobJson + " from recurring queue " + queue);
+      try (AbstractTransaction transaction = makeTransaction.get()) { // jedis.multi();
+        transaction.hdel(hashKey, jobJson);
+        transaction.zrem(queueKey, jobJson);
+        if (transaction.exec() == null) {
+          throw new RuntimeException("cannot remove " + jobJson + " from recurring queue " + queue);
+        }
       }
     } else {
       throw new IllegalArgumentException(queue + " cannot be used as a recurring queue");
